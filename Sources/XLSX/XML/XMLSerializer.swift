@@ -1,0 +1,51 @@
+public struct XMLSerializer {
+    public init() {}
+
+    public mutating func serialize(document: XMLDocument) -> String {
+        var output = #"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>"#
+        for child in document.children {
+            output += serialize(node: child)
+        }
+        return output
+    }
+
+    private func serialize(node: XMLNode) -> String {
+        switch node {
+        case let element as XMLElement:
+            return serialize(element: element)
+        case let text as XMLText:
+            return escapeText(text.value)
+        default:
+            return node.children.map(serialize(node:)).joined()
+        }
+    }
+
+    private func serialize(element: XMLElement) -> String {
+        var output = "<\(element.name.rawName)"
+        for attribute in element.attributes {
+            output += " \(attribute.name.rawName)=\"\(escapeAttribute(attribute.value))\""
+        }
+
+        if element.children.isEmpty {
+            output += "/>"
+            return output
+        }
+
+        output += ">"
+        output += element.children.map(serialize(node:)).joined()
+        output += "</\(element.name.rawName)>"
+        return output
+    }
+
+    private func escapeText(_ string: String) -> String {
+        string
+            .replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+    }
+
+    private func escapeAttribute(_ string: String) -> String {
+        escapeText(string)
+            .replacingOccurrences(of: "\"", with: "&quot;")
+    }
+}
