@@ -2,7 +2,7 @@ import Foundation
 
 public struct XLDocument {
     public init() {
-        try! self.init(opcPackage: OPCPackage())
+        self.init(package: XLDocumentPackage())
     }
 
     public init(package: XLDocumentPackage) {

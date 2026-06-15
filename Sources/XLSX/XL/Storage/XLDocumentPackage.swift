@@ -1,6 +1,26 @@
 import Foundation
 
 public final class XLDocumentPackage {
+    public init() {
+        self.contentTypes = OPCFileWithPath(
+            path: try! OPCFilePath(string: "/[Content_Types].xml"),
+            file: OPCContentTypesFile()
+        )
+        self.packageRels = OPCFileWithPath(
+            path: try! OPCRelsFile.path(for: .packageRoot),
+            file: OPCRelsFile()
+        )
+        self.workbook = OPCFileWithPath(
+            path: try! OPCFilePath(string: "/xl/workbook.xml"),
+            file: XLWorkbookFile()
+        )
+        self.workbookRels = OPCFileWithPath(
+            path: try! OPCFilePath(string: "/xl/_rels/workbook.xml.rels"),
+            file: OPCRelsFile()
+        )
+        self.opaqueFiles = []
+    }
+
     public init(
         contentTypes: OPCFileWithPath<OPCContentTypesFile>,
         packageRels: OPCFileWithPath<OPCRelsFile>,
@@ -166,7 +186,9 @@ public final class XLDocumentPackage {
     ) throws -> [Int: OPCFileWithPath<XLWorksheetFile>] {
         var worksheets: [Int: OPCFileWithPath<XLWorksheetFile>] = [:]
         for sheet in sheets {
-            guard let relationship = workbookRels.relationships.first(where: { $0.id == sheet.relationshipID }) else {
+            guard let relationship = workbookRels.relationships.first(where: { $0.id == sheet.relationshipID }),
+                  relationship.type == XMLNamespaceURI.worksheet.string
+            else {
                 continue
             }
             let path = try OPCFilePath(string: relationship.target).resolved(relativeTo: workbookPath)

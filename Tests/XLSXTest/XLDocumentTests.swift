@@ -62,6 +62,93 @@ struct XLDocumentTests {
         #expect(worksheet.path.description == "/xl/worksheets/sheet1.xml")
     }
 
+    @Test func opensOnlyWorksheetRelationshipTypesAsWorksheets() throws {
+        let chartSheetRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/chartsheet"
+        let chartSheetData = Data("<chartsheet/>".utf8)
+        var package = OPCPackage()
+        try package.insertFile(
+            data: Data("""
+                <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+                  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+                  <Default Extension="xml" ContentType="application/xml"/>
+                  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+                  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+                  <Override PartName="/xl/chartsheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+                </Types>
+                """.utf8),
+            at: OPCFilePath(string: "/[Content_Types].xml")
+        )
+        try package.insertFile(
+            data: Data("""
+                <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+                  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+                </Relationships>
+                """.utf8),
+            at: OPCFilePath(string: "/_rels/.rels")
+        )
+        try package.insertFile(
+            data: Data("""
+                <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+                  <sheets>
+                    <sheet name="Sheet1" sheetId="1" r:id="rId1"/>
+                    <sheet name="Chart1" sheetId="2" r:id="rId2"/>
+                  </sheets>
+                </workbook>
+                """.utf8),
+            at: OPCFilePath(string: "/xl/workbook.xml")
+        )
+        try package.insertFile(
+            data: Data("""
+                <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+                  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+                  <Relationship Id="rId2" Type="\(chartSheetRelationshipType)" Target="chartsheets/sheet1.xml"/>
+                </Relationships>
+                """.utf8),
+            at: OPCFilePath(string: "/xl/_rels/workbook.xml.rels")
+        )
+        try package.insertFile(
+            data: Data("<worksheet/>".utf8),
+            at: OPCFilePath(string: "/xl/worksheets/sheet1.xml")
+        )
+        try package.insertFile(
+            data: chartSheetData,
+            at: OPCFilePath(string: "/xl/chartsheets/sheet1.xml")
+        )
+
+        let destinationURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("swift-xlsx-tests-\(UUID().uuidString)")
+            .appendingPathExtension("xlsx")
+        defer {
+            try? FileManager.default.removeItem(at: destinationURL)
+        }
+
+        let document = try XLDocument(opcPackage: package)
+        #expect(document.package.workbook.file.sheets.map(\.sheetID) == [1, 2])
+        #expect(document.package.workbook.file.worksheetFromID.keys.sorted() == [1])
+        #expect(document.workbook.worksheets.map(\.sheetID) == [1])
+
+        try document.save(to: destinationURL)
+
+        let savedPackage = try OPCPackage(data: Data(contentsOf: destinationURL))
+        let savedWorkbookRelsPath = try OPCFilePath(string: "/xl/_rels/workbook.xml.rels")
+        let savedWorkbookRelsFile = try savedPackage.fileWithPath(OPCRelsFile.self, at: savedWorkbookRelsPath)
+        let savedWorkbookRels = try #require(savedWorkbookRelsFile)
+        let savedChartSheetRelationship = try #require(
+            savedWorkbookRels.file.relationships.first { $0.id == "rId2" }
+        )
+        let chartSheetPath = try OPCFilePath(string: "/xl/chartsheets/sheet1.xml")
+        let generatedSheetPath = try OPCFilePath(string: "/xl/worksheets/sheet2.xml")
+
+        #expect(savedChartSheetRelationship.type == chartSheetRelationshipType)
+        #expect(savedChartSheetRelationship.target == "chartsheets/sheet1.xml")
+        #expect(savedPackage.data(at: chartSheetPath) == chartSheetData)
+        #expect(savedPackage.data(at: generatedSheetPath) == nil)
+    }
+
     @Test func worksheetNameUsesWorkbookSheetEntry() throws {
         let document = XLDocument()
         let worksheet = try #require(document.workbook.worksheets.first)

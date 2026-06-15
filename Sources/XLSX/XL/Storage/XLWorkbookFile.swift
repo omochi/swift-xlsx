@@ -8,8 +8,17 @@ public struct XLWorkbookFile: OPCXMLFile {
 
     public init() {
         self.sheets = [Self.defaultSheet]
-        self.worksheetFromID = [:]
+        self.worksheetFromID = [
+            Self.defaultSheet.sheetID: OPCFileWithPath(
+                path: Self.defaultWorksheetPath,
+                file: XLWorksheetFile()
+            )
+        ]
         self.original = nil
+    }
+
+    public init(sheets: [XLWorkbookFileSheet]) {
+        self.init(sheets: sheets, worksheetFromID: [:])
     }
 
     public init(
@@ -36,6 +45,7 @@ public struct XLWorkbookFile: OPCXMLFile {
         sheetID: 1,
         relationshipID: "rId1"
     )
+    private static let defaultWorksheetPath = try! OPCFilePath(string: "/xl/worksheets/sheet1.xml")
 
     public func xmlDocument() throws -> XMLDocument {
         let document = original?.clone() ?? XMLDocument()
@@ -95,6 +105,13 @@ public struct XLWorkbookFile: OPCXMLFile {
         var contentTypeOverrides: [OPCFilePath: String] = [:]
 
         for sheet in sheets {
+            if worksheetFromID[sheet.sheetID] == nil,
+               let relationship = workbookRels.relationships.first(where: { $0.id == sheet.relationshipID }),
+               relationship.type != XMLNamespaceURI.worksheet.string
+            {
+                continue
+            }
+
             let file = try worksheetFile(for: sheet, workbookPath: workbookPath)
             workbookRels.ensureRelationship(
                 id: sheet.relationshipID,
