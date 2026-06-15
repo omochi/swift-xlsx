@@ -7,7 +7,7 @@ struct XMLDocumentTests {
     @Test func parsesNamespaceAwareElementTree() throws {
         let xml = """
         <?xml version="1.0" encoding="UTF-8"?>
-        <workbook xmlns="\(XLXMLURIs.spreadsheet)" xmlns:r="\(XLXMLURIs.officeRelationships)">
+        <workbook xmlns="\(XMLNamespaceURI.spreadsheet.string)" xmlns:r="\(XMLNamespaceURI.officeRelationships.string)">
           <sheets>
             <sheet name="Sheet1" sheetId="1" r:id="rId1"/>
           </sheets>
@@ -19,13 +19,16 @@ struct XMLDocumentTests {
         let sheets = try #require(firstChildElement(name: "sheets", of: workbook))
         let sheet = try #require(firstChildElement(name: "sheet", of: sheets))
 
-        #expect(workbook.namespaces.uri()?.string == XLXMLURIs.spreadsheet)
-        #expect(workbook.namespaces.uri(for: "r")?.string == XLXMLURIs.officeRelationships)
-        #expect(workbook.namespaceURI(for: workbook.name.prefix)?.string == XLXMLURIs.spreadsheet)
-        #expect(sheet.namespaceURI(for: sheet.name.prefix)?.string == XLXMLURIs.spreadsheet)
+        #expect(workbook.namespaces.uri() == .spreadsheet)
+        #expect(workbook.namespaces.uri(for: "r") == .officeRelationships)
+        #expect(workbook.namespaceURI(for: workbook.name.prefix) == .spreadsheet)
+        #expect(sheet.namespaceURI(for: sheet.name.prefix) == .spreadsheet)
         let relationshipID = try #require(sheet.attributes.first { $0.name.prefix == "r" && $0.name.name == "id" })
-        #expect(sheet.namespaceURI(for: relationshipID.name.prefix)?.string == XLXMLURIs.officeRelationships)
-        #expect(sheet.attribute("r:id") == "rId1")
+        #expect(sheet.namespaceURI(for: relationshipID.name.prefix) == .officeRelationships)
+        #expect(sheet.attribute(
+            name: "id",
+            namespaceURI: .officeRelationships
+        ) == "rId1")
     }
 
     @Test func serializesUnknownElementsAndEscapesValues() throws {
@@ -118,8 +121,8 @@ struct XMLDocumentTests {
         #expect(clonedText !== originalText)
         #expect(clonedRoot.parent === clone)
         #expect(clonedChild.parent === clonedRoot)
-        #expect(clonedChild.attribute("id") == "2")
-        #expect(originalChild.attribute("id") == "1")
+        #expect(clonedChild.attribute(name: "id") == "2")
+        #expect(originalChild.attribute(name: "id") == "1")
         #expect(clonedText.value == "changed")
         #expect(originalText.value == "value")
     }
@@ -143,6 +146,47 @@ struct XMLDocumentTests {
         #expect(removed === child)
         #expect(parent.children.isEmpty)
         #expect(child.parent == nil)
+    }
+
+    @Test func setAttributeUsesDeclaredNamespacePrefix() throws {
+        let parent = XMLElement(name: XMLName(name: "parent"))
+        parent.ensureNamespace(prefix: "rel", uri: .officeRelationships)
+        let child = XMLElement(name: XMLName(name: "child"))
+        parent.appendChild(child)
+
+        try child.setAttribute(
+            name: "id",
+            namespaceURI: .officeRelationships,
+            value: "rId1"
+        )
+
+        #expect(child.attributes.count == 1)
+        #expect(child.attributes.first?.name == XMLName(prefix: "rel", name: "id"))
+        #expect(child.attributes.first?.value == "rId1")
+    }
+
+    @Test func ensureNamespaceURIReusesExistingPrefixForURI() {
+        let element = XMLElement(name: XMLName(name: "element"))
+        element.ensureNamespace(prefix: "rel", uri: .officeRelationships)
+
+        let prefix = element.ensureNamespaceURI(prefix: "r", uri: .officeRelationships)
+
+        #expect(prefix == "rel")
+        #expect(element.namespaces.declarations.count == 1)
+        #expect(element.namespaces.uri(for: "rel") == .officeRelationships)
+    }
+
+    @Test func ensureNamespaceURIChoosesAvailablePrefixedName() {
+        let element = XMLElement(name: XMLName(name: "element"))
+        element.ensureNamespace(prefix: "r", uri: XMLNamespaceURI("urn:other"))
+        element.ensureNamespace(prefix: "r2", uri: XMLNamespaceURI("urn:other-2"))
+
+        let prefix = element.ensureNamespaceURI(prefix: "r", uri: .officeRelationships)
+
+        #expect(prefix == "r3")
+        #expect(element.namespaces.uri(for: "r")?.string == "urn:other")
+        #expect(element.namespaces.uri(for: "r2")?.string == "urn:other-2")
+        #expect(element.namespaces.uri(for: "r3") == .officeRelationships)
     }
 }
 

@@ -28,4 +28,5 @@ public struct XMLNamespaceTable: Sendable {
     public func uri(for prefix: String? = nil) -> XMLNamespaceURI? {
         entries.first { $0.prefix == prefix }?.uri
     }
+
 }

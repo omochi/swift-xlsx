@@ -2,16 +2,15 @@ import MemberwiseInit
 import Foundation
 
 @MemberwiseInit(.public)
-public struct OPCRelsFile: Sendable, OPCFile {
-    public init(data: Data) throws {
-        let document = try XMLDocumentReader.parse(data)
-        guard let root = document.element(name: "Relationships") else {
+public struct OPCRelsFile: Sendable, OPCXMLFile {
+    public init(xmlDocument: XMLDocument) throws {
+        guard let root = xmlDocument.element(name: "Relationships") else {
             throw OPCError.invalidRelationshipsFile
         }
         self.relationships = root.elements(name: "Relationship").compactMap { element in
-            guard let id = element.attribute("Id"),
-                  let type = element.attribute("Type"),
-                  let target = element.attribute("Target")
+            guard let id = element.attribute(name: "Id"),
+                  let type = element.attribute(name: "Type"),
+                  let target = element.attribute(name: "Target")
             else {
                 return nil
             }
@@ -67,16 +66,12 @@ public struct OPCRelsFile: Sendable, OPCFile {
         return relationship
     }
 
-    public func data() -> Data {
-        xmlDocument.data()
-    }
-
-    private var xmlDocument: XMLDocument {
+    public func xmlDocument() -> XMLDocument {
         let document = XMLDocument()
         let root = XMLElement(
             name: XMLName(name: "Relationships"),
             namespaces: XMLNamespaceTable().declared(
-                uri: XMLNamespaceURI(OPCXMLNamespaces.relationships)
+                uri: .relationships
             )
         )
 

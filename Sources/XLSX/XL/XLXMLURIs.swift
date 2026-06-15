@@ -1,9 +1,9 @@
-public enum XLXMLURIs {
-    public static let spreadsheet = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
-    public static let officeRelationships = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
-    public static let packageRelationships = "http://schemas.openxmlformats.org/package/2006/relationships"
+extension XMLNamespaceURI {
+    public static let spreadsheet = XMLNamespaceURI("http://schemas.openxmlformats.org/spreadsheetml/2006/main")
+    public static let officeRelationships = XMLNamespaceURI("http://schemas.openxmlformats.org/officeDocument/2006/relationships")
+    public static let packageRelationships = XMLNamespaceURI("http://schemas.openxmlformats.org/package/2006/relationships")
 
-    public static let officeDocument = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument"
-    public static let sharedStrings = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings"
-    public static let worksheet = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet"
+    public static let officeDocument = XMLNamespaceURI("http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument")
+    public static let sharedStrings = XMLNamespaceURI("http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings")
+    public static let worksheet = XMLNamespaceURI("http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet")
 }

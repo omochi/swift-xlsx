@@ -1,45 +1,42 @@
 import Foundation
 
-public struct XLWorkbook: OPCFile {
+public struct XLWorkbook: OPCXMLFile {
     public init() {
+        self.sheets = [Self.defaultSheet]
         self.original = nil
     }
 
-    public init(data: Data) throws {
-        self.original = try XMLDocumentReader.parse(data)
+    public init(sheets: [XLWorkbookSheet]) {
+        self.sheets = sheets
+        self.original = nil
     }
 
+    public init(xmlDocument: XMLDocument) throws {
+        self.sheets = xmlDocument.workbookSheets()
+        self.original = xmlDocument
+    }
+
+    public var sheets: [XLWorkbookSheet]
     public var original: XMLDocument?
 
     public func firstSheetRelationshipID() -> String? {
-        xmlDocument.firstSheetRelationshipID()
+        sheets.first?.relationshipID
     }
 
-    public func data() -> Data {
-        xmlDocument.data()
-    }
-
-    private var xmlDocument: XMLDocument {
+    public func xmlDocument() throws -> XMLDocument {
         let document = original?.clone() ?? XMLDocument()
-        ensureWorkbook(in: document)
+        try ensureWorkbook(in: document)
         return document
     }
 
-    private func ensureWorkbook(in document: XMLDocument) {
+    private func ensureWorkbook(in document: XMLDocument) throws {
         let workbookElement = workbookElement(in: document)
-        workbookElement.ensureNamespace(uri: XMLNamespaceURI(XLXMLURIs.spreadsheet))
-        workbookElement.ensureNamespace(prefix: "r", uri: XMLNamespaceURI(XLXMLURIs.officeRelationships))
+        workbookElement.ensureNamespace(uri: .spreadsheet)
+        workbookElement.ensureNamespaceURI(prefix: "r", uri: .officeRelationships)
 
         let sheetsElement = sheetsElement(in: workbookElement)
-        if sheetsElement.elements(name: "sheet").isEmpty {
-            sheetsElement.appendChild(XMLElement(
-                name: XMLName(name: "sheet"),
-                attributes: [
-                    XMLAttribute(name: XMLName(name: "name"), value: "Sheet1"),
-                    XMLAttribute(name: XMLName(name: "sheetId"), value: "1"),
-                    XMLAttribute(name: XMLName(prefix: "r", name: "id"), value: "rId1"),
-                ]
-            ))
+        for sheet in sheets {
+            try sheet.ensureElement(in: sheetsElement)
         }
     }
 
@@ -62,16 +59,22 @@ public struct XLWorkbook: OPCFile {
         workbookElement.appendChild(element)
         return element
     }
+
+    private static let defaultSheet = XLWorkbookSheet(
+        name: "Sheet1",
+        sheetID: 1,
+        relationshipID: "rId1"
+    )
 }
 
 private extension XMLDocument {
-    func firstSheetRelationshipID() -> String? {
+    func workbookSheets() -> [XLWorkbookSheet] {
         guard let workbookElement = element(name: "workbook"),
-              let sheetsElement = workbookElement.elements(name: "sheets").first,
-              let sheetElement = sheetsElement.elements(name: "sheet").first
+              let sheetsElement = workbookElement.elements(name: "sheets").first
         else {
-            return nil
+            return []
         }
-        return sheetElement.attribute("r:id")
+
+        return sheetsElement.elements(name: "sheet").compactMap(XLWorkbookSheet.init(element:))
     }
 }

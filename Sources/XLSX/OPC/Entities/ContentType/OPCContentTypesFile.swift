@@ -2,18 +2,17 @@ import MemberwiseInit
 import Foundation
 
 @MemberwiseInit(.public)
-public struct OPCContentTypesFile: OPCFile {
-    public init(data: Data) throws {
-        let document = try XMLDocumentReader.parse(data)
-        guard let root = document.element(name: "Types") else {
+public struct OPCContentTypesFile: OPCXMLFile {
+    public init(xmlDocument: XMLDocument) throws {
+        guard let root = xmlDocument.element(name: "Types") else {
             throw OPCError.invalidContentTypesFile
         }
         var defaults: [String: String] = [:]
         var overrides: [OPCFilePath: String] = [:]
 
         for element in root.elements(name: "Default") {
-            guard let extensionName = element.attribute("Extension"),
-                  let contentType = element.attribute("ContentType")
+            guard let extensionName = element.attribute(name: "Extension"),
+                  let contentType = element.attribute(name: "ContentType")
             else {
                 continue
             }
@@ -21,8 +20,8 @@ public struct OPCContentTypesFile: OPCFile {
         }
 
         for element in root.elements(name: "Override") {
-            guard let partName = element.attribute("PartName"),
-                  let contentType = element.attribute("ContentType")
+            guard let partName = element.attribute(name: "PartName"),
+                  let contentType = element.attribute(name: "ContentType")
             else {
                 continue
             }
@@ -43,16 +42,12 @@ public struct OPCContentTypesFile: OPCFile {
         overrides[partName] = contentType
     }
 
-    public func data() -> Data {
-        xmlDocument.data()
-    }
-
-    private var xmlDocument: XMLDocument {
+    public func xmlDocument() -> XMLDocument {
         let document = XMLDocument()
         let root = XMLElement(
             name: XMLName(name: "Types"),
             namespaces: XMLNamespaceTable().declared(
-                uri: XMLNamespaceURI(OPCXMLNamespaces.contentTypes)
+                uri: .contentTypes
             )
         )
 

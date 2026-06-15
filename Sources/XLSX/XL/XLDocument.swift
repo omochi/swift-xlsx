@@ -53,7 +53,7 @@ public struct XLDocument {
 
     private static let worksheetXML = """
         <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-        <worksheet xmlns="\(XLXMLURIs.spreadsheet)">
+        <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
           <sheetData>
             <row r="1">
               <c r="A1" t="s">
@@ -66,7 +66,7 @@ public struct XLDocument {
 
     private static let sharedStringsXML = """
         <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-        <sst xmlns="\(XLXMLURIs.spreadsheet)" count="1" uniqueCount="1">
+        <sst xmlns="\(XMLNamespaceURI.spreadsheet.string)" count="1" uniqueCount="1">
           <si>
             <t>hello world</t>
           </si>
@@ -90,7 +90,7 @@ public struct XLDocument {
         let opaqueFiles = opaqueFiles
 
         packageRels.file.ensureRelationship(
-            type: XLXMLURIs.officeDocument,
+            type: XMLNamespaceURI.officeDocument.string,
             target: workbook.path.description.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         )
 
@@ -98,11 +98,11 @@ public struct XLDocument {
 
         let worksheetRelationship = workbookRels.file.ensureRelationship(
             id: sheetRelationshipID,
-            type: XLXMLURIs.worksheet,
+            type: XMLNamespaceURI.worksheet.string,
             target: "worksheets/sheet1.xml"
         )
         let sharedStringsRelationship = workbookRels.file.ensureRelationship(
-            type: XLXMLURIs.sharedStrings,
+            type: XMLNamespaceURI.sharedStrings.string,
             target: "sharedStrings.xml"
         )
         let worksheetPath = try OPCFilePath(string: worksheetRelationship.target).resolved(relativeTo: workbook.path)
@@ -201,7 +201,7 @@ private extension OPCContentTypesFile {
 
 private extension OPCRelsFile {
     func workbookPath() throws -> OPCFilePath {
-        if let relationship = relationships.first(where: { $0.type == XLXMLURIs.officeDocument }) {
+        if let relationship = relationships.first(where: { $0.type == XMLNamespaceURI.officeDocument.string }) {
             return try OPCFilePath(string: relationship.target).resolved(relativeTo: OPCFilePath(string: "/"))
         }
         return try OPCFilePath(string: "/xl/workbook.xml")
