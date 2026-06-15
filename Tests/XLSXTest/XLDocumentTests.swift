@@ -58,8 +58,27 @@ struct XLDocumentTests {
     @Test func opensWorksheetsIntoWorkbookScope() throws {
         let document = try XLDocument.open(try #require(Bundle.module.url(forResource: "simple", withExtension: "xlsx")))
 
-        let worksheet = try #require(document.workbook.worksheets[1])
+        let worksheet = try #require(document.package.workbook.file.worksheetFromID[1])
         #expect(worksheet.path.description == "/xl/worksheets/sheet1.xml")
+    }
+
+    @Test func worksheetNameUsesWorkbookSheetEntry() throws {
+        let document = XLDocument()
+        let worksheet = try #require(document.workbook.worksheets.first)
+
+        #expect(worksheet.name == "Sheet1")
+
+        worksheet.name = "Renamed"
+
+        #expect(document.package.workbook.file.sheets[0].name == "Renamed")
+    }
+
+    @Test func workbookWorksheetsShareWorksheetFileInstances() throws {
+        let document = XLDocument()
+        let worksheet = try #require(document.workbook.worksheets.first)
+        let file = try #require(document.package.workbook.file.worksheetFromID[1]?.file)
+
+        #expect(worksheet.file === file)
     }
 
     @Test func preservesOpaqueFiles() throws {

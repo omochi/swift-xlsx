@@ -1,14 +1,26 @@
-import MemberwiseInit
 import Foundation
 
-@MemberwiseInit(.public)
-public struct XLDocumentPackage {
-    init(package: OPCPackage) throws {
+public final class XLDocumentPackage {
+    public init(
+        contentTypes: OPCFileWithPath<OPCContentTypesFile>,
+        packageRels: OPCFileWithPath<OPCRelsFile>,
+        workbook: OPCFileWithPath<XLWorkbookFile>,
+        workbookRels: OPCFileWithPath<OPCRelsFile>,
+        opaqueFiles: [OPCOpaqueFileWithPath]
+    ) {
+        self.contentTypes = contentTypes
+        self.packageRels = packageRels
+        self.workbook = workbook
+        self.workbookRels = workbookRels
+        self.opaqueFiles = opaqueFiles
+    }
+
+    init(opcPackage: OPCPackage) throws {
         var consumedPaths: Set<OPCFilePath> = []
 
         let contentTypes = try Self.readFile(
             OPCContentTypesFile.self,
-            from: package,
+            from: opcPackage,
             at: OPCFilePath(string: "/[Content_Types].xml"),
             default: OPCContentTypesFile(),
             consumedPaths: &consumedPaths
@@ -16,7 +28,7 @@ public struct XLDocumentPackage {
 
         let packageRels = try Self.readFile(
             OPCRelsFile.self,
-            from: package,
+            from: opcPackage,
             at: try OPCRelsFile.path(for: .packageRoot),
             default: OPCRelsFile(),
             consumedPaths: &consumedPaths
@@ -24,7 +36,7 @@ public struct XLDocumentPackage {
 
         var workbook = try Self.readFile(
             XLWorkbookFile.self,
-            from: package,
+            from: opcPackage,
             at: try Self.workbookPath(in: packageRels.file),
             default: XLWorkbookFile(),
             consumedPaths: &consumedPaths
@@ -32,14 +44,14 @@ public struct XLDocumentPackage {
 
         let workbookRels = try Self.readFile(
             OPCRelsFile.self,
-            from: package,
+            from: opcPackage,
             at: try OPCRelsFile.path(for: workbook.path),
             default: OPCRelsFile(),
             consumedPaths: &consumedPaths
         )
 
-        workbook.file.worksheets = try Self.worksheets(
-            in: package,
+        workbook.file.worksheetFromID = try Self.worksheets(
+            in: opcPackage,
             for: workbook.file.sheets,
             workbookPath: workbook.path,
             workbookRels: workbookRels.file,
@@ -50,7 +62,7 @@ public struct XLDocumentPackage {
         self.packageRels = packageRels
         self.workbook = workbook
         self.workbookRels = workbookRels
-        self.opaqueFiles = Self.opaqueFiles(in: package, excluding: consumedPaths)
+        self.opaqueFiles = Self.opaqueFiles(in: opcPackage, excluding: consumedPaths)
     }
 
     public var contentTypes: OPCFileWithPath<OPCContentTypesFile>
@@ -151,18 +163,18 @@ public struct XLDocumentPackage {
         workbookPath: OPCFilePath,
         workbookRels: OPCRelsFile,
         consumedPaths: inout Set<OPCFilePath>
-    ) throws -> [Int: OPCFileWithPath<XLWorksheet>] {
-        var worksheets: [Int: OPCFileWithPath<XLWorksheet>] = [:]
+    ) throws -> [Int: OPCFileWithPath<XLWorksheetFile>] {
+        var worksheets: [Int: OPCFileWithPath<XLWorksheetFile>] = [:]
         for sheet in sheets {
             guard let relationship = workbookRels.relationships.first(where: { $0.id == sheet.relationshipID }) else {
                 continue
             }
             let path = try OPCFilePath(string: relationship.target).resolved(relativeTo: workbookPath)
             worksheets[sheet.sheetID] = try Self.readFile(
-                XLWorksheet.self,
+                XLWorksheetFile.self,
                 from: package,
                 at: path,
-                default: XLWorksheet(),
+                default: XLWorksheetFile(),
                 consumedPaths: &consumedPaths
             )
         }

@@ -1,4 +1,4 @@
-public struct XLWorksheet: OPCXMLFile {
+public final class XLWorksheetFile: OPCXMLFile {
     public init() {
         self.original = nil
     }

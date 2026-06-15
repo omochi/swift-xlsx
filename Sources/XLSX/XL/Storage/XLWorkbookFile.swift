@@ -2,33 +2,33 @@ import Foundation
 
 public struct XLWorkbookFile: OPCXMLFile {
     struct PackageItems {
-        var files: [OPCFileWithPath<XLWorksheet>]
+        var files: [OPCFileWithPath<XLWorksheetFile>]
         var contentTypeOverrides: [OPCFilePath: String]
     }
 
     public init() {
         self.sheets = [Self.defaultSheet]
-        self.worksheets = [:]
+        self.worksheetFromID = [:]
         self.original = nil
     }
 
     public init(
         sheets: [XLWorkbookFileSheet],
-        worksheets: [Int: OPCFileWithPath<XLWorksheet>] = [:]
+        worksheetFromID: [Int: OPCFileWithPath<XLWorksheetFile>]
     ) {
         self.sheets = sheets
-        self.worksheets = worksheets
+        self.worksheetFromID = worksheetFromID
         self.original = nil
     }
 
     public init(xmlDocument: XMLDocument) throws {
         self.sheets = Self.workbookSheets(in: xmlDocument)
-        self.worksheets = [:]
+        self.worksheetFromID = [:]
         self.original = xmlDocument
     }
 
     public var sheets: [XLWorkbookFileSheet]
-    public var worksheets: [Int: OPCFileWithPath<XLWorksheet>]
+    public var worksheetFromID: [Int: OPCFileWithPath<XLWorksheetFile>]
     public var original: XMLDocument?
 
     private static let defaultSheet = XLWorkbookFileSheet(
@@ -91,7 +91,7 @@ public struct XLWorkbookFile: OPCXMLFile {
         workbookPath: OPCFilePath,
         workbookRels: inout OPCRelsFile
     ) throws -> PackageItems {
-        var files: [OPCFileWithPath<XLWorksheet>] = []
+        var files: [OPCFileWithPath<XLWorksheetFile>] = []
         var contentTypeOverrides: [OPCFilePath: String] = [:]
 
         for sheet in sheets {
@@ -101,7 +101,7 @@ public struct XLWorkbookFile: OPCXMLFile {
                 type: XMLNamespaceURI.worksheet.string,
                 target: file.path.relationshipTarget(relativeTo: workbookPath)
             )
-            worksheets[sheet.sheetID] = file
+            worksheetFromID[sheet.sheetID] = file
             files.append(file)
             contentTypeOverrides[file.path] = OPCContentTypes.worksheet
         }
@@ -115,14 +115,14 @@ public struct XLWorkbookFile: OPCXMLFile {
     private func worksheetFile(
         for sheet: XLWorkbookFileSheet,
         workbookPath: OPCFilePath
-    ) throws -> OPCFileWithPath<XLWorksheet> {
-        if let existing = worksheets[sheet.sheetID] {
+    ) throws -> OPCFileWithPath<XLWorksheetFile> {
+        if let existing = worksheetFromID[sheet.sheetID] {
             return existing
         }
 
         return OPCFileWithPath(
             path: try defaultWorksheetPath(for: sheet, workbookPath: workbookPath),
-            file: XLWorksheet()
+            file: XLWorksheetFile()
         )
     }
 
