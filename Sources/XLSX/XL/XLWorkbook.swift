@@ -1,22 +1,34 @@
 import Foundation
 
 public struct XLWorkbook: OPCXMLFile {
+    struct PackageItems {
+        var files: [OPCFileWithPath<XLWorksheet>]
+        var contentTypeOverrides: [OPCFilePath: String]
+    }
+
     public init() {
         self.sheets = [Self.defaultSheet]
+        self.worksheets = [:]
         self.original = nil
     }
 
-    public init(sheets: [XLWorkbookSheet]) {
+    public init(
+        sheets: [XLWorkbookSheet],
+        worksheets: [Int: OPCFileWithPath<XLWorksheet>] = [:]
+    ) {
         self.sheets = sheets
+        self.worksheets = worksheets
         self.original = nil
     }
 
     public init(xmlDocument: XMLDocument) throws {
         self.sheets = xmlDocument.workbookSheets()
+        self.worksheets = [:]
         self.original = xmlDocument
     }
 
     public var sheets: [XLWorkbookSheet]
+    public var worksheets: [Int: OPCFileWithPath<XLWorksheet>]
     public var original: XMLDocument?
 
     public func firstSheetRelationshipID() -> String? {
@@ -65,6 +77,54 @@ public struct XLWorkbook: OPCXMLFile {
         sheetID: 1,
         relationshipID: "rId1"
     )
+}
+
+extension XLWorkbook {
+    mutating func packageItems(
+        workbookPath: OPCFilePath,
+        workbookRels: inout OPCRelsFile
+    ) throws -> PackageItems {
+        var files: [OPCFileWithPath<XLWorksheet>] = []
+        var contentTypeOverrides: [OPCFilePath: String] = [:]
+
+        for sheet in sheets {
+            let file = try worksheetFile(for: sheet, workbookPath: workbookPath)
+            workbookRels.ensureRelationship(
+                id: sheet.relationshipID,
+                type: XMLNamespaceURI.worksheet.string,
+                target: file.path.relationshipTarget(relativeTo: workbookPath)
+            )
+            worksheets[sheet.sheetID] = file
+            files.append(file)
+            contentTypeOverrides[file.path] = OPCContentTypes.worksheet
+        }
+
+        return PackageItems(
+            files: files,
+            contentTypeOverrides: contentTypeOverrides
+        )
+    }
+
+    private func worksheetFile(
+        for sheet: XLWorkbookSheet,
+        workbookPath: OPCFilePath
+    ) throws -> OPCFileWithPath<XLWorksheet> {
+        if let existing = worksheets[sheet.sheetID] {
+            return existing
+        }
+
+        return OPCFileWithPath(
+            path: try defaultWorksheetPath(for: sheet, workbookPath: workbookPath),
+            file: XLWorksheet()
+        )
+    }
+
+    private func defaultWorksheetPath(
+        for sheet: XLWorkbookSheet,
+        workbookPath: OPCFilePath
+    ) throws -> OPCFilePath {
+        try OPCFilePath(string: "worksheets/sheet\(sheet.sheetID).xml").resolved(relativeTo: workbookPath)
+    }
 }
 
 private extension XMLDocument {

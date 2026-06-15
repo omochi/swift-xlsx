@@ -55,6 +55,13 @@ struct XLDocumentTests {
         #expect(sharedStringsXML.contains("<t>A</t>"))
     }
 
+    @Test func opensWorksheetsIntoWorkbookScope() throws {
+        let document = try XLDocument.open(try #require(Bundle.module.url(forResource: "simple", withExtension: "xlsx")))
+
+        let worksheet = try #require(document.workbook.file.worksheets[1])
+        #expect(worksheet.path.description == "/xl/worksheets/sheet1.xml")
+    }
+
     @Test func preservesOpaqueFiles() throws {
         let sourceURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("swift-xlsx-tests-\(UUID().uuidString)")
@@ -100,7 +107,7 @@ struct XLDocumentTests {
         #expect(contentTypesXML.contains(#"ContentType="application/octet-stream""#))
     }
 
-    @Test func preservesUnimplementedRelationshipTargetsAsOpaqueFiles() throws {
+    @Test func preservesOpenedRelationshipTargets() throws {
         let sourceURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("swift-xlsx-tests-\(UUID().uuidString)")
             .appendingPathExtension("xlsx")
@@ -132,7 +139,11 @@ struct XLDocumentTests {
 
         let savedPackage = try OPCPackage(data: Data(contentsOf: destinationURL))
 
-        #expect(try savedPackage.data(at: OPCFilePath(string: "/xl/worksheets/sheet1.xml")) == worksheetData)
+        let savedWorksheetXML = try String(
+            decoding: #require(savedPackage.data(at: OPCFilePath(string: "/xl/worksheets/sheet1.xml"))),
+            as: UTF8.self
+        )
+        #expect(savedWorksheetXML.contains("opaque worksheet"))
         #expect(try savedPackage.data(at: OPCFilePath(string: "/xl/sharedStrings.xml")) == sharedStringsData)
     }
 }

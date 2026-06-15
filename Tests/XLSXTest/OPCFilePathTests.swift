@@ -45,4 +45,11 @@ struct OPCFilePathTests {
 
         #expect(path.description == "/sharedStrings.xml")
     }
+
+    @Test func makesRelationshipTargetRelativeToSourcePath() throws {
+        #expect(try OPCFilePath(string: "/xl/workbook.xml")
+            .relationshipTarget(relativeTo: .packageRoot) == "xl/workbook.xml")
+        #expect(try OPCFilePath(string: "/xl/worksheets/sheet1.xml")
+            .relationshipTarget(relativeTo: OPCFilePath(string: "/xl/workbook.xml")) == "worksheets/sheet1.xml")
+    }
 }

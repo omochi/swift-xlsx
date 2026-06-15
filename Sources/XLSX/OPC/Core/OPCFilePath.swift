@@ -24,6 +24,8 @@ public struct OPCFilePath: Sendable & Hashable & CustomStringConvertible {
         self.components = componentString.split(separator: "/").map(String.init)
     }
 
+    public static let packageRoot = OPCFilePath(isAbsolute: true, components: [])
+
     public var isAbsolute: Bool
     public var components: [String]
 
@@ -60,6 +62,17 @@ public struct OPCFilePath: Sendable & Hashable & CustomStringConvertible {
             isAbsolute: path.isAbsolute,
             components: Array(directoryComponents) + components
         ).normalized()
+    }
+
+    public func relationshipTarget(relativeTo sourcePath: OPCFilePath) -> String {
+        let sourceDirectory = sourcePath.components.dropLast()
+        if isAbsolute && components.starts(with: sourceDirectory) {
+            return components.dropFirst(sourceDirectory.count).joined(separator: "/")
+        }
+        if isAbsolute {
+            return components.joined(separator: "/")
+        }
+        return description
     }
 
     public var description: String {
