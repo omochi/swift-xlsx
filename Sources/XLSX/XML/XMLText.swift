@@ -9,4 +9,8 @@ public final class XMLText: XMLNode {
     public override var kind: XMLNodeKind {
         .text
     }
+
+    public override func clone() -> Self {
+        XMLText(value) as! Self
+    }
 }

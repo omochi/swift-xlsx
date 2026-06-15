@@ -81,7 +81,7 @@ public struct OPCRelsFile: Sendable {
         let root = XMLElement(
             name: XMLName(name: "Relationships"),
             namespaces: XMLNamespaceTable().declared(
-                uri: document.internNamespaceURI(OPCXMLNamespaces.relationships)
+                uri: XMLNamespaceURI(OPCXMLNamespaces.relationships)
             )
         )
 

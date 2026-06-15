@@ -29,6 +29,15 @@ public final class XMLElement: XMLNode {
         set { childNodes = newValue }
     }
 
+    public override func clone() -> Self {
+        XMLElement(
+            name: name,
+            namespaces: namespaces,
+            attributes: attributes,
+            children: children.map { $0.clone() }
+        ) as! Self
+    }
+
     public func attribute(_ name: String) -> String? {
         attributes.first { $0.name.qualifiedName == name }?.value
     }

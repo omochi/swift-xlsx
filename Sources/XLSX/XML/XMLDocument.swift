@@ -4,7 +4,6 @@ public final class XMLDocument: XMLNode {
     public init(
         children: [XMLNode] = []
     ) {
-        self.namespaceURIs = [:]
         self.childNodes = children
         super.init()
         for child in children {
@@ -12,7 +11,6 @@ public final class XMLDocument: XMLNode {
         }
     }
 
-    private var namespaceURIs: [String: XMLNamespaceURI]
     public var childNodes: [XMLNode]
 
     public override var kind: XMLNodeKind {
@@ -32,18 +30,17 @@ public final class XMLDocument: XMLNode {
         Data(xmlString.utf8)
     }
 
+    public override func clone() -> Self {
+        let document = XMLDocument()
+        for child in children {
+            document.appendChild(child.clone())
+        }
+        return document as! Self
+    }
+
     public var xmlString: String {
         var serializer = XMLSerializer()
         return serializer.serialize(document: self)
     }
 
-    public func internNamespaceURI(_ string: String) -> XMLNamespaceURI {
-        if let uri = namespaceURIs[string] {
-            return uri
-        }
-
-        let uri = XMLNamespaceURI(string)
-        namespaceURIs[string] = uri
-        return uri
-    }
 }

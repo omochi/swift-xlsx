@@ -86,15 +86,51 @@ struct XMLDocumentTests {
         #expect(document.namespaceURI(for: "a") == nil)
     }
 
-    @Test func internsNamespaceURIInstancesInDocument() {
-        let document = XLSX.XMLDocument()
+    @Test func internsNamespaceURIInstancesGlobally() {
+        let first = XMLNamespaceURI("urn:test")
+        let second = XMLNamespaceURI("urn:test")
+        let other = XMLNamespaceURI("urn:other")
 
-        let first = document.internNamespaceURI("urn:test")
-        let second = document.internNamespaceURI("urn:test")
-        let other = document.internNamespaceURI("urn:other")
+        #expect(first == second)
+        #expect(first != other)
+    }
 
-        #expect(first === second)
-        #expect(first !== other)
+    @Test func clonesDocumentTreeWithoutSharingNodes() throws {
+        let xml = """
+        <root xmlns="urn:root">
+          <child id="1">value</child>
+        </root>
+        """
+        let document = try XMLDocumentReader.parse(Data(xml.utf8))
+        let clone = document.clone()
+        let originalRoot = try #require(document.element(name: "root"))
+        let clonedRoot = try #require(clone.element(name: "root"))
+        let originalChild = try #require(firstChildElement(name: "child", of: originalRoot))
+        let clonedChild = try #require(firstChildElement(name: "child", of: clonedRoot))
+        let originalText = try #require(originalChild.children.first as? XMLText)
+        let clonedText = try #require(clonedChild.children.first as? XMLText)
+
+        clonedChild.attributes[0].value = "2"
+        clonedText.value = "changed"
+
+        #expect(clonedRoot !== originalRoot)
+        #expect(clonedChild !== originalChild)
+        #expect(clonedText !== originalText)
+        #expect(clonedRoot.parent === clone)
+        #expect(clonedChild.parent === clonedRoot)
+        #expect(clonedChild.attribute("id") == "2")
+        #expect(originalChild.attribute("id") == "1")
+        #expect(clonedText.value == "changed")
+        #expect(originalText.value == "value")
+    }
+
+    @Test func cloneKeepsInternedNamespaceURIInstances() throws {
+        let document = try XMLDocumentReader.parse(Data(#"<root xmlns="urn:root"/>"#.utf8))
+        let clone = document.clone()
+        let root = try #require(clone.element(name: "root"))
+        let declaredURI = try #require(root.namespaces.uri())
+
+        #expect(XMLNamespaceURI("urn:root") == declaredURI)
     }
 
     @Test func removesChildNode() {

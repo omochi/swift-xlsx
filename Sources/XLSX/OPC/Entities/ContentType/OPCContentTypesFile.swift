@@ -57,7 +57,7 @@ public struct OPCContentTypesFile {
         let root = XMLElement(
             name: XMLName(name: "Types"),
             namespaces: XMLNamespaceTable().declared(
-                uri: document.internNamespaceURI(OPCXMLNamespaces.contentTypes)
+                uri: XMLNamespaceURI(OPCXMLNamespaces.contentTypes)
             )
         )
 

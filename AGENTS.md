@@ -22,7 +22,7 @@
 - 型名は、属する領域が分かる prefix を付ける。OPC 領域の型は `OPC` prefix を付ける。
 - memberwise initializer が必要な型では、可能な限り `@MemberwiseInit(.public)` を使う。
 - struct の stored property は、健全性条件を守るために固定する必要がある場合を除き、`let` ではなく `var` にする。
-- Swift の型メンバーは、先頭から inner type、initializer、stored property の順に定義する。
+- Swift の型メンバーは、先頭から inner type、initializer、stored property の順に定義する。inner type は initializer より前に置く。
 
 ## プロトコル表記
 

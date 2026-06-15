@@ -12,6 +12,10 @@ public class XMLNode {
         set {}
     }
 
+    public func clone() -> Self {
+        fatalError("Subclasses must provide a clone.")
+    }
+
     public func namespaceURI(for prefix: String? = nil) -> XMLNamespaceURI? {
         parent?.namespaceURI(for: prefix)
     }

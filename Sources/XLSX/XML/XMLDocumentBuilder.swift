@@ -20,7 +20,7 @@ public struct XMLDocumentBuilder: Handler {
 
         pendingNamespaces.declare(
             prefix: namespacePrefix,
-            uri: document.internNamespaceURI(Self.string(from: uri))
+            uri: XMLNamespaceURI(Self.string(from: uri))
         )
     }
 
