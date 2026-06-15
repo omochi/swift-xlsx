@@ -61,7 +61,7 @@ struct XLWorkbookTests {
 
         #expect(worksheetXML.contains("<c r=\"A1\" t=\"s\">"))
         #expect(worksheetXML.contains("<v>0</v>"))
-        #expect(sharedStringsXML.contains("<t>hello world</t>"))
+        #expect(sharedStringsXML.contains("<t>A</t>"))
     }
 
     @Test func preservesOpaqueFiles() throws {
@@ -107,5 +107,41 @@ struct XLWorkbookTests {
         #expect(try savedPackage.data(at: OPCFilePath(string: "/custom/item.bin")) == Data([0xde, 0xad, 0xbe, 0xef]))
         #expect(contentTypesXML.contains(#"PartName="/custom/item.bin""#))
         #expect(contentTypesXML.contains(#"ContentType="application/octet-stream""#))
+    }
+
+    @Test func preservesUnimplementedRelationshipTargetsAsOpaqueFiles() throws {
+        let sourceURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("swift-xlsx-tests-\(UUID().uuidString)")
+            .appendingPathExtension("xlsx")
+        let destinationURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("swift-xlsx-tests-\(UUID().uuidString)")
+            .appendingPathExtension("xlsx")
+        defer {
+            try? FileManager.default.removeItem(at: sourceURL)
+            try? FileManager.default.removeItem(at: destinationURL)
+        }
+
+        var package = try OPCPackage(data: Data(
+            contentsOf: try #require(Bundle.module.url(forResource: "simple", withExtension: "xlsx"))
+        ))
+        let worksheetData = Data("<worksheet>opaque worksheet</worksheet>".utf8)
+        let sharedStringsData = Data("<sst>opaque shared strings</sst>".utf8)
+        try package.insertFile(
+            data: worksheetData,
+            at: OPCFilePath(string: "/xl/worksheets/sheet1.xml")
+        )
+        try package.insertFile(
+            data: sharedStringsData,
+            at: OPCFilePath(string: "/xl/sharedStrings.xml")
+        )
+        try package.data().write(to: sourceURL)
+
+        let workbook = try XLWorkbook.open(sourceURL)
+        try workbook.save(to: destinationURL)
+
+        let savedPackage = try OPCPackage(data: Data(contentsOf: destinationURL))
+
+        #expect(try savedPackage.data(at: OPCFilePath(string: "/xl/worksheets/sheet1.xml")) == worksheetData)
+        #expect(try savedPackage.data(at: OPCFilePath(string: "/xl/sharedStrings.xml")) == sharedStringsData)
     }
 }
