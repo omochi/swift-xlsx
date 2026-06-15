@@ -1,99 +1,73 @@
 import Foundation
 
-public struct XLWorkbook {
-    public init() {
-        let workbookPath = try! OPCFilePath(string: "/xl/workbook.xml")
-
-        self.contentTypes = OPCContentTypesFile()
-        self.packageRels = OPCRelsFile()
-        self.workbookPath = workbookPath
-        self.workbook = try! XLWorkbookFile.default(path: workbookPath)
-        self.workbookRels = OPCRelsFile()
-        self.opaqueFiles = []
+struct XLWorkbook {
+    init(data: Data? = nil) throws {
+        self.original = try data.map(XMLDocumentReader.parse)
     }
 
-    init(package: OPCPackage) throws {
-        var consumedPaths: Set<OPCFilePath> = []
+    var original: XMLDocument?
 
-        let contentTypesPath = try OPCFilePath(string: "/[Content_Types].xml")
-        let contentTypesData = try? package.data(at: contentTypesPath)
-        if contentTypesData != nil {
-            consumedPaths.insert(contentTypesPath)
-        }
-        let contentTypes = try OPCContentTypesFile(data: contentTypesData)
-
-        let packageRelsPath = try OPCFilePath(string: "/_rels/.rels")
-        let packageRelsData = try? package.data(at: packageRelsPath)
-        if packageRelsData != nil {
-            consumedPaths.insert(packageRelsPath)
-        }
-        let packageRels = try OPCRelsFile(data: packageRelsData)
-
-        let workbookPath = try packageRels.workbookPath()
-        let workbookData = try? package.data(at: workbookPath)
-        if workbookData != nil {
-            consumedPaths.insert(workbookPath)
-        }
-        let workbook = try workbookData.map {
-            try XLWorkbookFile(path: workbookPath, data: $0)
-        } ?? XLWorkbookFile.default(path: workbookPath)
-
-        let workbookRelsPath = try OPCRelsFile.path(for: workbookPath)
-        let workbookRelsData = try? package.data(at: workbookRelsPath)
-        if workbookRelsData != nil {
-            consumedPaths.insert(workbookRelsPath)
-        }
-        let workbookRels = try OPCRelsFile(data: workbookRelsData)
-
-        let opaqueFiles = try Self.opaqueFiles(
-            in: package,
-            consumedPaths: consumedPaths
-        )
-
-        self.contentTypes = contentTypes
-        self.packageRels = packageRels
-        self.workbookPath = workbookPath
-        self.workbook = workbook
-        self.workbookRels = workbookRels
-        self.opaqueFiles = opaqueFiles
+    func firstSheetRelationshipID() -> String? {
+        xmlDocument.firstSheetRelationshipID()
     }
 
-    var contentTypes: OPCContentTypesFile
-    var packageRels: OPCRelsFile
-    var workbookPath: OPCFilePath
-    var workbook: XLWorkbookFile
-    var workbookRels: OPCRelsFile
-    var opaqueFiles: [OPCOpaqueFile]
-
-    public static func open(_ url: URL) throws -> XLWorkbook {
-        try XLWorkbook(package: OPCPackage(data: Data(contentsOf: url)))
+    func data() -> Data {
+        xmlDocument.data()
     }
 
-    public func save(to url: URL) throws {
-        var workbook = self
-        let package = try XLHelloWorldWriter.package(for: &workbook)
-        let data = try package.data()
-        try data.write(to: url, options: .atomic)
+    private var xmlDocument: XMLDocument {
+        let document = original?.clone() ?? XMLDocument()
+        ensureWorkbook(in: document)
+        return document
     }
 
-    private static func opaqueFiles(
-        in package: OPCPackage,
-        consumedPaths: Set<OPCFilePath>
-    ) throws -> [OPCOpaqueFile] {
-        try package.allFilePaths().compactMap { path in
-            guard !consumedPaths.contains(path) else {
-                return nil
-            }
-            return OPCOpaqueFile(path: path, data: try package.data(at: path))
+    private func ensureWorkbook(in document: XMLDocument) {
+        let workbookElement = workbookElement(in: document)
+        workbookElement.ensureNamespace(uri: XMLNamespaceURI(XLXMLURIs.spreadsheet))
+        workbookElement.ensureNamespace(prefix: "r", uri: XMLNamespaceURI(XLXMLURIs.officeRelationships))
+
+        let sheetsElement = sheetsElement(in: workbookElement)
+        if sheetsElement.elements(name: "sheet").isEmpty {
+            sheetsElement.appendChild(XMLElement(
+                name: XMLName(name: "sheet"),
+                attributes: [
+                    XMLAttribute(name: XMLName(name: "name"), value: "Sheet1"),
+                    XMLAttribute(name: XMLName(name: "sheetId"), value: "1"),
+                    XMLAttribute(name: XMLName(prefix: "r", name: "id"), value: "rId1"),
+                ]
+            ))
         }
+    }
+
+    private func workbookElement(in document: XMLDocument) -> XMLElement {
+        if let element = document.element(name: "workbook") {
+            return element
+        }
+
+        let element = XMLElement(name: XMLName(name: "workbook"))
+        document.appendChild(element)
+        return element
+    }
+
+    private func sheetsElement(in workbookElement: XMLElement) -> XMLElement {
+        if let element = workbookElement.elements(name: "sheets").first {
+            return element
+        }
+
+        let element = XMLElement(name: XMLName(name: "sheets"))
+        workbookElement.appendChild(element)
+        return element
     }
 }
 
-private extension OPCRelsFile {
-    func workbookPath() throws -> OPCFilePath {
-        if let relationship = relationships.first(where: { $0.type == XLXMLURIs.officeDocument }) {
-            return try OPCFilePath(string: relationship.target).resolved(relativeTo: OPCFilePath(string: "/"))
+private extension XMLDocument {
+    func firstSheetRelationshipID() -> String? {
+        guard let workbookElement = element(name: "workbook"),
+              let sheetsElement = workbookElement.elements(name: "sheets").first,
+              let sheetElement = sheetsElement.elements(name: "sheet").first
+        else {
+            return nil
         }
-        return try OPCFilePath(string: "/xl/workbook.xml")
+        return sheetElement.attribute("r:id")
     }
 }

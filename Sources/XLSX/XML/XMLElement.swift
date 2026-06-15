@@ -46,6 +46,13 @@ public final class XMLElement: XMLNode {
         children.compactMap { $0 as? XMLElement }.filter { $0.name.name == name }
     }
 
+    public func ensureNamespace(prefix: String? = nil, uri: XMLNamespaceURI) {
+        if namespaceURI(for: prefix) == uri {
+            return
+        }
+        namespaces.declare(prefix: prefix, uri: uri)
+    }
+
     public override func namespaceURI(for prefix: String? = nil) -> XMLNamespaceURI? {
         namespaces.uri(for: prefix) ?? parent?.namespaceURI(for: prefix)
     }

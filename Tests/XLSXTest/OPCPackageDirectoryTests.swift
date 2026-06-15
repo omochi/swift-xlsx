@@ -74,6 +74,19 @@ struct OPCPackageDirectoryTests {
         #expect(try package.childNames(in: OPCFilePath(string: "/xl")) == ["worksheets"])
         #expect(try package.data(at: OPCFilePath(string: "/xl/worksheets/sheet1.xml")) == Data("sheet".utf8))
     }
+
+    @Test func looksUpNodeIDsOptionally() throws {
+        var package = OPCPackage()
+        let sheetPath = try OPCFilePath(string: "/xl/worksheets/sheet1.xml")
+        let missingPath = try OPCFilePath(string: "/xl/worksheets/missing.xml")
+        let childOfFilePath = try OPCFilePath(string: "/xl/worksheets/sheet1.xml/cell")
+
+        try package.insertFile(data: Data("sheet".utf8), at: sheetPath)
+
+        #expect(package.nodeID(at: sheetPath) != nil)
+        #expect(package.nodeID(at: missingPath) == nil)
+        #expect(package.nodeID(at: childOfFilePath) == nil)
+    }
 }
 
 private func directoryNames(in package: OPCPackage, at path: String) -> [String]? {

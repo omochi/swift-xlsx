@@ -1,56 +1,59 @@
 import Foundation
 
 enum XLHelloWorldWriter {
-    static func package(for workbook: inout XLWorkbook) throws -> OPCPackage {
-        let packageRelationship = workbook.packageRels.ensureRelationship(
+    static func package(for document: inout XLDocument) throws -> OPCPackage {
+        let packageRelationship = document.packageRels.ensureRelationship(
             type: XLXMLURIs.officeDocument,
-            preferredTarget: workbook.workbookPath.description.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+            preferredTarget: document.workbookPath.description.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         )
-        workbook.workbookPath = try OPCFilePath(string: packageRelationship.target).resolved(relativeTo: OPCFilePath(string: "/"))
+        document.workbookPath = try OPCFilePath(string: packageRelationship.target).resolved(relativeTo: OPCFilePath(string: "/"))
 
-        let sheetRelationshipID = workbook.workbook.firstSheetRelationshipID() ?? "rId1"
+        let sheetRelationshipID = document.workbook.firstSheetRelationshipID() ?? "rId1"
 
-        let worksheetRelationship = workbook.workbookRels.ensureRelationship(
+        let worksheetRelationship = document.workbookRels.ensureRelationship(
             id: sheetRelationshipID,
             type: XLXMLURIs.worksheet,
             target: "worksheets/sheet1.xml"
         )
-        let sharedStringsRelationship = workbook.workbookRels.ensureRelationship(
+        let sharedStringsRelationship = document.workbookRels.ensureRelationship(
             type: XLXMLURIs.sharedStrings,
             preferredTarget: "sharedStrings.xml"
         )
-        let worksheetPath = try OPCFilePath(string: worksheetRelationship.target).resolved(relativeTo: workbook.workbookPath)
-        let sharedStringsPath = try OPCFilePath(string: sharedStringsRelationship.target).resolved(relativeTo: workbook.workbookPath)
+        let worksheetPath = try OPCFilePath(string: worksheetRelationship.target).resolved(relativeTo: document.workbookPath)
+        let sharedStringsPath = try OPCFilePath(string: sharedStringsRelationship.target).resolved(relativeTo: document.workbookPath)
 
         var package = OPCPackage()
-        for opaqueFile in workbook.opaqueFiles {
+        for opaqueFile in document.opaqueFiles {
             try package.insertFile(data: opaqueFile.data, at: opaqueFile.path)
         }
-        try package.insertFile(data: workbook.packageRels.data(), at: OPCFilePath(string: "/_rels/.rels"))
-        try package.insertFile(data: workbook.workbook.data(), at: workbook.workbookPath)
         try package.insertFile(
-            data: workbook.workbookRels.data(),
-            at: try OPCRelsFile.path(for: workbook.workbookPath)
+            data: document.packageRels.data(),
+            at: try OPCRelsFile.path(for: OPCFilePath(string: "/"))
         )
-        if !workbook.hasOpaqueFile(at: worksheetPath) {
+        try package.insertFile(data: document.workbook.data(), at: document.workbookPath)
+        try package.insertFile(
+            data: document.workbookRels.data(),
+            at: try OPCRelsFile.path(for: document.workbookPath)
+        )
+        if !document.hasOpaqueFile(at: worksheetPath) {
             try package.insertFile(
                 data: Data(worksheetXML.utf8),
                 at: worksheetPath
             )
         }
-        if !workbook.hasOpaqueFile(at: sharedStringsPath) {
+        if !document.hasOpaqueFile(at: sharedStringsPath) {
             try package.insertFile(
                 data: Data(sharedStringsXML.utf8),
                 at: sharedStringsPath
             )
         }
         ensureContentTypes(
-            in: &workbook.contentTypes,
-            workbookPath: workbook.workbookPath,
+            in: &document.contentTypes,
+            workbookPath: document.workbookPath,
             worksheetPath: worksheetPath,
             sharedStringsPath: sharedStringsPath
         )
-        try package.insertFile(data: workbook.contentTypes.data(), at: OPCFilePath(string: "/[Content_Types].xml"))
+        try package.insertFile(data: document.contentTypes.data(), at: OPCFilePath(string: "/[Content_Types].xml"))
 
         return package
     }
@@ -106,7 +109,7 @@ enum XLHelloWorldWriter {
     }
 }
 
-private extension XLWorkbook {
+private extension XLDocument {
     func hasOpaqueFile(at path: OPCFilePath) -> Bool {
         opaqueFiles.contains { $0.path == path }
     }

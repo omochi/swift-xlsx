@@ -3,7 +3,7 @@ import Testing
 import XLSX
 
 @Suite
-struct XLWorkbookTests {
+struct XLDocumentTests {
     @Test func savesHelloWorldWorkbook() throws {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("swift-xlsx-tests-\(UUID().uuidString)")
@@ -12,8 +12,8 @@ struct XLWorkbookTests {
             try? FileManager.default.removeItem(at: url)
         }
 
-        let workbook = XLWorkbook()
-        try workbook.save(to: url)
+        let document = XLDocument()
+        try document.save(to: url)
 
         let data = try Data(contentsOf: url)
         let package = try OPCPackage(data: data)
@@ -27,9 +27,9 @@ struct XLWorkbookTests {
             "/xl/worksheets/sheet1.xml",
         ])
 
-        let workbookXML = try String(decoding: package.data(at: OPCFilePath(string: "/xl/workbook.xml")), as: UTF8.self)
-        let worksheetXML = try String(decoding: package.data(at: OPCFilePath(string: "/xl/worksheets/sheet1.xml")), as: UTF8.self)
-        let sharedStringsXML = try String(decoding: package.data(at: OPCFilePath(string: "/xl/sharedStrings.xml")), as: UTF8.self)
+        let workbookXML = try String(decoding: #require(package.data(at: OPCFilePath(string: "/xl/workbook.xml"))), as: UTF8.self)
+        let worksheetXML = try String(decoding: #require(package.data(at: OPCFilePath(string: "/xl/worksheets/sheet1.xml"))), as: UTF8.self)
+        let sharedStringsXML = try String(decoding: #require(package.data(at: OPCFilePath(string: "/xl/sharedStrings.xml"))), as: UTF8.self)
 
         #expect(workbookXML.contains("<sheet name=\"Sheet1\" sheetId=\"1\" r:id=\"rId1\"/>"))
         #expect(worksheetXML.contains("<c r=\"A1\" t=\"s\">"))
@@ -52,12 +52,12 @@ struct XLWorkbookTests {
 
         try Data(contentsOf: try #require(Bundle.module.url(forResource: "simple", withExtension: "xlsx"))).write(to: sourceURL)
 
-        let workbook = try XLWorkbook.open(sourceURL)
-        try workbook.save(to: destinationURL)
+        let document = try XLDocument.open(sourceURL)
+        try document.save(to: destinationURL)
 
         let package = try OPCPackage(data: Data(contentsOf: destinationURL))
-        let worksheetXML = try String(decoding: package.data(at: OPCFilePath(string: "/xl/worksheets/sheet1.xml")), as: UTF8.self)
-        let sharedStringsXML = try String(decoding: package.data(at: OPCFilePath(string: "/xl/sharedStrings.xml")), as: UTF8.self)
+        let worksheetXML = try String(decoding: #require(package.data(at: OPCFilePath(string: "/xl/worksheets/sheet1.xml"))), as: UTF8.self)
+        let sharedStringsXML = try String(decoding: #require(package.data(at: OPCFilePath(string: "/xl/sharedStrings.xml"))), as: UTF8.self)
 
         #expect(worksheetXML.contains("<c r=\"A1\" t=\"s\">"))
         #expect(worksheetXML.contains("<v>0</v>"))
@@ -95,12 +95,12 @@ struct XLWorkbookTests {
         )
         try package.data().write(to: sourceURL)
 
-        let workbook = try XLWorkbook.open(sourceURL)
-        try workbook.save(to: destinationURL)
+        let document = try XLDocument.open(sourceURL)
+        try document.save(to: destinationURL)
 
         let savedPackage = try OPCPackage(data: Data(contentsOf: destinationURL))
         let contentTypesXML = try String(
-            decoding: savedPackage.data(at: OPCFilePath(string: "/[Content_Types].xml")),
+            decoding: #require(savedPackage.data(at: OPCFilePath(string: "/[Content_Types].xml"))),
             as: UTF8.self
         )
 
@@ -136,8 +136,8 @@ struct XLWorkbookTests {
         )
         try package.data().write(to: sourceURL)
 
-        let workbook = try XLWorkbook.open(sourceURL)
-        try workbook.save(to: destinationURL)
+        let document = try XLDocument.open(sourceURL)
+        try document.save(to: destinationURL)
 
         let savedPackage = try OPCPackage(data: Data(contentsOf: destinationURL))
 

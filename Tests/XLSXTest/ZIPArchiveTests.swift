@@ -14,9 +14,9 @@ struct ZIPArchiveTests {
         #expect(try package.childNames(in: OPCFilePath(string: "/xl")).contains("workbook.xml"))
         #expect(try package.childNames(in: OPCFilePath(string: "/xl/worksheets")) == ["sheet1.xml"])
 
-        let workbookXML = try String(decoding: package.data(at: OPCFilePath(string: "/xl/workbook.xml")), as: UTF8.self)
-        let worksheetXML = try String(decoding: package.data(at: OPCFilePath(string: "/xl/worksheets/sheet1.xml")), as: UTF8.self)
-        let sharedStringsXML = try String(decoding: package.data(at: OPCFilePath(string: "/xl/sharedStrings.xml")), as: UTF8.self)
+        let workbookXML = try String(decoding: #require(package.data(at: OPCFilePath(string: "/xl/workbook.xml"))), as: UTF8.self)
+        let worksheetXML = try String(decoding: #require(package.data(at: OPCFilePath(string: "/xl/worksheets/sheet1.xml"))), as: UTF8.self)
+        let sharedStringsXML = try String(decoding: #require(package.data(at: OPCFilePath(string: "/xl/sharedStrings.xml"))), as: UTF8.self)
 
         #expect(workbookXML.contains("<workbook"))
         #expect(workbookXML.contains("Sheet1"))

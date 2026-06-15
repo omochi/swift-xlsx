@@ -34,33 +34,37 @@ public struct OPCPackage: Sendable {
     public var root: OPCPackageNodeID
 
     public func node(at path: OPCFilePath) throws -> OPCPackageNode {
-        node(for: try nodeID(at: path))
+        guard let id = nodeID(at: path) else {
+            throw OPCError.entryNotFound(path.description)
+        }
+        return node(for: id)
     }
 
     public func node(for id: OPCPackageNodeID) -> OPCPackageNode {
         nodes[id.rawValue]
     }
 
-    public func nodeID(at path: OPCFilePath) throws -> OPCPackageNodeID {
+    public func nodeID(at path: OPCFilePath) -> OPCPackageNodeID? {
         var current = root
 
         for component in path.components {
-            guard case let .directory(directory) = node(for: current) else {
-                throw OPCError.entryIsNotDirectory(path.description)
+            guard case let .directory(directory) = node(for: current),
+                  let next = directory.entryDictionary[component]
+            else {
+                return nil
             }
-            guard let next = directory.entryDictionary[component] else {
-                throw OPCError.entryNotFound(path.description)
-            }
+
             current = next
         }
 
         return current
     }
 
-    public func data(at path: OPCFilePath) throws -> Data {
-        let id = try nodeID(at: path)
-        guard case let .file(file) = node(for: id) else {
-            throw OPCError.entryIsNotFile(path.description)
+    public func data(at path: OPCFilePath) -> Data? {
+        guard let id = nodeID(at: path),
+              case let .file(file) = node(for: id)
+        else {
+            return nil
         }
         return file.data
     }
@@ -70,7 +74,9 @@ public struct OPCPackage: Sendable {
     }
 
     public func childNames(in directoryPath: OPCFilePath) throws -> [String] {
-        let id = try nodeID(at: directoryPath)
+        guard let id = nodeID(at: directoryPath) else {
+            throw OPCError.entryNotFound(directoryPath.description)
+        }
         guard case let .directory(directory) = node(for: id) else {
             throw OPCError.entryIsNotDirectory(directoryPath.description)
         }
