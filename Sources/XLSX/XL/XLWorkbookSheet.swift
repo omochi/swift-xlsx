@@ -23,9 +23,7 @@ public struct XLWorkbookSheet: Sendable & Hashable {
     public var sheetID: Int
     public var relationshipID: String
 
-    func ensureElement(in sheetsElement: XMLElement) throws {
-        let element = sheetElement(in: sheetsElement)
-
+    func write(to element: XMLElement) throws {
         try element.setAttribute(name: "name", value: name)
         try element.setAttribute(name: "sheetId", value: String(sheetID))
         try element.setAttribute(
@@ -33,17 +31,5 @@ public struct XLWorkbookSheet: Sendable & Hashable {
             namespaceURI: .officeRelationships,
             value: relationshipID
         )
-    }
-
-    private func sheetElement(in sheetsElement: XMLElement) -> XMLElement {
-        if let element = sheetsElement.elements(name: "sheet").first(where: { element in
-            XLWorkbookSheet(element: element)?.sheetID == sheetID
-        }) {
-            return element
-        }
-
-        let element = XMLElement(name: XMLName(name: "sheet"))
-        sheetsElement.appendChild(element)
-        return element
     }
 }

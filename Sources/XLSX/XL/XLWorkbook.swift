@@ -22,7 +22,7 @@ public struct XLWorkbook: OPCXMLFile {
     }
 
     public init(xmlDocument: XMLDocument) throws {
-        self.sheets = xmlDocument.workbookSheets()
+        self.sheets = Self.workbookSheets(in: xmlDocument)
         self.worksheets = [:]
         self.original = xmlDocument
     }
@@ -31,28 +31,31 @@ public struct XLWorkbook: OPCXMLFile {
     public var worksheets: [Int: OPCFileWithPath<XLWorksheet>]
     public var original: XMLDocument?
 
-    public func firstSheetRelationshipID() -> String? {
-        sheets.first?.relationshipID
-    }
+    private static let defaultSheet = XLWorkbookSheet(
+        name: "Sheet1",
+        sheetID: 1,
+        relationshipID: "rId1"
+    )
 
     public func xmlDocument() throws -> XMLDocument {
         let document = original?.clone() ?? XMLDocument()
-        try ensureWorkbook(in: document)
+        try writeWorkbook(to: document)
         return document
     }
 
-    private func ensureWorkbook(in document: XMLDocument) throws {
-        let workbookElement = workbookElement(in: document)
+    private func writeWorkbook(to document: XMLDocument) throws {
+        let workbookElement = workbookElementForWriting(in: document)
         workbookElement.ensureNamespace(uri: .spreadsheet)
         workbookElement.ensureNamespaceURI(prefix: "r", uri: .officeRelationships)
 
-        let sheetsElement = sheetsElement(in: workbookElement)
+        let sheetsElement = sheetsElementForWriting(in: workbookElement)
         for sheet in sheets {
-            try sheet.ensureElement(in: sheetsElement)
+            let element = sheetElementForWriting(sheetID: sheet.sheetID, in: sheetsElement)
+            try sheet.write(to: element)
         }
     }
 
-    private func workbookElement(in document: XMLDocument) -> XMLElement {
+    private func workbookElementForWriting(in document: XMLDocument) -> XMLElement {
         if let element = document.element(name: "workbook") {
             return element
         }
@@ -62,7 +65,7 @@ public struct XLWorkbook: OPCXMLFile {
         return element
     }
 
-    private func sheetsElement(in workbookElement: XMLElement) -> XMLElement {
+    private func sheetsElementForWriting(in workbookElement: XMLElement) -> XMLElement {
         if let element = workbookElement.elements(name: "sheets").first {
             return element
         }
@@ -72,14 +75,18 @@ public struct XLWorkbook: OPCXMLFile {
         return element
     }
 
-    private static let defaultSheet = XLWorkbookSheet(
-        name: "Sheet1",
-        sheetID: 1,
-        relationshipID: "rId1"
-    )
-}
+    private func sheetElementForWriting(sheetID: Int, in sheetsElement: XMLElement) -> XMLElement {
+        if let element = sheetsElement.elements(name: "sheet").first(where: { element in
+            XLWorkbookSheet(element: element)?.sheetID == sheetID
+        }) {
+            return element
+        }
 
-extension XLWorkbook {
+        let element = XMLElement(name: XMLName(name: "sheet"))
+        sheetsElement.appendChild(element)
+        return element
+    }
+
     mutating func packageItems(
         workbookPath: OPCFilePath,
         workbookRels: inout OPCRelsFile
@@ -125,11 +132,9 @@ extension XLWorkbook {
     ) throws -> OPCFilePath {
         try OPCFilePath(string: "worksheets/sheet\(sheet.sheetID).xml").resolved(relativeTo: workbookPath)
     }
-}
 
-private extension XMLDocument {
-    func workbookSheets() -> [XLWorkbookSheet] {
-        guard let workbookElement = element(name: "workbook"),
+    private static func workbookSheets(in document: XMLDocument) -> [XLWorkbookSheet] {
+        guard let workbookElement = document.element(name: "workbook"),
               let sheetsElement = workbookElement.elements(name: "sheets").first
         else {
             return []

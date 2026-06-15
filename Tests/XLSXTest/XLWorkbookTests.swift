@@ -18,7 +18,6 @@ struct XLWorkbookTests {
             XLWorkbookSheet(name: "First", sheetID: 1, relationshipID: "rId1"),
             XLWorkbookSheet(name: "Second", sheetID: 4, relationshipID: "rId7"),
         ])
-        #expect(workbook.firstSheetRelationshipID() == "rId1")
     }
 
     @Test func writesSheetsFromWorkbookModel() throws {

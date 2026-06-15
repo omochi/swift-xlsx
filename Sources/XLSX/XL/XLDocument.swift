@@ -8,42 +8,47 @@ public struct XLDocument {
     public init(package: OPCPackage) throws {
         var consumedPaths: Set<OPCFilePath> = []
 
-        let contentTypes = try package.fileWithPath(
+        let contentTypes = try Self.readFile(
             OPCContentTypesFile.self,
+            from: package,
             at: OPCFilePath(string: "/[Content_Types].xml"),
             default: OPCContentTypesFile(),
             consumedPaths: &consumedPaths
         )
 
-        let packageRels = try package.fileWithPath(
+        let packageRels = try Self.readFile(
             OPCRelsFile.self,
+            from: package,
             at: try OPCRelsFile.path(for: .packageRoot),
             default: OPCRelsFile(),
             consumedPaths: &consumedPaths
         )
 
-        var workbook = try package.fileWithPath(
+        var workbook = try Self.readFile(
             XLWorkbook.self,
-            at: try packageRels.file.workbookPath(),
+            from: package,
+            at: try Self.workbookPath(in: packageRels.file),
             default: XLWorkbook(),
             consumedPaths: &consumedPaths
         )
 
-        let workbookRels = try package.fileWithPath(
+        let workbookRels = try Self.readFile(
             OPCRelsFile.self,
+            from: package,
             at: try OPCRelsFile.path(for: workbook.path),
             default: OPCRelsFile(),
             consumedPaths: &consumedPaths
         )
 
-        workbook.file.worksheets = try package.worksheets(
+        workbook.file.worksheets = try Self.worksheets(
+            in: package,
             for: workbook.file.sheets,
             workbookPath: workbook.path,
             workbookRels: workbookRels.file,
             consumedPaths: &consumedPaths
         )
 
-        let opaqueFiles = package.opaqueFiles(excluding: consumedPaths)
+        let opaqueFiles = Self.opaqueFiles(in: package, excluding: consumedPaths)
 
         self.contentTypes = contentTypes
         self.packageRels = packageRels
@@ -105,17 +110,18 @@ public struct XLDocument {
         try package.insertFile(workbook)
         try package.insertFile(workbookRels)
         for file in workbookItems.files {
-            if !opaqueFiles.contains(path: file.path) {
+            if !Self.containsOpaqueFile(at: file.path, in: opaqueFiles) {
                 try package.insertFile(file)
             }
         }
-        if !opaqueFiles.contains(path: sharedStringsPath) {
+        if !Self.containsOpaqueFile(at: sharedStringsPath, in: opaqueFiles) {
             try package.insertFile(
                 data: Data(Self.sharedStringsXML.utf8),
                 at: sharedStringsPath
             )
         }
-        contentTypes.file.ensureRequiredTypes(
+        Self.registerRequiredContentTypes(
+            in: &contentTypes.file,
             workbookPath: workbook.path,
             workbookContentTypeOverrides: workbookItems.contentTypeOverrides,
             sharedStringsPath: sharedStringsPath
@@ -125,22 +131,14 @@ public struct XLDocument {
         return package
     }
 
-}
-
-private extension [OPCOpaqueFileWithPath] {
-    func contains(path: OPCFilePath) -> Bool {
-        contains { $0.path == path }
-    }
-}
-
-private extension OPCPackage {
-    func fileWithPath<File: OPCFile>(
+    private static func readFile<File: OPCFile>(
         _ type: File.Type,
+        from package: OPCPackage,
         at path: OPCFilePath,
         default defaultFile: @autoclosure () -> File,
         consumedPaths: inout Set<OPCFilePath>
     ) throws -> OPCFileWithPath<File> {
-        guard let fileWithPath = try fileWithPath(type, at: path) else {
+        guard let fileWithPath = try package.fileWithPath(type, at: path) else {
             return OPCFileWithPath(path: path, file: defaultFile())
         }
 
@@ -148,16 +146,20 @@ private extension OPCPackage {
         return fileWithPath
     }
 
-    func opaqueFiles(excluding consumedPaths: Set<OPCFilePath>) -> [OPCOpaqueFileWithPath] {
-        allFilePaths().compactMap { path in
+    private static func opaqueFiles(
+        in package: OPCPackage,
+        excluding consumedPaths: Set<OPCFilePath>
+    ) -> [OPCOpaqueFileWithPath] {
+        package.allFilePaths().compactMap { path in
             guard !consumedPaths.contains(path) else {
                 return nil
             }
-            return try? fileWithPath(OPCOpaqueFile.self, at: path)
+            return try? package.fileWithPath(OPCOpaqueFile.self, at: path)
         }
     }
 
-    func worksheets(
+    private static func worksheets(
+        in package: OPCPackage,
         for sheets: [XLWorkbookSheet],
         workbookPath: OPCFilePath,
         workbookRels: OPCRelsFile,
@@ -165,12 +167,13 @@ private extension OPCPackage {
     ) throws -> [Int: OPCFileWithPath<XLWorksheet>] {
         var worksheets: [Int: OPCFileWithPath<XLWorksheet>] = [:]
         for sheet in sheets {
-            guard let relationship = workbookRels.relationship(id: sheet.relationshipID) else {
+            guard let relationship = workbookRels.relationships.first(where: { $0.id == sheet.relationshipID }) else {
                 continue
             }
             let path = try OPCFilePath(string: relationship.target).resolved(relativeTo: workbookPath)
-            worksheets[sheet.sheetID] = try fileWithPath(
+            worksheets[sheet.sheetID] = try Self.readFile(
                 XLWorksheet.self,
+                from: package,
                 at: path,
                 default: XLWorksheet(),
                 consumedPaths: &consumedPaths
@@ -178,46 +181,46 @@ private extension OPCPackage {
         }
         return worksheets
     }
-}
 
-private extension OPCContentTypesFile {
-    mutating func ensureRequiredTypes(
+    private static func containsOpaqueFile(
+        at path: OPCFilePath,
+        in opaqueFiles: [OPCOpaqueFileWithPath]
+    ) -> Bool {
+        opaqueFiles.contains { $0.path == path }
+    }
+
+    private static func registerRequiredContentTypes(
+        in contentTypes: inout OPCContentTypesFile,
         workbookPath: OPCFilePath,
         workbookContentTypeOverrides: [OPCFilePath: String],
         sharedStringsPath: OPCFilePath
     ) {
-        ensureDefault(
+        contentTypes.ensureDefault(
             extension: "rels",
             contentType: OPCContentTypes.relationships
         )
-        ensureDefault(
+        contentTypes.ensureDefault(
             extension: "xml",
             contentType: OPCContentTypes.xml
         )
-        ensureOverride(
+        contentTypes.ensureOverride(
             partName: workbookPath,
             contentType: OPCContentTypes.workbook
         )
         for (partName, contentType) in workbookContentTypeOverrides {
-            ensureOverride(
+            contentTypes.ensureOverride(
                 partName: partName,
                 contentType: contentType
             )
         }
-        ensureOverride(
+        contentTypes.ensureOverride(
             partName: sharedStringsPath,
             contentType: OPCContentTypes.sharedStrings
         )
     }
-}
 
-private extension OPCRelsFile {
-    func relationship(id: String) -> OPCRelationship? {
-        relationships.first { $0.id == id }
-    }
-
-    func workbookPath() throws -> OPCFilePath {
-        if let relationship = relationships.first(where: { $0.type == XMLNamespaceURI.officeDocument.string }) {
+    private static func workbookPath(in packageRels: OPCRelsFile) throws -> OPCFilePath {
+        if let relationship = packageRels.relationships.first(where: { $0.type == XMLNamespaceURI.officeDocument.string }) {
             return try OPCFilePath(string: relationship.target).resolved(relativeTo: .packageRoot)
         }
         return try OPCFilePath(string: "/xl/workbook.xml")

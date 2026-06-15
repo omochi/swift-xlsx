@@ -12,7 +12,7 @@ public struct XLWorksheet: OPCXMLFile {
     public func xmlDocument() -> XMLDocument {
         guard let original else {
             let document = XMLDocument()
-            let worksheetElement = worksheetElement(in: document)
+            let worksheetElement = worksheetElementForWriting(in: document)
             worksheetElement.ensureNamespace(uri: .spreadsheet)
             return document
         }
@@ -21,7 +21,7 @@ public struct XLWorksheet: OPCXMLFile {
         return document
     }
 
-    private func worksheetElement(in document: XMLDocument) -> XMLElement {
+    private func worksheetElementForWriting(in document: XMLDocument) -> XMLElement {
         if let element = document.element(name: "worksheet") {
             return element
         }
