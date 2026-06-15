@@ -18,13 +18,13 @@ public final class XMLElement: XMLNode {
     public var name: XMLName
     public var namespaces: XMLNamespaceTable
     public var attributes: [XMLAttribute]
-    public var childNodes: [XMLNode]
+    private var childNodes: [XMLNode]
 
     public override var kind: XMLNodeKind {
         .element
     }
 
-    public override var children: [XMLNode] {
+    override var _children: [XMLNode] {
         get { childNodes }
         set { childNodes = newValue }
     }

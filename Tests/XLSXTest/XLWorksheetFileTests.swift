@@ -46,6 +46,62 @@ struct XLWorksheetFileTests {
         #expect(xml.contains(#"<sheetData><row r="2"><c r="B2"><v>left</v></c><c r="D2"><v>right</v></c></row><row r="10"><c r="C10"><v>bottom</v></c></row></sheetData>"#))
     }
 
+    @Test func writesRowsSortedBeforeOtherSheetDataChildren() throws {
+        let worksheet = try XLWorksheetFile(data: Data("""
+            <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
+              <sheetData>
+                <row r="10">
+                  <c r="C10"><v>bottom</v></c>
+                </row>
+                <marker/>
+                <row r="2">
+                  <c r="B2"><v>left</v></c>
+                </row>
+              </sheetData>
+            </worksheet>
+            """.utf8))
+
+        worksheet.cell(row: 5, column: 1).value = XLCellValue(rawValue: "middle")
+
+        let xml = try String(decoding: worksheet.data(), as: UTF8.self)
+
+        let row2Range = try #require(xml.range(of: #"<row r="2""#))
+        let row5Range = try #require(xml.range(of: #"<row r="5""#))
+        let row10Range = try #require(xml.range(of: #"<row r="10""#))
+        let markerRange = try #require(xml.range(of: #"<marker/>"#))
+
+        #expect(row2Range.lowerBound < row5Range.lowerBound)
+        #expect(row5Range.lowerBound < row10Range.lowerBound)
+        #expect(row10Range.lowerBound < markerRange.lowerBound)
+    }
+
+    @Test func writesCellsSortedBeforeOtherRowChildren() throws {
+        let worksheet = try XLWorksheetFile(data: Data("""
+            <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
+              <sheetData>
+                <row r="2">
+                  <c r="D2"><v>right</v></c>
+                  <marker/>
+                  <c r="B2"><v>left</v></c>
+                </row>
+              </sheetData>
+            </worksheet>
+            """.utf8))
+
+        worksheet.cell(row: 2, column: 3).value = XLCellValue(rawValue: "middle")
+
+        let xml = try String(decoding: worksheet.data(), as: UTF8.self)
+
+        let cellBRange = try #require(xml.range(of: #"<c r="B2""#))
+        let cellCRange = try #require(xml.range(of: #"<c r="C2""#))
+        let cellDRange = try #require(xml.range(of: #"<c r="D2""#))
+        let markerRange = try #require(xml.range(of: #"<marker/>"#))
+
+        #expect(cellBRange.lowerBound < cellCRange.lowerBound)
+        #expect(cellCRange.lowerBound < cellDRange.lowerBound)
+        #expect(cellDRange.lowerBound < markerRange.lowerBound)
+    }
+
     @Test func exposesExistingRowNumbersAndMaxRowNumber() {
         let worksheet = XLWorksheetFile(rowFromNumber: [
             10: XLRowStorage(cellFromColumn: [:]),

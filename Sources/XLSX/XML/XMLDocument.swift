@@ -11,13 +11,13 @@ public final class XMLDocument: XMLNode {
         }
     }
 
-    public var childNodes: [XMLNode]
+    private var childNodes: [XMLNode]
 
     public override var kind: XMLNodeKind {
         .document
     }
 
-    public override var children: [XMLNode] {
+    override var _children: [XMLNode] {
         get { childNodes }
         set { childNodes = newValue }
     }

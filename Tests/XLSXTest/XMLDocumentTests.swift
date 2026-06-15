@@ -148,6 +148,42 @@ struct XMLDocumentTests {
         #expect(child.parent == nil)
     }
 
+    @Test func replacingChildrenUpdatesParentLinks() {
+        let oldParent = XMLElement(name: XMLName(name: "oldParent"))
+        let newParent = XMLElement(name: XMLName(name: "newParent"))
+        let removed = XMLElement(name: XMLName(name: "removed"))
+        let moved = XMLElement(name: XMLName(name: "moved"))
+        let added = XMLElement(name: XMLName(name: "added"))
+        oldParent.appendChild(removed)
+        oldParent.appendChild(moved)
+
+        newParent.children = [moved, added]
+
+        #expect(oldParent.children.count == 1)
+        #expect(oldParent.children.first === removed)
+        #expect(removed.parent === oldParent)
+        #expect(moved.parent === newParent)
+        #expect(added.parent === newParent)
+        #expect(newParent.children.count == 2)
+        #expect(newParent.children[0] === moved)
+        #expect(newParent.children[1] === added)
+    }
+
+    @Test func replacingChildrenDetachesRemovedChildren() {
+        let parent = XMLElement(name: XMLName(name: "parent"))
+        let kept = XMLElement(name: XMLName(name: "kept"))
+        let removed = XMLElement(name: XMLName(name: "removed"))
+        parent.appendChild(kept)
+        parent.appendChild(removed)
+
+        parent.children = [kept]
+
+        #expect(kept.parent === parent)
+        #expect(removed.parent == nil)
+        #expect(parent.children.count == 1)
+        #expect(parent.children.first === kept)
+    }
+
     @Test func setAttributeUsesDeclaredNamespacePrefix() throws {
         let parent = XMLElement(name: XMLName(name: "parent"))
         parent.ensureNamespace(prefix: "rel", uri: .officeRelationships)

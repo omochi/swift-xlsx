@@ -48,16 +48,9 @@ public final class XLWorksheetFile: OPCXMLFile {
     }
 
     public func xmlDocument() -> XMLDocument {
-        guard let original else {
-            let document = XMLDocument()
-            let worksheetElement = worksheetElementForWriting(in: document)
-            worksheetElement.ensureNamespace(uri: .spreadsheet)
-            writeRows(to: worksheetElement)
-            return document
-        }
-
-        let document = original.clone()
+        let document = original?.clone() ?? XMLDocument()
         let worksheetElement = worksheetElementForWriting(in: document)
+        worksheetElement.ensureNamespace(uri: .spreadsheet)
         writeRows(to: worksheetElement)
         return document
     }
@@ -89,14 +82,23 @@ public final class XLWorksheetFile: OPCXMLFile {
         }
 
         let sheetDataElement = sheetDataElementForWriting(in: worksheetElement)
+        let sheetDataChildren = rowElementsAndOtherChildren(in: sheetDataElement)
+        var rowElementFromNumber = sheetDataChildren.rowElementFromNumber
         for rowNumber in rowFromNumber.keys.sorted() {
             guard let row = rowFromNumber[rowNumber] else {
                 continue
             }
 
-            let rowElement = rowElementForWriting(rowNumber: rowNumber, in: sheetDataElement)
+            let rowElement = rowElementForWriting(
+                rowNumber: rowNumber,
+                in: sheetDataElement,
+                rowElementFromNumber: &rowElementFromNumber
+            )
             row.write(to: rowElement, rowNumber: rowNumber)
         }
+
+        let rowElements = rowElementFromNumber.sorted { $0.key < $1.key }.map { $0.value as XMLNode }
+        sheetDataElement.children = rowElements + sheetDataChildren.otherChildren
     }
 
     private func sheetDataElementForWriting(in worksheetElement: XMLElement) -> XMLElement {
@@ -109,8 +111,12 @@ public final class XLWorksheetFile: OPCXMLFile {
         return element
     }
 
-    private func rowElementForWriting(rowNumber: Int, in sheetDataElement: XMLElement) -> XMLElement {
-        if let element = sheetDataElement.elements(name: "row").first(where: { $0.attribute(name: "r") == String(rowNumber) }) {
+    private func rowElementForWriting(
+        rowNumber: Int,
+        in sheetDataElement: XMLElement,
+        rowElementFromNumber: inout [Int: XMLElement]
+    ) -> XMLElement {
+        if let element = rowElementFromNumber[rowNumber] {
             return element
         }
 
@@ -121,7 +127,29 @@ public final class XLWorksheetFile: OPCXMLFile {
             ]
         )
         sheetDataElement.appendChild(element)
+        rowElementFromNumber[rowNumber] = element
         return element
+    }
+
+    private func rowElementsAndOtherChildren(
+        in sheetDataElement: XMLElement
+    ) -> (rowElementFromNumber: [Int: XMLElement], otherChildren: [XMLNode]) {
+        var rowElementFromNumber: [Int: XMLElement] = [:]
+        var otherChildren: [XMLNode] = []
+        for child in sheetDataElement.children {
+            guard let rowElement = child as? XMLElement,
+                  rowElement.name.name == "row",
+                  let rowNumberText = rowElement.attribute(name: "r"),
+                  let rowNumber = Int(rowNumberText)
+            else {
+                otherChildren.append(child)
+                continue
+            }
+
+            rowElementFromNumber[rowNumber] = rowElement
+        }
+
+        return (rowElementFromNumber, otherChildren)
     }
 
     private func worksheetElementForWriting(in document: XMLDocument) -> XMLElement {

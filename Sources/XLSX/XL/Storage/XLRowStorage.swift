@@ -53,19 +53,32 @@ public final class XLRowStorage: Hashable {
     }
 
     func write(to rowElement: XMLElement, rowNumber: Int) {
+        let rowChildren = cellElementsAndOtherChildren(in: rowElement, rowNumber: rowNumber)
+        var cellElementFromColumn = rowChildren.cellElementFromColumn
         for column in cellFromColumn.keys.sorted() {
             guard let cell = cellFromColumn[column] else {
                 continue
             }
 
             let reference = XLCellReference(row: rowNumber, column: column)
-            let cellElement = cellElementForWriting(reference: reference, in: rowElement)
+            let cellElement = cellElementForWriting(
+                reference: reference,
+                in: rowElement,
+                cellElementFromColumn: &cellElementFromColumn
+            )
             cell.write(to: cellElement)
         }
+
+        let cellElements = cellElementFromColumn.sorted { $0.key < $1.key }.map { $0.value as XMLNode }
+        rowElement.children = cellElements + rowChildren.otherChildren
     }
 
-    private func cellElementForWriting(reference: XLCellReference, in rowElement: XMLElement) -> XMLElement {
-        if let element = rowElement.elements(name: "c").first(where: { $0.attribute(name: "r") == reference.description }) {
+    private func cellElementForWriting(
+        reference: XLCellReference,
+        in rowElement: XMLElement,
+        cellElementFromColumn: inout [Int: XMLElement]
+    ) -> XMLElement {
+        if let element = cellElementFromColumn[reference.column] {
             return element
         }
 
@@ -76,6 +89,30 @@ public final class XLRowStorage: Hashable {
             ]
         )
         rowElement.appendChild(element)
+        cellElementFromColumn[reference.column] = element
         return element
+    }
+
+    private func cellElementsAndOtherChildren(
+        in rowElement: XMLElement,
+        rowNumber: Int
+    ) -> (cellElementFromColumn: [Int: XMLElement], otherChildren: [XMLNode]) {
+        var cellElementFromColumn: [Int: XMLElement] = [:]
+        var otherChildren: [XMLNode] = []
+        for child in rowElement.children {
+            guard let cellElement = child as? XMLElement,
+                  cellElement.name.name == "c",
+                  let referenceText = cellElement.attribute(name: "r"),
+                  let reference = XLCellReference(referenceText),
+                  reference.row == rowNumber
+            else {
+                otherChildren.append(child)
+                continue
+            }
+
+            cellElementFromColumn[reference.column] = cellElement
+        }
+
+        return (cellElementFromColumn, otherChildren)
     }
 }
