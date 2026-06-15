@@ -34,6 +34,10 @@ public struct OPCContentTypesFile: OPCXMLFile {
     public var defaults: [String: String] = [:]
     public var overrides: [OPCFilePath: String] = [:]
 
+    public static func path() throws -> OPCFilePath {
+        try OPCFilePath(string: "/[Content_Types].xml")
+    }
+
     public mutating func ensureDefault(extension extensionName: String, contentType: String) {
         defaults[extensionName] = contentType
     }

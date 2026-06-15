@@ -17,13 +17,8 @@ public final class XLWorkbookFile: OPCXMLFile {
     }
 
     public init() {
-        self.sheets = [Self.defaultSheet]
-        self.worksheetFromID = [
-            Self.defaultSheet.sheetID: OPCFileWithPath(
-                path: Self.defaultWorksheetPath,
-                file: XLWorksheetFile()
-            )
-        ]
+        self.sheets = []
+        self.worksheetFromID = [:]
         self.original = nil
     }
 
@@ -50,12 +45,12 @@ public final class XLWorkbookFile: OPCXMLFile {
     public var worksheetFromID: [Int: OPCFileWithPath<XLWorksheetFile>]
     public var original: XMLDocument?
 
-    private static let defaultSheet = XLWorkbookFileSheet(
-        name: "Sheet1",
-        sheetID: 1,
-        relationshipID: "rId1"
-    )
-    private static let defaultWorksheetPath = try! OPCFilePath(string: "/xl/worksheets/sheet1.xml")
+    public static func path(in packageRels: OPCRelsFile) throws -> OPCFilePath {
+        if let relationship = packageRels.relationships.first(where: { $0.type == XMLNamespaceURI.officeDocument.string }) {
+            return try OPCFilePath(string: relationship.target).resolved(relativeTo: .packageRoot)
+        }
+        return try OPCFilePath(string: "/xl/workbook.xml")
+    }
 
     public func xmlDocument() throws -> XMLDocument {
         let document = original?.clone() ?? XMLDocument()

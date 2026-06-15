@@ -1,38 +1,10 @@
+import MemberwiseInit
 import Foundation
 
+@MemberwiseInit(.public)
 public final class XLDocumentPackage {
-    public init() {
-        self.contentTypes = OPCFileWithPath(
-            path: try! OPCFilePath(string: "/[Content_Types].xml"),
-            file: OPCContentTypesFile()
-        )
-        self.packageRels = OPCFileWithPath(
-            path: try! OPCRelsFile.path(for: .packageRoot),
-            file: OPCRelsFile()
-        )
-        self.workbook = OPCFileWithPath(
-            path: try! OPCFilePath(string: "/xl/workbook.xml"),
-            file: XLWorkbookFile()
-        )
-        self.workbookRels = OPCFileWithPath(
-            path: try! OPCFilePath(string: "/xl/_rels/workbook.xml.rels"),
-            file: OPCRelsFile()
-        )
-        self.opaqueFiles = []
-    }
-
-    public init(
-        contentTypes: OPCFileWithPath<OPCContentTypesFile>,
-        packageRels: OPCFileWithPath<OPCRelsFile>,
-        workbook: OPCFileWithPath<XLWorkbookFile>,
-        workbookRels: OPCFileWithPath<OPCRelsFile>,
-        opaqueFiles: [OPCOpaqueFileWithPath]
-    ) {
-        self.contentTypes = contentTypes
-        self.packageRels = packageRels
-        self.workbook = workbook
-        self.workbookRels = workbookRels
-        self.opaqueFiles = opaqueFiles
+    public convenience init() {
+        try! self.init(opcPackage: OPCPackage())
     }
 
     init(opcPackage: OPCPackage) throws {
@@ -41,7 +13,7 @@ public final class XLDocumentPackage {
         let contentTypes = try Self.readFile(
             OPCContentTypesFile.self,
             from: opcPackage,
-            at: OPCFilePath(string: "/[Content_Types].xml"),
+            at: OPCContentTypesFile.path(),
             default: OPCContentTypesFile(),
             consumedPaths: &consumedPaths
         )
@@ -54,10 +26,11 @@ public final class XLDocumentPackage {
             consumedPaths: &consumedPaths
         )
 
+        let workbookPath = try XLWorkbookFile.path(in: packageRels.file)
         let workbook = try Self.readFile(
             XLWorkbookFile.self,
             from: opcPackage,
-            at: try Self.workbookPath(in: packageRels.file),
+            at: workbookPath,
             default: XLWorkbookFile(),
             consumedPaths: &consumedPaths
         )
@@ -78,33 +51,43 @@ public final class XLDocumentPackage {
             consumedPaths: &consumedPaths
         )
 
+        let sharedStrings = try Self.readFile(
+            XLSharedStringsFile.self,
+            from: opcPackage,
+            at: try XLSharedStringsFile.path(workbookPath: workbook.path, workbookRels: workbookRels.file),
+            default: Self.defaultSharedStringsFile(),
+            consumedPaths: &consumedPaths
+        )
+
         self.contentTypes = contentTypes
         self.packageRels = packageRels
         self.workbook = workbook
         self.workbookRels = workbookRels
+        self.sharedStrings = sharedStrings
         self.opaqueFiles = Self.opaqueFiles(in: opcPackage, excluding: consumedPaths)
+
+        if opcPackage.data(at: workbookPath) == nil {
+            _ = try self.workbook.file.appendWorksheet(
+                name: "Sheet1",
+                workbookPath: self.workbook.path,
+                workbookRels: &self.workbookRels.file
+            )
+        }
     }
 
     public var contentTypes: OPCFileWithPath<OPCContentTypesFile>
     public var packageRels: OPCFileWithPath<OPCRelsFile>
     public var workbook: OPCFileWithPath<XLWorkbookFile>
     public var workbookRels: OPCFileWithPath<OPCRelsFile>
+    public var sharedStrings: OPCFileWithPath<XLSharedStringsFile>
     public var opaqueFiles: [OPCOpaqueFileWithPath]
-
-    private static let sharedStringsXML = """
-        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-        <sst xmlns="\(XMLNamespaceURI.spreadsheet.string)" count="1" uniqueCount="1">
-          <si>
-            <t>hello world</t>
-          </si>
-        </sst>
-        """
 
     func makeOPCPackage() throws -> OPCPackage {
         var contentTypes = contentTypes
         var packageRels = packageRels
         let workbook = workbook
         var workbookRels = workbookRels
+        var sharedStrings = sharedStrings
         let opaqueFiles = opaqueFiles
 
         packageRels.file.ensureRelationship(
@@ -119,7 +102,7 @@ public final class XLDocumentPackage {
             type: XMLNamespaceURI.sharedStrings.string,
             target: "sharedStrings.xml"
         )
-        let sharedStringsPath = try OPCFilePath(string: sharedStringsRelationship.target).resolved(relativeTo: workbook.path)
+        sharedStrings.path = try OPCFilePath(string: sharedStringsRelationship.target).resolved(relativeTo: workbook.path)
 
         var package = OPCPackage()
         for opaqueFile in opaqueFiles {
@@ -133,17 +116,14 @@ public final class XLDocumentPackage {
                 try package.insertFile(file)
             }
         }
-        if !Self.containsOpaqueFile(at: sharedStringsPath, in: opaqueFiles) {
-            try package.insertFile(
-                data: Data(Self.sharedStringsXML.utf8),
-                at: sharedStringsPath
-            )
+        if !Self.containsOpaqueFile(at: sharedStrings.path, in: opaqueFiles) {
+            try package.insertFile(sharedStrings)
         }
         Self.registerRequiredContentTypes(
             in: &contentTypes.file,
             workbookPath: workbook.path,
             workbookContentTypeOverrides: workbookItems.contentTypeOverrides,
-            sharedStringsPath: sharedStringsPath
+            sharedStringsPath: sharedStrings.path
         )
         try package.insertFile(contentTypes)
 
@@ -203,6 +183,12 @@ public final class XLDocumentPackage {
         return worksheets
     }
 
+    private static func defaultSharedStringsFile() -> XLSharedStringsFile {
+        XLSharedStringsFile(items: [
+            XLSharedStringItem(text: "hello world"),
+        ])
+    }
+
     private static func containsOpaqueFile(
         at path: OPCFilePath,
         in opaqueFiles: [OPCOpaqueFileWithPath]
@@ -240,10 +226,4 @@ public final class XLDocumentPackage {
         )
     }
 
-    private static func workbookPath(in packageRels: OPCRelsFile) throws -> OPCFilePath {
-        if let relationship = packageRels.relationships.first(where: { $0.type == XMLNamespaceURI.officeDocument.string }) {
-            return try OPCFilePath(string: relationship.target).resolved(relativeTo: .packageRoot)
-        }
-        return try OPCFilePath(string: "/xl/workbook.xml")
-    }
 }

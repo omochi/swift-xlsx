@@ -7,4 +7,5 @@ public enum OPCError: Error & Equatable {
     case unsupportedFileSystemEntry(String)
     case invalidContentTypesFile
     case invalidRelationshipsFile
+    case invalidSharedStringsFile
 }

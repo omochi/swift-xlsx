@@ -234,7 +234,7 @@ struct XLDocumentTests {
         #expect(worksheet.sheetID == 2)
         #expect(worksheet.name == "Extra")
         #expect(document.workbook.worksheets.map(\.sheetID) == [1, 2])
-        #expect(document.package.workbookRels.file.relationships.map(\.id) == ["rId2"])
+        #expect(document.package.workbookRels.file.relationships.map(\.id) == ["rId1", "rId2"])
 
         try document.save(to: url)
 
@@ -268,7 +268,7 @@ struct XLDocumentTests {
         document.workbook.removeWorksheet(sheetID: worksheet.sheetID)
 
         #expect(document.workbook.worksheets.map(\.sheetID) == [1])
-        #expect(document.package.workbookRels.file.relationships.isEmpty)
+        #expect(document.package.workbookRels.file.relationships.map(\.id) == ["rId1"])
 
         try document.save(to: url)
 
@@ -344,7 +344,11 @@ struct XLDocumentTests {
             contentsOf: try #require(Bundle.module.url(forResource: "simple", withExtension: "xlsx"))
         ))
         let worksheetData = Data("<worksheet>opaque worksheet</worksheet>".utf8)
-        let sharedStringsData = Data("<sst>opaque shared strings</sst>".utf8)
+        let sharedStringsData = Data("""
+            <sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="1" uniqueCount="1">
+              <si><r><rPr><b/></rPr><t>Rich</t></r><r><t> text</t></r></si>
+            </sst>
+            """.utf8)
         try package.insertFile(
             data: worksheetData,
             at: OPCFilePath(string: "/xl/worksheets/sheet1.xml")
@@ -365,6 +369,13 @@ struct XLDocumentTests {
             as: UTF8.self
         )
         #expect(savedWorksheetXML.contains("opaque worksheet"))
-        #expect(try savedPackage.data(at: OPCFilePath(string: "/xl/sharedStrings.xml")) == sharedStringsData)
+
+        let savedSharedStringsXML = try String(
+            decoding: #require(savedPackage.data(at: OPCFilePath(string: "/xl/sharedStrings.xml"))),
+            as: UTF8.self
+        )
+        #expect(savedSharedStringsXML.contains(#"<rPr><b/></rPr>"#))
+        #expect(savedSharedStringsXML.contains(#"<t>Rich</t>"#))
+        #expect(savedSharedStringsXML.contains(#"<t> text</t>"#))
     }
 }
