@@ -32,8 +32,8 @@ public final class XLSharedStringsFile: OPCXMLFile {
         let document = original?.clone() ?? XMLDocument()
         let sharedStringsElement = sharedStringsElementForWriting(in: document)
         sharedStringsElement.ensureNamespace(uri: .spreadsheet)
-        try! sharedStringsElement.setAttribute(name: "count", value: String(records.count))
-        try! sharedStringsElement.setAttribute(name: "uniqueCount", value: String(records.count))
+        sharedStringsElement.setAttribute(name: "count", value: String(records.count))
+        sharedStringsElement.setAttribute(name: "uniqueCount", value: String(records.count))
         write(records: records, to: sharedStringsElement)
         return document
     }

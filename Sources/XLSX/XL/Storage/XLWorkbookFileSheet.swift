@@ -24,8 +24,8 @@ public struct XLWorkbookFileSheet: Sendable & Hashable {
     public var relationshipID: String
 
     func write(to element: XMLElement) throws {
-        try element.setAttribute(name: "name", value: name)
-        try element.setAttribute(name: "sheetId", value: String(sheetID))
+        element.setAttribute(name: "name", value: name)
+        element.setAttribute(name: "sheetId", value: String(sheetID))
         try element.setAttribute(
             name: "id",
             namespaceURI: .officeRelationships,

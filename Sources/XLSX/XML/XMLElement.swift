@@ -53,6 +53,14 @@ public final class XMLElement: XMLNode {
     @discardableResult
     public func setAttribute(
         name: String,
+        value: String
+    ) -> XMLAttribute {
+        try! setAttribute(name: name, namespaceURI: nil, value: value)
+    }
+
+    @discardableResult
+    public func setAttribute(
+        name: String,
         namespaceURI: XMLNamespaceURI? = nil,
         value: String
     ) throws -> XMLAttribute {
