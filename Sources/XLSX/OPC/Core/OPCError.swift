@@ -5,4 +5,6 @@ public enum OPCError: Error & Equatable {
     case entryIsNotFile(String)
     case conflictingEntry(String)
     case unsupportedFileSystemEntry(String)
+    case invalidContentTypesFile
+    case invalidRelationshipsFile
 }

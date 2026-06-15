@@ -1,25 +1,31 @@
-import MemberwiseInit
-
-@MemberwiseInit(.public)
 public struct XMLNamespaceTable: Sendable {
-    public var uriToID: [String: XMLNamespaceID] = [:]
-    public var idToURI: [String] = []
+    public init() {}
 
-    public mutating func intern(_ uri: String?) -> XMLNamespaceID? {
-        guard let uri else {
-            return nil
-        }
-        if let id = uriToID[uri] {
-            return id
-        }
+    private var entries: [(prefix: String?, uri: XMLNamespaceURI)] = []
 
-        let id = XMLNamespaceID(rawValue: idToURI.count)
-        uriToID[uri] = id
-        idToURI.append(uri)
-        return id
+    public var declarations: [(prefix: String?, uri: XMLNamespaceURI)] {
+        entries
     }
 
-    public func uri(for id: XMLNamespaceID) -> String {
-        idToURI[id.rawValue]
+    public var isEmpty: Bool {
+        entries.isEmpty
+    }
+
+    public mutating func declare(prefix: String? = nil, uri: XMLNamespaceURI) {
+        if let index = entries.firstIndex(where: { $0.prefix == prefix }) {
+            entries[index].uri = uri
+        } else {
+            entries.append((prefix: prefix, uri: uri))
+        }
+    }
+
+    public func declared(prefix: String? = nil, uri: XMLNamespaceURI) -> Self {
+        var table = self
+        table.declare(prefix: prefix, uri: uri)
+        return table
+    }
+
+    public func uri(for prefix: String? = nil) -> XMLNamespaceURI? {
+        entries.first { $0.prefix == prefix }?.uri
     }
 }

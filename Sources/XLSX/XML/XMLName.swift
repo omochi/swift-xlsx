@@ -1,24 +1,14 @@
-public struct XMLName: Hashable, Sendable {
-    public init(rawName: String, namespaceID: XMLNamespaceID?) {
-        self.namespaceID = namespaceID
+import MemberwiseInit
 
-        if let colonIndex = rawName.firstIndex(of: ":") {
-            self.prefix = String(rawName[..<colonIndex])
-            self.localName = String(rawName[rawName.index(after: colonIndex)...])
-        } else {
-            self.prefix = nil
-            self.localName = rawName
-        }
-    }
+@MemberwiseInit(.public)
+public struct XMLName: Sendable & Hashable {
+    public var prefix: String? = nil
+    public var name: String
 
-    public var prefix: String?
-    public var localName: String
-    public var namespaceID: XMLNamespaceID?
-
-    public var rawName: String {
+    public var qualifiedName: String {
         guard let prefix else {
-            return localName
+            return name
         }
-        return "\(prefix):\(localName)"
+        return "\(prefix):\(name)"
     }
 }

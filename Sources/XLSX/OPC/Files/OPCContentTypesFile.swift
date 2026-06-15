@@ -10,35 +10,28 @@ public struct OPCContentTypesFile {
         }
 
         let document = try XMLDocumentReader.parse(data)
-        let root = XMLDocument.firstElement(named: "Types", in: document) ?? document
+        guard let root = document.element(name: "Types") else {
+            throw OPCError.invalidContentTypesFile
+        }
         var defaults: [String: String] = [:]
         var overrides: [OPCFilePath: String] = [:]
 
-        for child in XMLDocument.children(of: root, in: document) {
-            guard let element = child as? XMLElement else {
+        for element in root.elements(name: "Default") {
+            guard let extensionName = element.attribute("Extension"),
+                  let contentType = element.attribute("ContentType")
+            else {
                 continue
             }
+            defaults[extensionName] = contentType
+        }
 
-            switch element.name.rawName {
-            case "Default":
-                guard let extensionName = XMLDocument.attribute("Extension", of: element, in: document),
-                      let contentType = XMLDocument.attribute("ContentType", of: element, in: document)
-                else {
-                    continue
-                }
-                defaults[extensionName] = contentType
-
-            case "Override":
-                guard let partName = XMLDocument.attribute("PartName", of: element, in: document),
-                      let contentType = XMLDocument.attribute("ContentType", of: element, in: document)
-                else {
-                    continue
-                }
-                overrides[try OPCFilePath(string: partName)] = contentType
-
-            default:
+        for element in root.elements(name: "Override") {
+            guard let partName = element.attribute("PartName"),
+                  let contentType = element.attribute("ContentType")
+            else {
                 continue
             }
+            overrides[try OPCFilePath(string: partName)] = contentType
         }
 
         self.init(defaults: defaults, overrides: overrides)
@@ -60,14 +53,12 @@ public struct OPCContentTypesFile {
     }
 
     private var xmlDocument: XMLDocument {
+        let document = XMLDocument()
         let root = XMLElement(
-            name: XMLName(rawName: "Types", namespaceID: nil),
-            attributes: [
-                XMLAttribute(
-                    name: XMLName(rawName: "xmlns", namespaceID: nil),
-                    value: "http://schemas.openxmlformats.org/package/2006/content-types"
-                ),
-            ]
+            name: XMLName(name: "Types"),
+            namespaces: XMLNamespaceTable().declared(
+                uri: document.internNamespaceURI(OPCXMLURIs.contentTypes)
+            )
         )
 
         for extensionName in defaults.keys.sorted() {
@@ -75,14 +66,14 @@ public struct OPCContentTypesFile {
                 continue
             }
             root.appendChild(XMLElement(
-                name: XMLName(rawName: "Default", namespaceID: nil),
+                name: XMLName(name: "Default"),
                 attributes: [
                     XMLAttribute(
-                        name: XMLName(rawName: "Extension", namespaceID: nil),
+                        name: XMLName(name: "Extension"),
                         value: extensionName
                     ),
                     XMLAttribute(
-                        name: XMLName(rawName: "ContentType", namespaceID: nil),
+                        name: XMLName(name: "ContentType"),
                         value: contentType
                     ),
                 ]
@@ -94,20 +85,21 @@ public struct OPCContentTypesFile {
                 continue
             }
             root.appendChild(XMLElement(
-                name: XMLName(rawName: "Override", namespaceID: nil),
+                name: XMLName(name: "Override"),
                 attributes: [
                     XMLAttribute(
-                        name: XMLName(rawName: "PartName", namespaceID: nil),
+                        name: XMLName(name: "PartName"),
                         value: partName.description
                     ),
                     XMLAttribute(
-                        name: XMLName(rawName: "ContentType", namespaceID: nil),
+                        name: XMLName(name: "ContentType"),
                         value: contentType
                     ),
                 ]
             ))
         }
 
-        return XMLDocument(children: [root])
+        document.appendChild(root)
+        return document
     }
 }

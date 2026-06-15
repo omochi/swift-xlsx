@@ -9,7 +9,7 @@ enum ZIPArchive {
         for record in centralDirectory {
             if record.fileName.hasSuffix("/") {
                 entries.append(OPCFileEntry(
-                    path: try OPCFilePath(string: record.fileName),
+                    path: try OPCFilePath(string: "/" + String(record.fileName.dropLast())),
                     content: .directory([])
                 ))
                 continue
@@ -22,7 +22,7 @@ enum ZIPArchive {
                 uncompressedSize: record.uncompressedSize
             )
             entries.append(OPCFileEntry(
-                path: try OPCFilePath(string: record.fileName),
+                path: try OPCFilePath(string: "/" + record.fileName),
                 content: .file(entryData)
             ))
         }

@@ -47,8 +47,8 @@ struct XLWorkbookFile {
     }
 
     private static func workbookPath(in packageRels: OPCRelsFile) throws -> OPCFilePath {
-        if let relationship = packageRels.relationships.first(where: { $0.type == XLRelationshipType.officeDocument }) {
-            return try OPCFilePath(string: relationship.target)
+        if let relationship = packageRels.relationships.first(where: { $0.type == XLXMLURIs.officeDocument }) {
+            return try OPCFilePath(string: relationship.target).resolved(relativeTo: OPCFilePath(string: "/"))
         }
         return try OPCFilePath(string: "/xl/workbook.xml")
     }
@@ -77,12 +77,12 @@ struct XLWorkbookFile {
         ]
 
         for relationship in workbookRels.relationships {
-            guard relationship.type == XLRelationshipType.worksheet
-                || relationship.type == XLRelationshipType.sharedStrings
+            guard relationship.type == XLXMLURIs.worksheet
+                || relationship.type == XLXMLURIs.sharedStrings
             else {
                 continue
             }
-            paths.insert(try relationship.targetPath(relativeTo: workbookPath))
+            paths.insert(try OPCFilePath(string: relationship.target).resolved(relativeTo: workbookPath))
         }
 
         return paths

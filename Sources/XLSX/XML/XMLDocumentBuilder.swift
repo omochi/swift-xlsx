@@ -8,20 +8,20 @@ public struct XMLDocumentBuilder: Handler {
 
     public var document = XMLDocument()
     public var stack: [XMLNode] = []
-    private var pendingNamespaceAttributes: [XMLAttribute] = []
+    private var pendingNamespaces = XMLNamespaceTable()
 
     public mutating func start(mapping prefix: Span<XML.Byte>?, uri: Span<XML.Byte>) {
-        let rawName: String
+        let namespacePrefix: String?
         if let prefix {
-            rawName = "xmlns:\(Self.string(from: prefix))"
+            namespacePrefix = Self.string(from: prefix)
         } else {
-            rawName = "xmlns"
+            namespacePrefix = nil
         }
 
-        pendingNamespaceAttributes.append(XMLAttribute(
-            name: XMLName(rawName: rawName, namespaceID: nil),
-            value: Self.string(from: uri)
-        ))
+        pendingNamespaces.declare(
+            prefix: namespacePrefix,
+            uri: document.internNamespaceURI(Self.string(from: uri))
+        )
     }
 
     public mutating func start(
@@ -29,19 +29,20 @@ public struct XMLDocumentBuilder: Handler {
         namespace uri: Span<XML.Byte>?,
         attributes: XML.ResolvedAttributes
     ) {
-        var elementAttributes = pendingNamespaceAttributes
-        pendingNamespaceAttributes.removeAll(keepingCapacity: true)
+        let elementNamespaces = pendingNamespaces
+        pendingNamespaces = XMLNamespaceTable()
+        var elementAttributes: [XMLAttribute] = []
 
         for index in attributes.indices {
             elementAttributes.append(XMLAttribute(
-                name: xmlName(rawName: Self.string(from: attributes.name(at: index).bytes),
-                              namespaceURI: Self.optionalString(from: attributes.namespace(at: index))),
+                name: xmlName(qualifiedName: Self.string(from: attributes.name(at: index).bytes)),
                 value: Self.string(from: attributes.value(at: index))
             ))
         }
 
         let element = XMLElement(
-            name: xmlName(rawName: Self.string(from: name.bytes), namespaceURI: Self.optionalString(from: uri)),
+            name: xmlName(qualifiedName: Self.string(from: name.bytes)),
+            namespaces: elementNamespaces,
             attributes: elementAttributes
         )
         stack.last?.appendChild(element)
@@ -60,15 +61,14 @@ public struct XMLDocumentBuilder: Handler {
         stack.last?.appendChild(XMLText(Self.string(from: data)))
     }
 
-    private mutating func xmlName(rawName: String, namespaceURI: String?) -> XMLName {
-        XMLName(rawName: rawName, namespaceID: document.namespaces.intern(namespaceURI))
-    }
-
-    private static func optionalString(from bytes: Span<XML.Byte>?) -> String? {
-        guard let bytes else {
-            return nil
+    private mutating func xmlName(qualifiedName: String) -> XMLName {
+        if let colonIndex = qualifiedName.firstIndex(of: ":") {
+            return XMLName(
+                prefix: String(qualifiedName[..<colonIndex]),
+                name: String(qualifiedName[qualifiedName.index(after: colonIndex)...])
+            )
         }
-        return string(from: bytes)
+        return XMLName(name: qualifiedName)
     }
 
     private static func string(from bytes: Span<XML.Byte>) -> String {

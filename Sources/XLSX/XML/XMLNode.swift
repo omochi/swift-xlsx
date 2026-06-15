@@ -1,7 +1,7 @@
 public class XMLNode {
     public init() {}
 
-    public weak var parent: XMLNode?
+    public private(set) weak var parent: XMLNode?
 
     public var kind: XMLNodeKind {
         fatalError("Subclasses must provide a node kind.")
@@ -12,8 +12,12 @@ public class XMLNode {
         set {}
     }
 
+    public func namespaceURI(for prefix: String? = nil) -> XMLNamespaceURI? {
+        parent?.namespaceURI(for: prefix)
+    }
+
     public func appendChild(_ child: XMLNode) {
-        child.parent = self
+        child._setParent(self)
         children.append(child)
     }
 
@@ -24,7 +28,11 @@ public class XMLNode {
         }
 
         let removed = children.remove(at: index)
-        removed.parent = nil
+        removed._setParent(nil)
         return removed
+    }
+
+    func _setParent(_ parent: XMLNode?) {
+        self.parent = parent
     }
 }

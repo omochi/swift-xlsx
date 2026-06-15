@@ -3,24 +3,24 @@ import Foundation
 enum XLHelloWorldWriter {
     static func package(for file: inout XLWorkbookFile) throws -> OPCPackage {
         let packageRelationship = file.packageRels.ensureRelationship(
-            type: XLRelationshipType.officeDocument,
+            type: XLXMLURIs.officeDocument,
             preferredTarget: file.workbookPath.description.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         )
-        file.workbookPath = try OPCFilePath(string: packageRelationship.target)
+        file.workbookPath = try OPCFilePath(string: packageRelationship.target).resolved(relativeTo: OPCFilePath(string: "/"))
 
         let sheetRelationshipID = file.workbook.firstSheetRelationshipID() ?? "rId1"
 
         let worksheetRelationship = file.workbookRels.ensureRelationship(
             id: sheetRelationshipID,
-            type: XLRelationshipType.worksheet,
+            type: XLXMLURIs.worksheet,
             target: "worksheets/sheet1.xml"
         )
         let sharedStringsRelationship = file.workbookRels.ensureRelationship(
-            type: XLRelationshipType.sharedStrings,
+            type: XLXMLURIs.sharedStrings,
             preferredTarget: "sharedStrings.xml"
         )
-        let worksheetPath = try worksheetRelationship.targetPath(relativeTo: file.workbookPath)
-        let sharedStringsPath = try sharedStringsRelationship.targetPath(relativeTo: file.workbookPath)
+        let worksheetPath = try OPCFilePath(string: worksheetRelationship.target).resolved(relativeTo: file.workbookPath)
+        let sharedStringsPath = try OPCFilePath(string: sharedStringsRelationship.target).resolved(relativeTo: file.workbookPath)
 
         var package = OPCPackage()
         for opaqueFile in file.opaqueFiles {

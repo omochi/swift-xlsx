@@ -10,13 +10,13 @@ public struct OPCRelsFile: Sendable {
         }
 
         let document = try XMLDocumentReader.parse(data)
-        let root = XMLDocument.firstElement(named: "Relationships", in: document) ?? document
-        self.relationships = XMLDocument.children(of: root, in: document).compactMap { child in
-            guard document.kind(of: child) == .element,
-                  XMLDocument.name(of: child, in: document) == "Relationship",
-                  let id = XMLDocument.attribute("Id", of: child, in: document),
-                  let type = XMLDocument.attribute("Type", of: child, in: document),
-                  let target = XMLDocument.attribute("Target", of: child, in: document)
+        guard let root = document.element(name: "Relationships") else {
+            throw OPCError.invalidRelationshipsFile
+        }
+        self.relationships = root.elements(name: "Relationship").compactMap { element in
+            guard let id = element.attribute("Id"),
+                  let type = element.attribute("Type"),
+                  let target = element.attribute("Target")
             else {
                 return nil
             }
@@ -34,7 +34,7 @@ public struct OPCRelsFile: Sendable {
 
         let directoryComponents = sourcePath.components.dropLast()
         let components = Array(directoryComponents) + ["_rels", "\(fileName).rels"]
-        return try OPCFilePath(string: components.joined(separator: "/"))
+        return OPCFilePath(isAbsolute: sourcePath.isAbsolute, components: components)
     }
 
     @discardableResult
@@ -73,21 +73,40 @@ public struct OPCRelsFile: Sendable {
     }
 
     public func data() -> Data {
-        Data(xmlString.utf8)
+        xmlDocument.data()
     }
 
-    private var xmlString: String {
-        var lines = [
-            #"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>"#,
-            #"<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">"#,
-        ]
+    private var xmlDocument: XMLDocument {
+        let document = XMLDocument()
+        let root = XMLElement(
+            name: XMLName(name: "Relationships"),
+            namespaces: XMLNamespaceTable().declared(
+                uri: document.internNamespaceURI(OPCXMLURIs.relationships)
+            )
+        )
 
         for relationship in relationships {
-            lines.append(#"  <Relationship Id="\#(escape(relationship.id))" Type="\#(escape(relationship.type))" Target="\#(escape(relationship.target))"/>"#)
+            root.appendChild(XMLElement(
+                name: XMLName(name: "Relationship"),
+                attributes: [
+                    XMLAttribute(
+                        name: XMLName(name: "Id"),
+                        value: relationship.id
+                    ),
+                    XMLAttribute(
+                        name: XMLName(name: "Type"),
+                        value: relationship.type
+                    ),
+                    XMLAttribute(
+                        name: XMLName(name: "Target"),
+                        value: relationship.target
+                    ),
+                ]
+            ))
         }
 
-        lines.append("</Relationships>")
-        return lines.joined(separator: "\n")
+        document.appendChild(root)
+        return document
     }
 
     private func nextRelationshipID() -> String {
@@ -99,13 +118,5 @@ public struct OPCRelsFile: Sendable {
         }.max() ?? 0
 
         return "rId\(maxID + 1)"
-    }
-
-    private func escape(_ string: String) -> String {
-        string
-            .replacingOccurrences(of: "&", with: "&amp;")
-            .replacingOccurrences(of: "\"", with: "&quot;")
-            .replacingOccurrences(of: "<", with: "&lt;")
-            .replacingOccurrences(of: ">", with: "&gt;")
     }
 }

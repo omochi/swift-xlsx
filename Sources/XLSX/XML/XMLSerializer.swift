@@ -21,9 +21,12 @@ public struct XMLSerializer {
     }
 
     private func serialize(element: XMLElement) -> String {
-        var output = "<\(element.name.rawName)"
+        var output = "<\(element.name.qualifiedName)"
+        for declaration in element.namespaces.declarations {
+            output += " \(namespaceDeclarationName(for: declaration.prefix))=\"\(escapeAttribute(declaration.uri.string))\""
+        }
         for attribute in element.attributes {
-            output += " \(attribute.name.rawName)=\"\(escapeAttribute(attribute.value))\""
+            output += " \(attribute.name.qualifiedName)=\"\(escapeAttribute(attribute.value))\""
         }
 
         if element.children.isEmpty {
@@ -33,8 +36,15 @@ public struct XMLSerializer {
 
         output += ">"
         output += element.children.map(serialize(node:)).joined()
-        output += "</\(element.name.rawName)>"
+        output += "</\(element.name.qualifiedName)>"
         return output
+    }
+
+    private func namespaceDeclarationName(for prefix: String?) -> String {
+        guard let prefix else {
+            return "xmlns"
+        }
+        return "xmlns:\(prefix)"
     }
 
     private func escapeText(_ string: String) -> String {
