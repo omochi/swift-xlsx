@@ -7,7 +7,8 @@ public struct XLSXToolsCommand: ParsableCommand {
         abstract: "Utilities for unpacking and packing XLSX OPC packages.",
         subcommands: [
             ExtractCommand.self,
-            CreateCommand.self,
+            PackCommand.self,
+            TestHelperCommand.self,
         ]
     )
 

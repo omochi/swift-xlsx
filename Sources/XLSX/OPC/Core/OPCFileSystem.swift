@@ -52,7 +52,9 @@ enum OPCFileSystem {
             at: directoryURL,
             includingPropertiesForKeys: [.isDirectoryKey, .isRegularFileKey, .isSymbolicLinkKey],
             options: []
-        ).sorted(by: { $0.lastPathComponent < $1.lastPathComponent })
+        ).filter {
+            !ignoredFileNames.contains($0.lastPathComponent)
+        }.sorted(by: { $0.lastPathComponent < $1.lastPathComponent })
 
         var entries: [OPCFileEntry] = []
         if !components.isEmpty {
@@ -97,5 +99,9 @@ enum OPCFileSystem {
         path.components.reduce(directoryURL) { url, component in
             url.appendingPathComponent(component)
         }
+    }
+
+    private static var ignoredFileNames: Set<String> {
+        [".DS_Store"]
     }
 }

@@ -1,17 +1,17 @@
 import Foundation
 
-struct XLWorkbook {
-    init(data: Data? = nil) throws {
+public struct XLWorkbook {
+    public init(data: Data? = nil) throws {
         self.original = try data.map(XMLDocumentReader.parse)
     }
 
-    var original: XMLDocument?
+    public var original: XMLDocument?
 
-    func firstSheetRelationshipID() -> String? {
+    public func firstSheetRelationshipID() -> String? {
         xmlDocument.firstSheetRelationshipID()
     }
 
-    func data() -> Data {
+    public func data() -> Data {
         xmlDocument.data()
     }
 

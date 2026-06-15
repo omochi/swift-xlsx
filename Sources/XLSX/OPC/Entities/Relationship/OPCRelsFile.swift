@@ -57,7 +57,7 @@ public struct OPCRelsFile: Sendable {
     @discardableResult
     public mutating func ensureRelationship(
         type: String,
-        preferredTarget: String
+        target: String
     ) -> OPCRelationship {
         if let relationship = relationships.first(where: { $0.type == type }) {
             return relationship
@@ -66,7 +66,7 @@ public struct OPCRelsFile: Sendable {
         let relationship = OPCRelationship(
             id: nextRelationshipID(),
             type: type,
-            target: preferredTarget
+            target: target
         )
         relationships.append(relationship)
         return relationship

@@ -2,10 +2,10 @@ import ArgumentParser
 import Foundation
 import XLSX
 
-public struct CreateCommand: ParsableCommand {
+public struct PackCommand: ParsableCommand {
     public static let configuration = CommandConfiguration(
-        commandName: "create",
-        abstract: "Create an XLSX file from a directory."
+        commandName: "pack",
+        abstract: "Pack a directory into an XLSX file."
     )
 
     @Argument(help: "The directory to package.")
@@ -18,7 +18,7 @@ public struct CreateCommand: ParsableCommand {
 
     public func run() throws {
         let inputURL = URL(fileURLWithPath: input)
-        let outputURL = output.map(URL.init(fileURLWithPath:)) ?? XLSXToolsOutputURL.createDefault(for: inputURL)
+        let outputURL = output.map(URL.init(fileURLWithPath:)) ?? XLSXToolsOutputURL.packDefault(for: inputURL)
         let package = try OPCPackage(directoryURL: inputURL)
         let data = try package.data()
         try data.write(to: outputURL, options: .atomic)

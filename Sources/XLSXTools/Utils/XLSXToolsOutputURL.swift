@@ -9,7 +9,7 @@ enum XLSXToolsOutputURL {
         return baseURL
     }
 
-    static func createDefault(for inputURL: URL) -> URL {
+    static func packDefault(for inputURL: URL) -> URL {
         inputURL.appendingPathExtension("xlsx")
     }
 }

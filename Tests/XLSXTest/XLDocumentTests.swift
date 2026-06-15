@@ -4,7 +4,7 @@ import XLSX
 
 @Suite
 struct XLDocumentTests {
-    @Test func savesHelloWorldWorkbook() throws {
+    @Test func savesDefaultDocumentFixture() throws {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("swift-xlsx-tests-\(UUID().uuidString)")
             .appendingPathExtension("xlsx")
@@ -17,25 +17,16 @@ struct XLDocumentTests {
 
         let data = try Data(contentsOf: url)
         let package = try OPCPackage(data: data)
+        let fixtureURL = try #require(Bundle.module.resourceURL?.appendingPathComponent("default-document"))
+        let fixturePackage = try OPCPackage(directoryURL: fixtureURL)
 
-        #expect(package.allFilePaths().map(\.description) == [
-            "/[Content_Types].xml",
-            "/_rels/.rels",
-            "/xl/_rels/workbook.xml.rels",
-            "/xl/sharedStrings.xml",
-            "/xl/workbook.xml",
-            "/xl/worksheets/sheet1.xml",
-        ])
+        let paths = package.allFilePaths()
+        let fixturePaths = fixturePackage.allFilePaths()
+        #expect(paths == fixturePaths)
 
-        let workbookXML = try String(decoding: #require(package.data(at: OPCFilePath(string: "/xl/workbook.xml"))), as: UTF8.self)
-        let worksheetXML = try String(decoding: #require(package.data(at: OPCFilePath(string: "/xl/worksheets/sheet1.xml"))), as: UTF8.self)
-        let sharedStringsXML = try String(decoding: #require(package.data(at: OPCFilePath(string: "/xl/sharedStrings.xml"))), as: UTF8.self)
-
-        #expect(workbookXML.contains("<sheet name=\"Sheet1\" sheetId=\"1\" r:id=\"rId1\"/>"))
-        #expect(worksheetXML.contains("<c r=\"A1\" t=\"s\">"))
-        #expect(sharedStringsXML.contains("count=\"1\""))
-        #expect(sharedStringsXML.contains("uniqueCount=\"1\""))
-        #expect(sharedStringsXML.contains("<t>hello world</t>"))
+        for path in paths {
+            #expect(package.data(at: path) == fixturePackage.data(at: path))
+        }
     }
 
     @Test func savesOpenedWorkbookThroughRelationships() throws {

@@ -30,6 +30,22 @@ struct OPCPackageDirectoryTests {
         #expect(directoryNames(in: package, at: "/xl") == ["worksheets"])
     }
 
+    @Test func ignoresHiddenFilesWhenReading() throws {
+        let fileManager = FileManager.default
+        let sourceURL = try temporaryDirectoryURL(named: "source")
+        defer {
+            try? fileManager.removeItem(at: sourceURL)
+        }
+
+        try Data("content types".utf8).write(to: sourceURL.appendingPathComponent("[Content_Types].xml"))
+        try Data("metadata".utf8).write(to: sourceURL.appendingPathComponent(".DS_Store"))
+
+        let package = try OPCPackage(directoryURL: sourceURL)
+
+        #expect(try package.childNames(in: OPCFilePath(string: "/")) == ["[Content_Types].xml"])
+        #expect(package.allFilePaths().map(\.description) == ["/[Content_Types].xml"])
+    }
+
     @Test func writes() throws {
         let fileManager = FileManager.default
         let destinationURL = try temporaryDirectoryURL(named: "destination")
