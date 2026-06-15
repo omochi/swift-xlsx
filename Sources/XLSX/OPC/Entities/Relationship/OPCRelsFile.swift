@@ -66,6 +66,14 @@ public struct OPCRelsFile: Sendable, OPCXMLFile {
         return relationship
     }
 
+    @discardableResult
+    public mutating func removeRelationship(id: String) -> OPCRelationship? {
+        guard let index = relationships.firstIndex(where: { $0.id == id }) else {
+            return nil
+        }
+        return relationships.remove(at: index)
+    }
+
     public func xmlDocument() -> XMLDocument {
         let document = XMLDocument()
         let root = XMLElement(

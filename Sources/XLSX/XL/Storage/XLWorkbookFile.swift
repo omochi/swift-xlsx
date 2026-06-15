@@ -1,9 +1,19 @@
 import Foundation
 
 public struct XLWorkbookFile: OPCXMLFile {
+    struct AddedWorksheet {
+        var sheet: XLWorkbookFileSheet
+        var file: OPCFileWithPath<XLWorksheetFile>
+    }
+
     struct PackageItems {
         var files: [OPCFileWithPath<XLWorksheetFile>]
         var contentTypeOverrides: [OPCFilePath: String]
+    }
+
+    struct RemovedWorksheet {
+        var sheet: XLWorkbookFileSheet
+        var file: OPCFileWithPath<XLWorksheetFile>?
     }
 
     public init() {
@@ -51,6 +61,42 @@ public struct XLWorkbookFile: OPCXMLFile {
         let document = original?.clone() ?? XMLDocument()
         try writeWorkbook(to: document)
         return document
+    }
+
+    mutating func appendWorksheet(
+        name: String,
+        workbookPath: OPCFilePath,
+        workbookRels: inout OPCRelsFile
+    ) throws -> AddedWorksheet {
+        let sheet = XLWorkbookFileSheet(
+            name: name,
+            sheetID: nextSheetID(),
+            relationshipID: nextRelationshipID(workbookRels: workbookRels)
+        )
+        let file = OPCFileWithPath(
+            path: try defaultWorksheetPath(for: sheet, workbookPath: workbookPath),
+            file: XLWorksheetFile()
+        )
+
+        sheets.append(sheet)
+        worksheetFromID[sheet.sheetID] = file
+        workbookRels.ensureRelationship(
+            id: sheet.relationshipID,
+            type: XMLNamespaceURI.worksheet.string,
+            target: file.path.relationshipTarget(relativeTo: workbookPath)
+        )
+
+        return AddedWorksheet(sheet: sheet, file: file)
+    }
+
+    mutating func removeWorksheet(sheetID: Int) -> RemovedWorksheet? {
+        guard let index = sheets.firstIndex(where: { $0.sheetID == sheetID }) else {
+            return nil
+        }
+
+        let sheet = sheets.remove(at: index)
+        let file = worksheetFromID.removeValue(forKey: sheetID)
+        return RemovedWorksheet(sheet: sheet, file: file)
     }
 
     private func writeWorkbook(to document: XMLDocument) throws {
@@ -148,6 +194,22 @@ public struct XLWorkbookFile: OPCXMLFile {
         workbookPath: OPCFilePath
     ) throws -> OPCFilePath {
         try OPCFilePath(string: "worksheets/sheet\(sheet.sheetID).xml").resolved(relativeTo: workbookPath)
+    }
+
+    private func nextSheetID() -> Int {
+        (sheets.map(\.sheetID).max() ?? 0) + 1
+    }
+
+    private func nextRelationshipID(workbookRels: OPCRelsFile) -> String {
+        let usedIDs = Set(workbookRels.relationships.map(\.id) + sheets.map(\.relationshipID))
+        let maxID = usedIDs.compactMap { id -> Int? in
+            guard id.hasPrefix("rId") else {
+                return nil
+            }
+            return Int(id.dropFirst(3))
+        }.max() ?? 0
+
+        return "rId\(maxID + 1)"
     }
 
     private static func workbookSheets(in document: XMLDocument) -> [XLWorkbookFileSheet] {

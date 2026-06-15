@@ -168,6 +168,69 @@ struct XLDocumentTests {
         #expect(worksheet.file === file)
     }
 
+    @Test func appendsWorksheet() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("swift-xlsx-tests-\(UUID().uuidString)")
+            .appendingPathExtension("xlsx")
+        defer {
+            try? FileManager.default.removeItem(at: url)
+        }
+
+        let document = XLDocument()
+        let worksheet = try document.workbook.appendWorksheet(name: "Extra")
+
+        #expect(worksheet.sheetID == 2)
+        #expect(worksheet.name == "Extra")
+        #expect(document.workbook.worksheets.map(\.sheetID) == [1, 2])
+        #expect(document.package.workbookRels.file.relationships.map(\.id) == ["rId2"])
+
+        try document.save(to: url)
+
+        let package = try OPCPackage(data: Data(contentsOf: url))
+        let workbookXML = try String(
+            decoding: #require(package.data(at: OPCFilePath(string: "/xl/workbook.xml"))),
+            as: UTF8.self
+        )
+        let workbookRelsPath = try OPCFilePath(string: "/xl/_rels/workbook.xml.rels")
+        let workbookRels = try #require(try package.fileWithPath(OPCRelsFile.self, at: workbookRelsPath))
+
+        #expect(workbookXML.contains(#"<sheet name="Extra" sheetId="2" r:id="rId2"/>"#))
+        #expect(workbookRels.file.relationships.contains {
+            $0.id == "rId2" &&
+            $0.type == XMLNamespaceURI.worksheet.string &&
+            $0.target == "worksheets/sheet2.xml"
+        })
+        #expect(try package.data(at: OPCFilePath(string: "/xl/worksheets/sheet2.xml")) != nil)
+    }
+
+    @Test func removesWorksheet() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("swift-xlsx-tests-\(UUID().uuidString)")
+            .appendingPathExtension("xlsx")
+        defer {
+            try? FileManager.default.removeItem(at: url)
+        }
+
+        let document = XLDocument()
+        let worksheet = try document.workbook.appendWorksheet(name: "Extra")
+        document.workbook.removeWorksheet(sheetID: worksheet.sheetID)
+
+        #expect(document.workbook.worksheets.map(\.sheetID) == [1])
+        #expect(document.package.workbookRels.file.relationships.isEmpty)
+
+        try document.save(to: url)
+
+        let package = try OPCPackage(data: Data(contentsOf: url))
+        let fixtureURL = try #require(Bundle.module.resourceURL?.appendingPathComponent("default-document"))
+        let fixturePackage = try OPCPackage(directoryURL: fixtureURL)
+        let paths = package.allFilePaths()
+
+        #expect(paths == fixturePackage.allFilePaths())
+        for path in paths {
+            #expect(package.data(at: path) == fixturePackage.data(at: path))
+        }
+    }
+
     @Test func preservesOpaqueFiles() throws {
         let sourceURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("swift-xlsx-tests-\(UUID().uuidString)")
