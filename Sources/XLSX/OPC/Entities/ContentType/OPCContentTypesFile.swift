@@ -2,13 +2,8 @@ import MemberwiseInit
 import Foundation
 
 @MemberwiseInit(.public)
-public struct OPCContentTypesFile {
-    public init(data: Data?) throws {
-        guard let data else {
-            self.init()
-            return
-        }
-
+public struct OPCContentTypesFile: OPCFile {
+    public init(data: Data) throws {
         let document = try XMLDocumentReader.parse(data)
         guard let root = document.element(name: "Types") else {
             throw OPCError.invalidContentTypesFile

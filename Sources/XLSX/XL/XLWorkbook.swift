@@ -1,8 +1,12 @@
 import Foundation
 
-public struct XLWorkbook {
-    public init(data: Data? = nil) throws {
-        self.original = try data.map(XMLDocumentReader.parse)
+public struct XLWorkbook: OPCFile {
+    public init() {
+        self.original = nil
+    }
+
+    public init(data: Data) throws {
+        self.original = try XMLDocumentReader.parse(data)
     }
 
     public var original: XMLDocument?

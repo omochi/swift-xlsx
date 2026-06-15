@@ -103,6 +103,44 @@ struct OPCPackageDirectoryTests {
         #expect(package.nodeID(at: missingPath) == nil)
         #expect(package.nodeID(at: childOfFilePath) == nil)
     }
+
+    @Test func readsTypedFileWithPath() throws {
+        let contentTypesPath = try OPCFilePath(string: "/[Content_Types].xml")
+        var package = OPCPackage()
+        try package.insertFile(
+            data: Data("""
+                <?xml version="1.0" encoding="UTF-8"?>
+                <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+                  <Default Extension="xml" ContentType="application/xml"/>
+                </Types>
+                """.utf8),
+            at: contentTypesPath
+        )
+
+        let loadedFileWithPath = try package.fileWithPath(OPCContentTypesFile.self, at: contentTypesPath)
+        let fileWithPath = try #require(loadedFileWithPath)
+
+        #expect(fileWithPath.path == contentTypesPath)
+        #expect(fileWithPath.file.defaults["xml"] == "application/xml")
+        let missingFileWithPath = try package.fileWithPath(
+            OPCContentTypesFile.self,
+            at: OPCFilePath(string: "/missing.xml")
+        )
+        #expect(missingFileWithPath == nil)
+    }
+
+    @Test func insertsFileWithPath() throws {
+        let path = try OPCFilePath(string: "/custom/item.bin")
+        let fileWithPath = OPCOpaqueFileWithPath(
+            path: path,
+            file: OPCOpaqueFile(data: Data([0xde, 0xad, 0xbe, 0xef]))
+        )
+        var package = OPCPackage()
+
+        try package.insertFile(fileWithPath)
+
+        #expect(package.data(at: path) == Data([0xde, 0xad, 0xbe, 0xef]))
+    }
 }
 
 private func directoryNames(in package: OPCPackage, at path: String) -> [String]? {

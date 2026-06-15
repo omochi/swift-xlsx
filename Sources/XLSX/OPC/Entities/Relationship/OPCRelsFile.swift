@@ -2,13 +2,8 @@ import MemberwiseInit
 import Foundation
 
 @MemberwiseInit(.public)
-public struct OPCRelsFile: Sendable {
-    public init(data: Data?) throws {
-        guard let data else {
-            self.relationships = []
-            return
-        }
-
+public struct OPCRelsFile: Sendable, OPCFile {
+    public init(data: Data) throws {
         let document = try XMLDocumentReader.parse(data)
         guard let root = document.element(name: "Relationships") else {
             throw OPCError.invalidRelationshipsFile
