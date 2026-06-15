@@ -58,7 +58,7 @@ struct XLDocumentTests {
     @Test func opensWorksheetsIntoWorkbookScope() throws {
         let document = try XLDocument.open(try #require(Bundle.module.url(forResource: "simple", withExtension: "xlsx")))
 
-        let worksheet = try #require(document.workbook.file.worksheets[1])
+        let worksheet = try #require(document.workbook.worksheets[1])
         #expect(worksheet.path.description == "/xl/worksheets/sheet1.xml")
     }
 

@@ -1,6 +1,6 @@
 import Foundation
 
-public struct XLWorkbook: OPCXMLFile {
+public struct XLWorkbookFile: OPCXMLFile {
     struct PackageItems {
         var files: [OPCFileWithPath<XLWorksheet>]
         var contentTypeOverrides: [OPCFilePath: String]
@@ -13,7 +13,7 @@ public struct XLWorkbook: OPCXMLFile {
     }
 
     public init(
-        sheets: [XLWorkbookSheet],
+        sheets: [XLWorkbookFileSheet],
         worksheets: [Int: OPCFileWithPath<XLWorksheet>] = [:]
     ) {
         self.sheets = sheets
@@ -27,11 +27,11 @@ public struct XLWorkbook: OPCXMLFile {
         self.original = xmlDocument
     }
 
-    public var sheets: [XLWorkbookSheet]
+    public var sheets: [XLWorkbookFileSheet]
     public var worksheets: [Int: OPCFileWithPath<XLWorksheet>]
     public var original: XMLDocument?
 
-    private static let defaultSheet = XLWorkbookSheet(
+    private static let defaultSheet = XLWorkbookFileSheet(
         name: "Sheet1",
         sheetID: 1,
         relationshipID: "rId1"
@@ -77,7 +77,7 @@ public struct XLWorkbook: OPCXMLFile {
 
     private func sheetElementForWriting(sheetID: Int, in sheetsElement: XMLElement) -> XMLElement {
         if let element = sheetsElement.elements(name: "sheet").first(where: { element in
-            XLWorkbookSheet(element: element)?.sheetID == sheetID
+            XLWorkbookFileSheet(element: element)?.sheetID == sheetID
         }) {
             return element
         }
@@ -113,7 +113,7 @@ public struct XLWorkbook: OPCXMLFile {
     }
 
     private func worksheetFile(
-        for sheet: XLWorkbookSheet,
+        for sheet: XLWorkbookFileSheet,
         workbookPath: OPCFilePath
     ) throws -> OPCFileWithPath<XLWorksheet> {
         if let existing = worksheets[sheet.sheetID] {
@@ -127,19 +127,19 @@ public struct XLWorkbook: OPCXMLFile {
     }
 
     private func defaultWorksheetPath(
-        for sheet: XLWorkbookSheet,
+        for sheet: XLWorkbookFileSheet,
         workbookPath: OPCFilePath
     ) throws -> OPCFilePath {
         try OPCFilePath(string: "worksheets/sheet\(sheet.sheetID).xml").resolved(relativeTo: workbookPath)
     }
 
-    private static func workbookSheets(in document: XMLDocument) -> [XLWorkbookSheet] {
+    private static func workbookSheets(in document: XMLDocument) -> [XLWorkbookFileSheet] {
         guard let workbookElement = document.element(name: "workbook"),
               let sheetsElement = workbookElement.elements(name: "sheets").first
         else {
             return []
         }
 
-        return sheetsElement.elements(name: "sheet").compactMap(XLWorkbookSheet.init(element:))
+        return sheetsElement.elements(name: "sheet").compactMap(XLWorkbookFileSheet.init(element:))
     }
 }

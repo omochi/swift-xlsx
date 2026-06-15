@@ -1,11 +1,9 @@
+import MemberwiseInit
 import Foundation
 
-public struct XLDocument {
-    public init() {
-        try! self.init(package: OPCPackage())
-    }
-
-    public init(package: OPCPackage) throws {
+@MemberwiseInit(.public)
+public struct XLDocumentPackage {
+    init(package: OPCPackage) throws {
         var consumedPaths: Set<OPCFilePath> = []
 
         let contentTypes = try Self.readFile(
@@ -25,10 +23,10 @@ public struct XLDocument {
         )
 
         var workbook = try Self.readFile(
-            XLWorkbook.self,
+            XLWorkbookFile.self,
             from: package,
             at: try Self.workbookPath(in: packageRels.file),
-            default: XLWorkbook(),
+            default: XLWorkbookFile(),
             consumedPaths: &consumedPaths
         )
 
@@ -48,18 +46,16 @@ public struct XLDocument {
             consumedPaths: &consumedPaths
         )
 
-        let opaqueFiles = Self.opaqueFiles(in: package, excluding: consumedPaths)
-
         self.contentTypes = contentTypes
         self.packageRels = packageRels
         self.workbook = workbook
         self.workbookRels = workbookRels
-        self.opaqueFiles = opaqueFiles
+        self.opaqueFiles = Self.opaqueFiles(in: package, excluding: consumedPaths)
     }
 
     public var contentTypes: OPCFileWithPath<OPCContentTypesFile>
     public var packageRels: OPCFileWithPath<OPCRelsFile>
-    public var workbook: OPCFileWithPath<XLWorkbook>
+    public var workbook: OPCFileWithPath<XLWorkbookFile>
     public var workbookRels: OPCFileWithPath<OPCRelsFile>
     public var opaqueFiles: [OPCOpaqueFileWithPath]
 
@@ -72,16 +68,7 @@ public struct XLDocument {
         </sst>
         """
 
-    public static func open(_ url: URL) throws -> XLDocument {
-        try XLDocument(package: OPCPackage(data: Data(contentsOf: url)))
-    }
-
-    public func save(to url: URL) throws {
-        let data = try makeOPCPackage().data()
-        try data.write(to: url, options: .atomic)
-    }
-
-    private func makeOPCPackage() throws -> OPCPackage {
+    func makeOPCPackage() throws -> OPCPackage {
         var contentTypes = contentTypes
         var packageRels = packageRels
         var workbook = workbook
@@ -160,7 +147,7 @@ public struct XLDocument {
 
     private static func worksheets(
         in package: OPCPackage,
-        for sheets: [XLWorkbookSheet],
+        for sheets: [XLWorkbookFileSheet],
         workbookPath: OPCFilePath,
         workbookRels: OPCRelsFile,
         consumedPaths: inout Set<OPCFilePath>

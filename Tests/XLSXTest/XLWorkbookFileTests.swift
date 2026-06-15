@@ -3,9 +3,9 @@ import Testing
 import XLSX
 
 @Suite
-struct XLWorkbookTests {
+struct XLWorkbookFileTests {
     @Test func readsSheetsFromWorkbookXML() throws {
-        let workbook = try XLWorkbook(data: Data("""
+        let workbook = try XLWorkbookFile(data: Data("""
             <workbook xmlns="\(XMLNamespaceURI.spreadsheet.string)" xmlns:rel="\(XMLNamespaceURI.officeRelationships.string)">
               <sheets>
                 <sheet name="First" sheetId="1" rel:id="rId1"/>
@@ -15,15 +15,15 @@ struct XLWorkbookTests {
             """.utf8))
 
         #expect(workbook.sheets == [
-            XLWorkbookSheet(name: "First", sheetID: 1, relationshipID: "rId1"),
-            XLWorkbookSheet(name: "Second", sheetID: 4, relationshipID: "rId7"),
+            XLWorkbookFileSheet(name: "First", sheetID: 1, relationshipID: "rId1"),
+            XLWorkbookFileSheet(name: "Second", sheetID: 4, relationshipID: "rId7"),
         ])
     }
 
     @Test func writesSheetsFromWorkbookModel() throws {
-        let workbook = XLWorkbook(sheets: [
-            XLWorkbookSheet(name: "First", sheetID: 1, relationshipID: "rId1"),
-            XLWorkbookSheet(name: "Second", sheetID: 4, relationshipID: "rId7"),
+        let workbook = XLWorkbookFile(sheets: [
+            XLWorkbookFileSheet(name: "First", sheetID: 1, relationshipID: "rId1"),
+            XLWorkbookFileSheet(name: "Second", sheetID: 4, relationshipID: "rId7"),
         ])
 
         let xml = try String(decoding: workbook.data(), as: UTF8.self)
@@ -33,7 +33,7 @@ struct XLWorkbookTests {
     }
 
     @Test func patchesKnownSheetElementsWithoutRemovingUnknownContent() throws {
-        var workbook = try XLWorkbook(data: Data("""
+        var workbook = try XLWorkbookFile(data: Data("""
             <workbook xmlns="\(XMLNamespaceURI.spreadsheet.string)" xmlns:rel="\(XMLNamespaceURI.officeRelationships.string)">
               <sheets>
                 <sheet name="Old" sheetId="1" rel:id="rId1" state="hidden"/>
@@ -42,8 +42,8 @@ struct XLWorkbookTests {
             </workbook>
             """.utf8))
         workbook.sheets = [
-            XLWorkbookSheet(name: "New", sheetID: 1, relationshipID: "rId1"),
-            XLWorkbookSheet(name: "Added", sheetID: 2, relationshipID: "rId2"),
+            XLWorkbookFileSheet(name: "New", sheetID: 1, relationshipID: "rId1"),
+            XLWorkbookFileSheet(name: "Added", sheetID: 2, relationshipID: "rId2"),
         ]
 
         let xml = try String(decoding: workbook.data(), as: UTF8.self)
@@ -55,7 +55,7 @@ struct XLWorkbookTests {
     }
 
     @Test func patchesSheetElementsBySheetID() throws {
-        var workbook = try XLWorkbook(data: Data("""
+        var workbook = try XLWorkbookFile(data: Data("""
             <workbook xmlns="\(XMLNamespaceURI.spreadsheet.string)" xmlns:rel="\(XMLNamespaceURI.officeRelationships.string)">
               <sheets>
                 <sheet name="Original" sheetId="1" rel:id="rId1"/>
@@ -64,7 +64,7 @@ struct XLWorkbookTests {
             </workbook>
             """.utf8))
         workbook.sheets = [
-            XLWorkbookSheet(name: "Moved", sheetID: 1, relationshipID: "rId3"),
+            XLWorkbookFileSheet(name: "Moved", sheetID: 1, relationshipID: "rId3"),
         ]
 
         let xml = try String(decoding: workbook.data(), as: UTF8.self)
@@ -74,13 +74,13 @@ struct XLWorkbookTests {
     }
 
     @Test func addsRelationshipNamespaceWithoutOverwritingExistingPrefix() throws {
-        var workbook = try XLWorkbook(xmlDocument: XMLDocumentReader.parse(Data("""
+        var workbook = try XLWorkbookFile(xmlDocument: XMLDocumentReader.parse(Data("""
             <workbook xmlns="\(XMLNamespaceURI.spreadsheet.string)" xmlns:r="urn:other">
               <sheets/>
             </workbook>
             """.utf8)))
         workbook.sheets = [
-            XLWorkbookSheet(name: "Sheet1", sheetID: 1, relationshipID: "rId1"),
+            XLWorkbookFileSheet(name: "Sheet1", sheetID: 1, relationshipID: "rId1"),
         ]
 
         let xml = try String(decoding: workbook.data(), as: UTF8.self)

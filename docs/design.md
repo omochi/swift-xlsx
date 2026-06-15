@@ -8,7 +8,7 @@ OPC package 内の XML file は、内容の性質に応じて扱いを分ける�
 
 一方で、未対応の情報を壊したくない file は、読み込み時の original XML を保持する。保存時には original XML を clone し、ライブラリが所有する既知の情報だけを差分更新する。未知の要素、未知の属性、既存の namespace prefix は可能な限り保持する。
 
-例として workbook は、シート一覧を `XLWorkbookSheet` として型付けして扱うが、workbook XML 全体を完全に再生成しない。既存の `<sheet>` 要素は `sheetId` で同一性を判定し、持っているシート情報だけを上書きまたは追加する。
+例として workbook file は、シート一覧を `XLWorkbookFileSheet` として型付けして扱うが、workbook XML 全体を完全に再生成しない。既存の `<sheet>` 要素は `sheetId` で同一性を判定し、持っているシート情報だけを上書きまたは追加する。
 
 ## Namespace prefix
 

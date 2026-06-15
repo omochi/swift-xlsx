@@ -1,7 +1,7 @@
 import MemberwiseInit
 
 @MemberwiseInit(.public)
-public struct XLWorkbookSheet: Sendable & Hashable {
+public struct XLWorkbookFileSheet: Sendable & Hashable {
     init?(element: XMLElement) {
         guard let name = element.attribute(name: "name"),
               let sheetIDText = element.attribute(name: "sheetId"),
