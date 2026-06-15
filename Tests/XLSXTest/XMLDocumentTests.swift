@@ -44,6 +44,25 @@ struct XMLDocumentTests {
         #expect(output.contains("<child>raw &lt; value</child>"))
     }
 
+    @Test func serializesElementAsXMLString() throws {
+        let element = XMLElement(
+            name: XMLName(name: "root"),
+            attributes: [
+                XMLAttribute(name: XMLName(name: "custom"), value: "a&b"),
+            ],
+            children: [
+                XMLElement(
+                    name: XMLName(name: "child"),
+                    children: [XMLText("raw < value")]
+                ),
+            ]
+        )
+
+        let output = element.xmlString
+
+        #expect(output == #"<root custom="a&amp;b"><child>raw &lt; value</child></root>"#)
+    }
+
     @Test func parsesNamespaceDeclarationOnNestedElement() throws {
         let xml = """
         <root>

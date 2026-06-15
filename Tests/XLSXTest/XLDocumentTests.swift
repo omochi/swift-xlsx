@@ -55,6 +55,43 @@ struct XLDocumentTests {
         #expect(sharedStringsXML.contains("<t>A</t>"))
     }
 
+    @Test func opensPlainSharedStringCellsAsStringValues() throws {
+        let document = try XLDocument.open(try #require(Bundle.module.url(forResource: "simple", withExtension: "xlsx")))
+        let worksheet = try #require(document.workbook.worksheets.first)
+
+        #expect(worksheet.existingCell(row: 1, column: 1)?.value == .string("A"))
+    }
+
+    @Test func rebuildsSharedStringsFromEditedCells() throws {
+        let sourceURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("swift-xlsx-tests-\(UUID().uuidString)")
+            .appendingPathExtension("xlsx")
+        let destinationURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("swift-xlsx-tests-\(UUID().uuidString)")
+            .appendingPathExtension("xlsx")
+        defer {
+            try? FileManager.default.removeItem(at: sourceURL)
+            try? FileManager.default.removeItem(at: destinationURL)
+        }
+
+        try Data(contentsOf: try #require(Bundle.module.url(forResource: "simple", withExtension: "xlsx"))).write(to: sourceURL)
+
+        let document = try XLDocument.open(sourceURL)
+        let worksheet = try #require(document.workbook.worksheets.first)
+        worksheet.cell(row: 1, column: 1).value = .string("B")
+        try document.save(to: destinationURL)
+
+        let package = try OPCPackage(data: Data(contentsOf: destinationURL))
+        let worksheetXML = try String(decoding: #require(package.data(at: OPCFilePath(string: "/xl/worksheets/sheet1.xml"))), as: UTF8.self)
+            .replacingOccurrences(of: "\n", with: "")
+            .replacingOccurrences(of: " ", with: "")
+        let sharedStringsXML = try String(decoding: #require(package.data(at: OPCFilePath(string: "/xl/sharedStrings.xml"))), as: UTF8.self)
+
+        #expect(worksheetXML.contains(#"<cr="A1"t="s"><v>0</v></c>"#))
+        #expect(sharedStringsXML.contains(#"<t>B</t>"#))
+        #expect(!sharedStringsXML.contains(#"<t>A</t>"#))
+    }
+
     @Test func opensWorksheetsIntoWorkbookScope() throws {
         let document = try XLDocument.open(try #require(Bundle.module.url(forResource: "simple", withExtension: "xlsx")))
 
@@ -343,7 +380,14 @@ struct XLDocumentTests {
         var package = try OPCPackage(data: Data(
             contentsOf: try #require(Bundle.module.url(forResource: "simple", withExtension: "xlsx"))
         ))
-        let worksheetData = Data("<worksheet>opaque worksheet</worksheet>".utf8)
+        let worksheetData = Data("""
+            <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+              <sheetData>
+                <row r="1"><c r="A1" t="s"><v>0</v></c></row>
+              </sheetData>
+              <opaque>worksheet</opaque>
+            </worksheet>
+            """.utf8)
         let sharedStringsData = Data("""
             <sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="1" uniqueCount="1">
               <si><r><rPr><b/></rPr><t>Rich</t></r><r><t> text</t></r></si>
@@ -368,7 +412,8 @@ struct XLDocumentTests {
             decoding: #require(savedPackage.data(at: OPCFilePath(string: "/xl/worksheets/sheet1.xml"))),
             as: UTF8.self
         )
-        #expect(savedWorksheetXML.contains("opaque worksheet"))
+        #expect(savedWorksheetXML.contains(#"<opaque>worksheet</opaque>"#))
+        #expect(savedWorksheetXML.contains(#"<c r="A1" t="s"><v>0</v></c>"#))
 
         let savedSharedStringsXML = try String(
             decoding: #require(savedPackage.data(at: OPCFilePath(string: "/xl/sharedStrings.xml"))),

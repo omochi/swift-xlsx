@@ -19,23 +19,23 @@ struct XLWorksheetFileTests {
             </worksheet>
             """.utf8))
 
-        #expect(worksheet.rowFromNumber == [
-            2: XLRowStorage(cellFromColumn: [
+        #expect(worksheet.rowByNumber == [
+            2: XLRowStorage(cellByColumn: [
                 2: XLCellStorage(value: XLCellValue(rawValue: "left")),
                 4: XLCellStorage(value: XLCellValue(rawValue: "right")),
             ]),
-            10: XLRowStorage(cellFromColumn: [
+            10: XLRowStorage(cellByColumn: [
                 3: XLCellStorage(value: XLCellValue(rawValue: "bottom")),
             ]),
         ])
     }
 
     @Test func writesSparseRowsAndCellsToWorksheetXML() throws {
-        let worksheet = XLWorksheetFile(rowFromNumber: [
-            10: XLRowStorage(cellFromColumn: [
+        let worksheet = XLWorksheetFile(rowByNumber: [
+            10: XLRowStorage(cellByColumn: [
                 3: XLCellStorage(value: XLCellValue(rawValue: "bottom")),
             ]),
-            2: XLRowStorage(cellFromColumn: [
+            2: XLRowStorage(cellByColumn: [
                 4: XLCellStorage(value: XLCellValue(rawValue: "right")),
                 2: XLCellStorage(value: XLCellValue(rawValue: "left")),
             ]),
@@ -103,9 +103,9 @@ struct XLWorksheetFileTests {
     }
 
     @Test func exposesExistingRowNumbersAndMaxRowNumber() {
-        let worksheet = XLWorksheetFile(rowFromNumber: [
-            10: XLRowStorage(cellFromColumn: [:]),
-            2: XLRowStorage(cellFromColumn: [:]),
+        let worksheet = XLWorksheetFile(rowByNumber: [
+            10: XLRowStorage(cellByColumn: [:]),
+            2: XLRowStorage(cellByColumn: [:]),
         ])
 
         #expect(worksheet.maxRowNumber == 10)
@@ -113,13 +113,13 @@ struct XLWorksheetFileTests {
     }
 
     @Test func returnsExistingRowsWithoutCreatingMissingRows() {
-        let worksheet = XLWorksheetFile(rowFromNumber: [
-            2: XLRowStorage(cellFromColumn: [
+        let worksheet = XLWorksheetFile(rowByNumber: [
+            2: XLRowStorage(cellByColumn: [
                 1: XLCellStorage(value: XLCellValue(rawValue: "left")),
             ]),
         ])
 
-        #expect(worksheet.existingRow(2) == XLRowStorage(cellFromColumn: [
+        #expect(worksheet.existingRow(2) == XLRowStorage(cellByColumn: [
             1: XLCellStorage(value: XLCellValue(rawValue: "left")),
         ]))
         #expect(worksheet.existingRow(3) == nil)
@@ -132,8 +132,8 @@ struct XLWorksheetFileTests {
         #expect(worksheet.maxRowNumber == nil)
         #expect(worksheet.existingRow(3) == nil)
 
-        #expect(worksheet.row(3) == XLRowStorage(cellFromColumn: [:]))
-        #expect(worksheet.existingRow(3) == XLRowStorage(cellFromColumn: [:]))
+        #expect(worksheet.row(3) == XLRowStorage(cellByColumn: [:]))
+        #expect(worksheet.existingRow(3) == XLRowStorage(cellByColumn: [:]))
         #expect(worksheet.maxRowNumber == 3)
         #expect(worksheet.existingRowNumbers == [3])
     }
@@ -143,7 +143,7 @@ struct XLWorksheetFileTests {
 
         worksheet.row(3).cell(column: 2).value = XLCellValue(rawValue: "value")
 
-        #expect(worksheet.existingRow(3)?.cellFromColumn[2]?.value == XLCellValue(rawValue: "value"))
+        #expect(worksheet.existingRow(3)?.cellByColumn[2]?.value == XLCellValue(rawValue: "value"))
     }
 
     @Test func editsCellsThroughWorksheetCellAccessors() throws {
@@ -157,7 +157,7 @@ struct XLWorksheetFileTests {
     }
 
     @Test func exposesExistingColumnNumbersAndMaxColumnNumber() {
-        let row = XLRowStorage(cellFromColumn: [
+        let row = XLRowStorage(cellByColumn: [
             4: XLCellStorage(value: XLCellValue(rawValue: "right")),
             2: XLCellStorage(value: XLCellValue(rawValue: "left")),
         ])
@@ -167,7 +167,7 @@ struct XLWorksheetFileTests {
     }
 
     @Test func returnsExistingCellsWithoutCreatingMissingCells() {
-        let row = XLRowStorage(cellFromColumn: [
+        let row = XLRowStorage(cellByColumn: [
             2: XLCellStorage(value: XLCellValue(rawValue: "left")),
         ])
 
@@ -177,7 +177,7 @@ struct XLWorksheetFileTests {
     }
 
     @Test func createsMissingCellsWhenAccessed() {
-        let row = XLRowStorage(cellFromColumn: [:])
+        let row = XLRowStorage(cellByColumn: [:])
 
         #expect(row.maxColumnNumber == nil)
         #expect(row.existingCell(column: 3) == nil)
@@ -198,7 +198,7 @@ struct XLWorksheetFileTests {
               </sheetData>
             </worksheet>
             """.utf8))
-        worksheet.rowFromNumber[1]?.cellFromColumn[1]?.value = XLCellValue(rawValue: "1")
+        worksheet.rowByNumber[1]?.cellByColumn[1]?.value = XLCellValue(rawValue: "1")
 
         let xml = try String(decoding: worksheet.data(), as: UTF8.self)
 

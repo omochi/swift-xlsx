@@ -12,15 +12,14 @@ struct XLSharedStringsFileTests {
             </sst>
             """.utf8))
 
-        #expect(sharedStrings.count == 3)
-        #expect(sharedStrings.uniqueCount == 2)
-        #expect(sharedStrings.items == [
+        #expect(sharedStrings.records.count == 2)
+        #expect(sharedStrings.records.compactMap(\.item) == [
             XLSharedStringItem(text: "hello"),
             XLSharedStringItem(text: "world"),
         ])
     }
 
-    @Test func readsRichTextAsPlainText() throws {
+    @Test func doesNotDecodeRichTextRecordAsItem() throws {
         let sharedStrings = try XLSharedStringsFile(data: Data("""
             <sst xmlns="\(XMLNamespaceURI.spreadsheet.string)">
               <si>
@@ -30,9 +29,8 @@ struct XLSharedStringsFileTests {
             </sst>
             """.utf8))
 
-        #expect(sharedStrings.items == [
-            XLSharedStringItem(text: "Hello world"),
-        ])
+        #expect(sharedStrings.records.count == 1)
+        #expect(sharedStrings.records.first?.item == nil)
     }
 
     @Test func preservesUnchangedRichTextItemsWhenWriting() throws {
@@ -49,20 +47,51 @@ struct XLSharedStringsFileTests {
         #expect(xml.contains(#"<extLst><ext uri="keep"/></extLst>"#))
     }
 
-    @Test func patchesChangedItemsAsPlainText() throws {
+    @Test func appendsChangedItemsAsPlainText() throws {
         let sharedStrings = try XLSharedStringsFile(data: Data("""
             <sst xmlns="\(XMLNamespaceURI.spreadsheet.string)" count="1" uniqueCount="1">
               <si><r><rPr><b/></rPr><t>Hello</t></r></si>
             </sst>
             """.utf8))
-        sharedStrings.items = [
-            XLSharedStringItem(text: "Changed"),
-        ]
+        sharedStrings.records.append(sharedStringRecord(index: 1, text: "Changed"))
 
         let xml = try String(decoding: sharedStrings.data(), as: UTF8.self)
 
         #expect(xml.contains(#"<si><t>Changed</t></si>"#))
-        #expect(!xml.contains("<rPr>"))
+        #expect(xml.contains(#"<rPr><b/></rPr>"#))
+    }
+
+    @Test func appendsAddedItemsAfterOriginalChildren() throws {
+        let sharedStrings = try XLSharedStringsFile(data: Data("""
+            <sst xmlns="\(XMLNamespaceURI.spreadsheet.string)" count="1" uniqueCount="1">
+              <si><t>A</t></si>
+              <extLst><ext uri="keep"/></extLst>
+            </sst>
+            """.utf8))
+        sharedStrings.records.append(sharedStringRecord(index: 1, text: "B"))
+
+        let xml = try String(decoding: sharedStrings.data(), as: UTF8.self)
+            .replacingOccurrences(of: "\n", with: "")
+            .replacingOccurrences(of: "  ", with: "")
+
+        #expect(xml.contains(#"<si><t>A</t></si><extLst><ext uri="keep"/></extLst><si><t>B</t></si>"#))
+    }
+
+    @Test func keepsExistingRecordOrderWhenNewRecordIsAppended() throws {
+        let sharedStrings = try XLSharedStringsFile(data: Data("""
+            <sst xmlns="\(XMLNamespaceURI.spreadsheet.string)" count="3" uniqueCount="3">
+              <si><t>A</t></si>
+              <si><t>B</t></si>
+              <si><t>C</t></si>
+            </sst>
+            """.utf8))
+        sharedStrings.records.append(sharedStringRecord(index: 3, text: "X"))
+
+        let xml = try String(decoding: sharedStrings.data(), as: UTF8.self)
+            .replacingOccurrences(of: "\n", with: "")
+            .replacingOccurrences(of: "  ", with: "")
+
+        #expect(xml.contains(#"<si><t>A</t></si><si><t>B</t></si><si><t>C</t></si><si><t>X</t></si>"#))
     }
 
     @Test func rejectsSharedStringsFileWithoutSharedStringsRoot() throws {
@@ -72,5 +101,19 @@ struct XLSharedStringsFileTests {
         } catch let error as OPCError {
             #expect(error == .invalidSharedStringsFile)
         }
+    }
+
+    private func sharedStringRecord(index: Int, text: String) -> XLSharedStringRecord {
+        let item = XLSharedStringItem(text: text)
+        let itemElement = XMLElement(name: XMLName(name: "si"))
+        let textElement = XMLElement(name: XMLName(name: "t"))
+        textElement.appendChild(XMLText(text))
+        itemElement.appendChild(textElement)
+        return XLSharedStringRecord(
+            index: index,
+            childIndex: nil,
+            item: item,
+            element: itemElement
+        )
     }
 }

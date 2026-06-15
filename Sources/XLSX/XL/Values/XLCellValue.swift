@@ -1,6 +1,17 @@
-import MemberwiseInit
+public enum XLCellValue: Sendable & Hashable {
+    case string(String)
+    case opaqueSharedString(index: Int)
 
-@MemberwiseInit(.public)
-public struct XLCellValue: Sendable & Hashable {
-    public var rawValue: String
+    public init(rawValue: String) {
+        self = .string(rawValue)
+    }
+
+    public var rawValue: String {
+        switch self {
+        case let .string(text):
+            return text
+        case let .opaqueSharedString(index):
+            return String(index)
+        }
+    }
 }

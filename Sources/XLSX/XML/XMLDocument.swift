@@ -39,7 +39,7 @@ public final class XMLDocument: XMLNode {
     }
 
     public var xmlString: String {
-        var serializer = XMLSerializer()
+        let serializer = XMLSerializer()
         return serializer.serialize(document: self)
     }
 

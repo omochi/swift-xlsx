@@ -38,6 +38,11 @@ public final class XMLElement: XMLNode {
         ) as! Self
     }
 
+    public var xmlString: String {
+        let serializer = XMLSerializer()
+        return serializer.serialize(element: self)
+    }
+
     public func attribute(name: String, namespaceURI: XMLNamespaceURI? = nil) -> String? {
         guard let index = attributeIndex(name: name, namespaceURI: namespaceURI) else {
             return nil

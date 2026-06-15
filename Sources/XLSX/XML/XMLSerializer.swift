@@ -1,7 +1,7 @@
 public struct XMLSerializer {
     public init() {}
 
-    public mutating func serialize(document: XMLDocument) -> String {
+    public func serialize(document: XMLDocument) -> String {
         var output = #"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>"#
         for child in document.children {
             output += serialize(node: child)
@@ -9,18 +9,7 @@ public struct XMLSerializer {
         return output
     }
 
-    private func serialize(node: XMLNode) -> String {
-        switch node {
-        case let element as XMLElement:
-            return serialize(element: element)
-        case let text as XMLText:
-            return escapeText(text.value)
-        default:
-            return node.children.map(serialize(node:)).joined()
-        }
-    }
-
-    private func serialize(element: XMLElement) -> String {
+    public func serialize(element: XMLElement) -> String {
         var output = "<\(element.name.qualifiedName)"
         for declaration in element.namespaces.declarations {
             output += " \(namespaceDeclarationName(for: declaration.prefix))=\"\(escapeAttribute(declaration.uri.string))\""
@@ -38,6 +27,17 @@ public struct XMLSerializer {
         output += element.children.map(serialize(node:)).joined()
         output += "</\(element.name.qualifiedName)>"
         return output
+    }
+
+    private func serialize(node: XMLNode) -> String {
+        switch node {
+        case let element as XMLElement:
+            return serialize(element: element)
+        case let text as XMLText:
+            return escapeText(text.value)
+        default:
+            return node.children.map(serialize(node:)).joined()
+        }
     }
 
     private func namespaceDeclarationName(for prefix: String?) -> String {

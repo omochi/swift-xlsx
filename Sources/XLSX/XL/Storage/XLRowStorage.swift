@@ -1,6 +1,6 @@
 public final class XLRowStorage: Hashable {
-    public init(cellFromColumn: [Int: XLCellStorage]) {
-        self.cellFromColumn = cellFromColumn
+    public init(cellByColumn: [Int: XLCellStorage]) {
+        self.cellByColumn = cellByColumn
     }
 
     init(rowElement: XMLElement, rowNumber: Int) {
@@ -17,46 +17,50 @@ public final class XLRowStorage: Hashable {
             cells[reference.column] = cell
         }
 
-        self.cellFromColumn = cells
+        self.cellByColumn = cells
     }
 
-    public var cellFromColumn: [Int: XLCellStorage]
+    public var cellByColumn: [Int: XLCellStorage]
 
     public var maxColumnNumber: Int? {
-        cellFromColumn.keys.max()
+        cellByColumn.keys.max()
     }
 
     public var existingColumnNumbers: [Int] {
-        cellFromColumn.keys.sorted()
+        cellByColumn.keys.sorted()
     }
 
     public func cell(column: Int) -> XLCellStorage {
-        if let cell = cellFromColumn[column] {
+        if let cell = cellByColumn[column] {
             return cell
         }
 
         let cell = XLCellStorage(value: XLCellValue(rawValue: ""))
-        cellFromColumn[column] = cell
+        cellByColumn[column] = cell
         return cell
     }
 
     public func existingCell(column: Int) -> XLCellStorage? {
-        cellFromColumn[column]
+        cellByColumn[column]
     }
 
     public static func == (lhs: XLRowStorage, rhs: XLRowStorage) -> Bool {
-        lhs.cellFromColumn == rhs.cellFromColumn
+        lhs.cellByColumn == rhs.cellByColumn
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(cellFromColumn)
+        hasher.combine(cellByColumn)
     }
 
-    func write(to rowElement: XMLElement, rowNumber: Int) {
+    func write(
+        to rowElement: XMLElement,
+        rowNumber: Int,
+        sharedStrings: XLSharedStringWritePlan? = nil
+    ) {
         let rowChildren = cellElementsAndOtherChildren(in: rowElement, rowNumber: rowNumber)
-        var cellElementFromColumn = rowChildren.cellElementFromColumn
-        for column in cellFromColumn.keys.sorted() {
-            guard let cell = cellFromColumn[column] else {
+        var cellElementByColumn = rowChildren.cellElementByColumn
+        for column in cellByColumn.keys.sorted() {
+            guard let cell = cellByColumn[column] else {
                 continue
             }
 
@@ -64,21 +68,41 @@ public final class XLRowStorage: Hashable {
             let cellElement = cellElementForWriting(
                 reference: reference,
                 in: rowElement,
-                cellElementFromColumn: &cellElementFromColumn
+                cellElementByColumn: &cellElementByColumn
             )
-            cell.write(to: cellElement)
+            cell.write(to: cellElement, sharedStrings: sharedStrings)
         }
 
-        let cellElements = cellElementFromColumn.sorted { $0.key < $1.key }.map { $0.value as XMLNode }
+        let cellElements = cellElementByColumn.sorted { $0.key < $1.key }.map { $0.value as XMLNode }
         rowElement.children = cellElements + rowChildren.otherChildren
+    }
+
+    func resolveSharedStrings(_ sharedStrings: XLSharedStringsFile) {
+        for cell in cellByColumn.values {
+            cell.resolveSharedStrings(sharedStrings)
+        }
+    }
+
+    func collectSharedStringValues(
+        usedItems: inout Set<XLSharedStringItem>,
+        orderedItems: inout [XLSharedStringItem],
+        usedOpaqueIndices: inout Set<Int>
+    ) {
+        for column in cellByColumn.keys.sorted() {
+            cellByColumn[column]?.collectSharedStringValues(
+                usedItems: &usedItems,
+                orderedItems: &orderedItems,
+                usedOpaqueIndices: &usedOpaqueIndices
+            )
+        }
     }
 
     private func cellElementForWriting(
         reference: XLCellReference,
         in rowElement: XMLElement,
-        cellElementFromColumn: inout [Int: XMLElement]
+        cellElementByColumn: inout [Int: XMLElement]
     ) -> XMLElement {
-        if let element = cellElementFromColumn[reference.column] {
+        if let element = cellElementByColumn[reference.column] {
             return element
         }
 
@@ -89,15 +113,15 @@ public final class XLRowStorage: Hashable {
             ]
         )
         rowElement.appendChild(element)
-        cellElementFromColumn[reference.column] = element
+        cellElementByColumn[reference.column] = element
         return element
     }
 
     private func cellElementsAndOtherChildren(
         in rowElement: XMLElement,
         rowNumber: Int
-    ) -> (cellElementFromColumn: [Int: XMLElement], otherChildren: [XMLNode]) {
-        var cellElementFromColumn: [Int: XMLElement] = [:]
+    ) -> (cellElementByColumn: [Int: XMLElement], otherChildren: [XMLNode]) {
+        var cellElementByColumn: [Int: XMLElement] = [:]
         var otherChildren: [XMLNode] = []
         for child in rowElement.children {
             guard let cellElement = child as? XMLElement,
@@ -110,9 +134,9 @@ public final class XLRowStorage: Hashable {
                 continue
             }
 
-            cellElementFromColumn[reference.column] = cellElement
+            cellElementByColumn[reference.column] = cellElement
         }
 
-        return (cellElementFromColumn, otherChildren)
+        return (cellElementByColumn, otherChildren)
     }
 }
