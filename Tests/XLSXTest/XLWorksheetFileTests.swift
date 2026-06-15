@@ -46,6 +46,92 @@ struct XLWorksheetFileTests {
         #expect(xml.contains(#"<sheetData><row r="2"><c r="B2"><v>left</v></c><c r="D2"><v>right</v></c></row><row r="10"><c r="C10"><v>bottom</v></c></row></sheetData>"#))
     }
 
+    @Test func exposesExistingRowNumbersAndMaxRowNumber() {
+        let worksheet = XLWorksheetFile(rowFromNumber: [
+            10: XLRowStorage(cellFromColumn: [:]),
+            2: XLRowStorage(cellFromColumn: [:]),
+        ])
+
+        #expect(worksheet.maxRowNumber == 10)
+        #expect(worksheet.existingRowNumbers == [2, 10])
+    }
+
+    @Test func returnsExistingRowsWithoutCreatingMissingRows() {
+        let worksheet = XLWorksheetFile(rowFromNumber: [
+            2: XLRowStorage(cellFromColumn: [
+                1: XLCellStorage(value: XLCellValue(rawValue: "left")),
+            ]),
+        ])
+
+        #expect(worksheet.existingRow(2) == XLRowStorage(cellFromColumn: [
+            1: XLCellStorage(value: XLCellValue(rawValue: "left")),
+        ]))
+        #expect(worksheet.existingRow(3) == nil)
+        #expect(worksheet.existingRowNumbers == [2])
+    }
+
+    @Test func createsMissingRowsWhenAccessed() {
+        let worksheet = XLWorksheetFile()
+
+        #expect(worksheet.maxRowNumber == nil)
+        #expect(worksheet.existingRow(3) == nil)
+
+        #expect(worksheet.row(3) == XLRowStorage(cellFromColumn: [:]))
+        #expect(worksheet.existingRow(3) == XLRowStorage(cellFromColumn: [:]))
+        #expect(worksheet.maxRowNumber == 3)
+        #expect(worksheet.existingRowNumbers == [3])
+    }
+
+    @Test func editsCellsThroughAccessedRow() {
+        let worksheet = XLWorksheetFile()
+
+        worksheet.row(3).cell(column: 2).value = XLCellValue(rawValue: "value")
+
+        #expect(worksheet.existingRow(3)?.cellFromColumn[2]?.value == XLCellValue(rawValue: "value"))
+    }
+
+    @Test func editsCellsThroughWorksheetCellAccessors() throws {
+        let worksheet = XLWorksheetFile()
+
+        worksheet.cell(row: 3, column: 2).value = XLCellValue(rawValue: "left")
+        worksheet.cell(reference: try #require(XLCellReference("D4"))).value = XLCellValue(rawValue: "right")
+
+        #expect(worksheet.existingRow(3)?.existingCell(column: 2)?.value == XLCellValue(rawValue: "left"))
+        #expect(worksheet.existingRow(4)?.existingCell(column: 4)?.value == XLCellValue(rawValue: "right"))
+    }
+
+    @Test func exposesExistingColumnNumbersAndMaxColumnNumber() {
+        let row = XLRowStorage(cellFromColumn: [
+            4: XLCellStorage(value: XLCellValue(rawValue: "right")),
+            2: XLCellStorage(value: XLCellValue(rawValue: "left")),
+        ])
+
+        #expect(row.maxColumnNumber == 4)
+        #expect(row.existingColumnNumbers == [2, 4])
+    }
+
+    @Test func returnsExistingCellsWithoutCreatingMissingCells() {
+        let row = XLRowStorage(cellFromColumn: [
+            2: XLCellStorage(value: XLCellValue(rawValue: "left")),
+        ])
+
+        #expect(row.existingCell(column: 2) == XLCellStorage(value: XLCellValue(rawValue: "left")))
+        #expect(row.existingCell(column: 3) == nil)
+        #expect(row.existingColumnNumbers == [2])
+    }
+
+    @Test func createsMissingCellsWhenAccessed() {
+        let row = XLRowStorage(cellFromColumn: [:])
+
+        #expect(row.maxColumnNumber == nil)
+        #expect(row.existingCell(column: 3) == nil)
+
+        #expect(row.cell(column: 3) == XLCellStorage(value: XLCellValue(rawValue: "")))
+        #expect(row.existingCell(column: 3) == XLCellStorage(value: XLCellValue(rawValue: "")))
+        #expect(row.maxColumnNumber == 3)
+        #expect(row.existingColumnNumbers == [3])
+    }
+
     @Test func patchesKnownCellsWithoutRemovingUnknownCellAttributes() throws {
         let worksheet = try XLWorksheetFile(data: Data("""
             <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">

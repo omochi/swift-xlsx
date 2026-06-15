@@ -1,6 +1,6 @@
 import Foundation
 
-public struct XLWorkbookFile: OPCXMLFile {
+public final class XLWorkbookFile: OPCXMLFile {
     struct AddedWorksheet {
         var sheet: XLWorkbookFileSheet
         var file: OPCFileWithPath<XLWorksheetFile>
@@ -27,7 +27,7 @@ public struct XLWorkbookFile: OPCXMLFile {
         self.original = nil
     }
 
-    public init(sheets: [XLWorkbookFileSheet]) {
+    public convenience init(sheets: [XLWorkbookFileSheet]) {
         self.init(sheets: sheets, worksheetFromID: [:])
     }
 
@@ -63,7 +63,7 @@ public struct XLWorkbookFile: OPCXMLFile {
         return document
     }
 
-    mutating func appendWorksheet(
+    func appendWorksheet(
         name: String,
         workbookPath: OPCFilePath,
         workbookRels: inout OPCRelsFile
@@ -89,7 +89,7 @@ public struct XLWorkbookFile: OPCXMLFile {
         return AddedWorksheet(sheet: sheet, file: file)
     }
 
-    mutating func removeWorksheet(sheetID: Int) -> RemovedWorksheet? {
+    func removeWorksheet(sheetID: Int) -> RemovedWorksheet? {
         guard let index = sheets.firstIndex(where: { $0.sheetID == sheetID }) else {
             return nil
         }
@@ -143,7 +143,7 @@ public struct XLWorkbookFile: OPCXMLFile {
         return element
     }
 
-    mutating func packageItems(
+    func packageItems(
         workbookPath: OPCFilePath,
         workbookRels: inout OPCRelsFile
     ) throws -> PackageItems {

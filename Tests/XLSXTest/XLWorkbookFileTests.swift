@@ -33,7 +33,7 @@ struct XLWorkbookFileTests {
     }
 
     @Test func patchesKnownSheetElementsWithoutRemovingUnknownContent() throws {
-        var workbook = try XLWorkbookFile(data: Data("""
+        let workbook = try XLWorkbookFile(data: Data("""
             <workbook xmlns="\(XMLNamespaceURI.spreadsheet.string)" xmlns:rel="\(XMLNamespaceURI.officeRelationships.string)">
               <sheets>
                 <sheet name="Old" sheetId="1" rel:id="rId1" state="hidden"/>
@@ -55,7 +55,7 @@ struct XLWorkbookFileTests {
     }
 
     @Test func patchesSheetElementsBySheetID() throws {
-        var workbook = try XLWorkbookFile(data: Data("""
+        let workbook = try XLWorkbookFile(data: Data("""
             <workbook xmlns="\(XMLNamespaceURI.spreadsheet.string)" xmlns:rel="\(XMLNamespaceURI.officeRelationships.string)">
               <sheets>
                 <sheet name="Original" sheetId="1" rel:id="rId1"/>
@@ -74,7 +74,7 @@ struct XLWorkbookFileTests {
     }
 
     @Test func addsRelationshipNamespaceWithoutOverwritingExistingPrefix() throws {
-        var workbook = try XLWorkbookFile(xmlDocument: XMLDocumentReader.parse(Data("""
+        let workbook = try XLWorkbookFile(xmlDocument: XMLDocumentReader.parse(Data("""
             <workbook xmlns="\(XMLNamespaceURI.spreadsheet.string)" xmlns:r="urn:other">
               <sheets/>
             </workbook>

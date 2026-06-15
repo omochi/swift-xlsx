@@ -1,7 +1,8 @@
-import MemberwiseInit
+public final class XLRowStorage: Hashable {
+    public init(cellFromColumn: [Int: XLCellStorage]) {
+        self.cellFromColumn = cellFromColumn
+    }
 
-@MemberwiseInit(.public)
-public struct XLRowStorage: Sendable & Hashable {
     init(rowElement: XMLElement, rowNumber: Int) {
         var cells: [Int: XLCellStorage] = [:]
         for cellElement in rowElement.elements(name: "c") {
@@ -20,6 +21,36 @@ public struct XLRowStorage: Sendable & Hashable {
     }
 
     public var cellFromColumn: [Int: XLCellStorage]
+
+    public var maxColumnNumber: Int? {
+        cellFromColumn.keys.max()
+    }
+
+    public var existingColumnNumbers: [Int] {
+        cellFromColumn.keys.sorted()
+    }
+
+    public func cell(column: Int) -> XLCellStorage {
+        if let cell = cellFromColumn[column] {
+            return cell
+        }
+
+        let cell = XLCellStorage(value: XLCellValue(rawValue: ""))
+        cellFromColumn[column] = cell
+        return cell
+    }
+
+    public func existingCell(column: Int) -> XLCellStorage? {
+        cellFromColumn[column]
+    }
+
+    public static func == (lhs: XLRowStorage, rhs: XLRowStorage) -> Bool {
+        lhs.cellFromColumn == rhs.cellFromColumn
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(cellFromColumn)
+    }
 
     func write(to rowElement: XMLElement, rowNumber: Int) {
         for column in cellFromColumn.keys.sorted() {

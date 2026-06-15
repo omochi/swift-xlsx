@@ -54,7 +54,7 @@ public final class XLDocumentPackage {
             consumedPaths: &consumedPaths
         )
 
-        var workbook = try Self.readFile(
+        let workbook = try Self.readFile(
             XLWorkbookFile.self,
             from: opcPackage,
             at: try Self.workbookPath(in: packageRels.file),
@@ -103,7 +103,7 @@ public final class XLDocumentPackage {
     func makeOPCPackage() throws -> OPCPackage {
         var contentTypes = contentTypes
         var packageRels = packageRels
-        var workbook = workbook
+        let workbook = workbook
         var workbookRels = workbookRels
         let opaqueFiles = opaqueFiles
 

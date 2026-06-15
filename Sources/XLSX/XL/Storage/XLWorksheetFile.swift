@@ -17,6 +17,36 @@ public final class XLWorksheetFile: OPCXMLFile {
     public var original: XMLDocument?
     public var rowFromNumber: [Int: XLRowStorage]
 
+    public var maxRowNumber: Int? {
+        rowFromNumber.keys.max()
+    }
+
+    public var existingRowNumbers: [Int] {
+        rowFromNumber.keys.sorted()
+    }
+
+    public func row(_ number: Int) -> XLRowStorage {
+        if let row = rowFromNumber[number] {
+            return row
+        }
+
+        let row = XLRowStorage(cellFromColumn: [:])
+        rowFromNumber[number] = row
+        return row
+    }
+
+    public func existingRow(_ number: Int) -> XLRowStorage? {
+        rowFromNumber[number]
+    }
+
+    public func cell(row: Int, column: Int) -> XLCellStorage {
+        self.row(row).cell(column: column)
+    }
+
+    public func cell(reference: XLCellReference) -> XLCellStorage {
+        cell(row: reference.row, column: reference.column)
+    }
+
     public func xmlDocument() -> XMLDocument {
         guard let original else {
             let document = XMLDocument()
