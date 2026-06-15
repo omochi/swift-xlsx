@@ -168,6 +168,58 @@ struct XLDocumentTests {
         #expect(worksheet.file === file)
     }
 
+    @Test func worksheetExposesRowsThroughHandles() throws {
+        let document = XLDocument()
+        let worksheet = try #require(document.workbook.worksheets.first)
+
+        #expect(worksheet.maxRowNumber == nil)
+        #expect(worksheet.existingRow(3) == nil)
+        #expect(worksheet.existingRowNumbers == [])
+
+        let row = worksheet.row(3)
+        row.storage.cell(column: 2).value = XLCellValue(rawValue: "value")
+
+        #expect(row.number == 3)
+        #expect(worksheet.maxRowNumber == 3)
+        #expect(worksheet.existingRowNumbers == [3])
+        #expect(worksheet.existingRow(3)?.storage.existingCell(column: 2)?.value == XLCellValue(rawValue: "value"))
+    }
+
+    @Test func rowExposesCellsThroughHandles() throws {
+        let document = XLDocument()
+        let worksheet = try #require(document.workbook.worksheets.first)
+        let row = worksheet.row(3)
+
+        #expect(row.maxColumnNumber == nil)
+        #expect(row.existingCell(column: 2) == nil)
+        #expect(row.existingColumnNumbers == [])
+
+        let cell = row.cell(column: 2)
+        cell.value = XLCellValue(rawValue: "value")
+
+        #expect(cell.reference == XLCellReference(row: 3, column: 2))
+        #expect(row.maxColumnNumber == 2)
+        #expect(row.existingColumnNumbers == [2])
+        #expect(row.existingCell(column: 2)?.value == XLCellValue(rawValue: "value"))
+    }
+
+    @Test func worksheetExposesCellsThroughHandles() throws {
+        let document = XLDocument()
+        let worksheet = try #require(document.workbook.worksheets.first)
+        let reference = try #require(XLCellReference("D4"))
+
+        #expect(worksheet.existingCell(row: 3, column: 2) == nil)
+        #expect(worksheet.existingCell(reference: reference) == nil)
+
+        worksheet.cell(row: 3, column: 2).value = XLCellValue(rawValue: "left")
+        worksheet.cell(reference: reference).value = XLCellValue(rawValue: "right")
+
+        #expect(worksheet.existingCell(row: 3, column: 2)?.reference == XLCellReference(row: 3, column: 2))
+        #expect(worksheet.existingCell(row: 3, column: 2)?.value == XLCellValue(rawValue: "left"))
+        #expect(worksheet.existingCell(reference: reference)?.reference == reference)
+        #expect(worksheet.existingCell(reference: reference)?.value == XLCellValue(rawValue: "right"))
+    }
+
     @Test func appendsWorksheet() throws {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("swift-xlsx-tests-\(UUID().uuidString)")
