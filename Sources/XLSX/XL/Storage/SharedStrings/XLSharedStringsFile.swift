@@ -34,7 +34,7 @@ public final class XLSharedStringsFile: OPCXMLFile {
         sharedStringsElement.ensureNamespace(uri: .spreadsheet)
         sharedStringsElement.setAttribute(name: "count", value: String(records.count))
         sharedStringsElement.setAttribute(name: "uniqueCount", value: String(records.count))
-        try write(records: records, to: sharedStringsElement)
+        try write(to: sharedStringsElement)
         return document
     }
 
@@ -114,25 +114,15 @@ public final class XLSharedStringsFile: OPCXMLFile {
         return element
     }
 
-    private func write(records: [XLSharedStringRecord], to sharedStringsElement: XMLElement) throws {
-        var children: [XMLNode] = []
-        var recordIndex = 0
-        for child in sharedStringsElement.children {
-            guard let element = child as? XMLElement,
-                  element.name.name == "si"
-            else {
-                children.append(child)
-                continue
+    private func write(to sharedStringsElement: XMLElement) throws {
+        sharedStringsElement.children = try XMLUtils.patchChildren(
+            in: sharedStringsElement,
+            replacingElementsNamed: "si",
+            with: records,
+            makeElement: { record in
+                try elementForWriting(record: record, in: sharedStringsElement)
             }
-
-            if records.indices.contains(recordIndex) {
-                children.append(try elementForWriting(record: records[recordIndex], in: sharedStringsElement))
-                recordIndex += 1
-            }
-        }
-
-        children += try records.dropFirst(recordIndex).map { try elementForWriting(record: $0, in: sharedStringsElement) as XMLNode }
-        sharedStringsElement.children = children
+        )
     }
 
     private func elementForWriting(

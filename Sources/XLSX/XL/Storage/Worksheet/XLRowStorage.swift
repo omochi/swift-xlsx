@@ -1,8 +1,7 @@
-public final class XLRowStorage {
-    public init(cellByColumn: [Int: XLCellStorage]) {
-        self.cellByColumn = cellByColumn
-    }
+import MemberwiseInit
 
+@MemberwiseInit(.public)
+public final class XLRowStorage {
     init(rowElement: XMLElement, rowNumber: Int) {
         var cells: [Int: XLCellStorage] = [:]
         for cellElement in rowElement.elements(name: "c") {

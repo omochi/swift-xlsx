@@ -65,24 +65,14 @@ public final class XLStylesFile: OPCXMLFile {
         let cellXfsElement = cellXfsElementForWriting(in: stylesElement)
         cellXfsElement.setAttribute(name: "count", value: String(cellFormats.count))
 
-        var children: [XMLNode] = []
-        var formatIndex = 0
-        for child in cellXfsElement.children {
-            guard let element = child as? XMLElement,
-                  element.name.name == "xf"
-            else {
-                children.append(child)
-                continue
+        cellXfsElement.children = XMLUtils.patchChildren(
+            in: cellXfsElement,
+            replacingElementsNamed: "xf",
+            with: cellFormats,
+            makeElement: { cellFormat in
+                cellFormat.xmlElement()
             }
-
-            if cellFormats.indices.contains(formatIndex) {
-                children.append(cellFormats[formatIndex].xmlElement())
-                formatIndex += 1
-            }
-        }
-
-        children += cellFormats.dropFirst(formatIndex).map { $0.xmlElement() as XMLNode }
-        cellXfsElement.children = children
+        )
     }
 
     private func cellXfsElementForWriting(in stylesElement: XMLElement) -> XMLElement {

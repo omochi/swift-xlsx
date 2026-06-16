@@ -1,11 +1,8 @@
+import MemberwiseInit
 import Foundation
 
+@MemberwiseInit(.public)
 public final class XLCellStorage {
-    public init(value: XLCellValue, formatIndex: Int? = nil) {
-        self.value = value
-        self.formatIndex = formatIndex
-    }
-
     init?(cellElement: XMLElement) {
         guard let value = Self.value(in: cellElement) else {
             return nil
@@ -16,7 +13,7 @@ public final class XLCellStorage {
     }
 
     public var value: XLCellValue
-    public var formatIndex: Int?
+    public var formatIndex: Int? = nil
 
     func write(to cellElement: XMLElement, sharedStrings: XLSharedStringWritePlan? = nil) throws {
         writeFormatIndex(to: cellElement)
