@@ -15,7 +15,8 @@ public struct XLRow {
 
     public func cell(column: Int) -> XLCell {
         XLCell(
-            reference: XLCellReference(row: number, column: column),
+            row: number,
+            column: column,
             storage: storage.cell(column: column)
         )
     }
@@ -26,7 +27,8 @@ public struct XLRow {
         }
 
         return XLCell(
-            reference: XLCellReference(row: number, column: column),
+            row: number,
+            column: column,
             storage: cellStorage
         )
     }

@@ -2,8 +2,13 @@ import MemberwiseInit
 
 @MemberwiseInit(.public)
 public struct XLCell {
-    public var reference: XLCellReference
+    public var row: Int
+    public var column: Int
     public var storage: XLCellStorage
+
+    public var reference: XLCellReference {
+        XLCellReference(row: row, column: column)
+    }
 
     public var value: XLCellValue {
         get {

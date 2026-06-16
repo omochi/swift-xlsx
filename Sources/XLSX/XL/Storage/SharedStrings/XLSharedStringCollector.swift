@@ -11,6 +11,8 @@ struct XLSharedStringCollector {
             }
         case let .opaqueSharedString(index):
             usedOpaqueIndices.insert(index)
+        case .number, .boolean, .error:
+            break
         }
     }
 }

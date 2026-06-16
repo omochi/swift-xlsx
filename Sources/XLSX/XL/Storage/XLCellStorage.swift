@@ -1,22 +1,16 @@
+import Foundation
+
 public final class XLCellStorage: Hashable {
     public init(value: XLCellValue) {
         self.value = value
     }
 
     init?(cellElement: XMLElement) {
-        guard let valueElement = cellElement.elements(name: "v").first,
-              let valueText = valueElement.children.compactMap({ $0 as? XMLText }).first?.value
-        else {
+        guard let value = Self.value(in: cellElement) else {
             return nil
         }
 
-        if cellElement.attribute(name: "t") == "s",
-           let sharedStringIndex = Int(valueText)
-        {
-            self.value = .opaqueSharedString(index: sharedStringIndex)
-        } else {
-            self.value = .string(valueText)
-        }
+        self.value = value
     }
 
     public var value: XLCellValue
@@ -30,13 +24,35 @@ public final class XLCellStorage: Hashable {
     }
 
     func write(to cellElement: XMLElement, sharedStrings: XLSharedStringWritePlan? = nil) throws {
-        if sharedStrings != nil {
-            setCellType("s", in: cellElement)
+        cellElement.children = cellElement.children.filter { child in
+            guard let element = child as? XMLElement else {
+                return true
+            }
+            return element.name.name != "v" && element.name.name != "is"
         }
 
-        let valueElement = valueElementForWriting(in: cellElement)
-        valueElement.children = []
-        valueElement.appendChild(XMLText(try valueText(sharedStrings: sharedStrings)))
+        switch value {
+        case .number:
+            removeCellType(in: cellElement)
+            appendValueElement(to: cellElement, text: value.description)
+        case .boolean:
+            setCellType("b", in: cellElement)
+            appendValueElement(to: cellElement, text: value.description)
+        case .string:
+            if let sharedStrings {
+                setCellType("s", in: cellElement)
+                appendValueElement(to: cellElement, text: String(try sharedStrings.index(for: value)))
+            } else {
+                removeCellType(in: cellElement)
+                appendValueElement(to: cellElement, text: value.description)
+            }
+        case .error:
+            setCellType("e", in: cellElement)
+            appendValueElement(to: cellElement, text: value.description)
+        case .opaqueSharedString:
+            setCellType("s", in: cellElement)
+            appendValueElement(to: cellElement, text: try valueText(sharedStrings: sharedStrings))
+        }
     }
 
     func resolveSharedStrings(_ sharedStrings: XLSharedStringsFile) {
@@ -47,21 +63,85 @@ public final class XLCellStorage: Hashable {
         collector.collect(value)
     }
 
-    private func valueElementForWriting(in cellElement: XMLElement) -> XMLElement {
-        if let element = cellElement.elements(name: "v").first {
-            return element
+    private static func value(in cellElement: XMLElement) -> XLCellValue? {
+        let cellType = cellElement.attribute(name: "t")
+        if cellType == "inlineStr" {
+            guard let inlineStringElement = cellElement.elements(name: "is").first else {
+                return nil
+            }
+            return .string(textContent(in: inlineStringElement))
         }
 
-        let element = XMLElement(name: XMLName(name: "v"))
-        cellElement.appendChild(element)
-        return element
+        guard let valueText = valueText(in: cellElement) else {
+            return nil
+        }
+
+        switch cellType {
+        case nil, "n":
+            if Self.isNumber(valueText) {
+                return .number(valueText)
+            }
+            return .string(valueText)
+        case "b":
+            return .boolean(booleanValue(valueText))
+        case "d":
+            return .string(valueText)
+        case "e":
+            return .error(valueText)
+        case "s":
+            guard let sharedStringIndex = Int(valueText) else {
+                return nil
+            }
+            return .opaqueSharedString(index: sharedStringIndex)
+        case "str":
+            return .string(valueText)
+        default:
+            return .string(valueText)
+        }
+    }
+
+    private static func valueText(in cellElement: XMLElement) -> String? {
+        guard let valueElement = cellElement.elements(name: "v").first else {
+            return nil
+        }
+        return textContent(in: valueElement)
+    }
+
+    private static func textContent(in element: XMLElement) -> String {
+        textContent(in: element as XMLNode)
+    }
+
+    private static func textContent(in node: XMLNode) -> String {
+        if let text = node as? XMLText {
+            return text.value
+        }
+        return node.children.map { textContent(in: $0) }.joined()
+    }
+
+    private static func booleanValue(_ value: String) -> Bool {
+        if let number = Int(value) {
+            return number != 0
+        }
+
+        let lowercased = value.lowercased()
+        return lowercased.hasPrefix("t") || lowercased.hasPrefix("y")
+    }
+
+    private static func isNumber(_ value: String) -> Bool {
+        Double(value) != nil
     }
 
     private func valueText(sharedStrings: XLSharedStringWritePlan?) throws -> String {
         guard let sharedStrings else {
-            return value.rawValue
+            return value.description
         }
         return String(try sharedStrings.index(for: value))
+    }
+
+    private func appendValueElement(to cellElement: XMLElement, text: String) {
+        let valueElement = XMLElement(name: XMLName(name: "v"))
+        valueElement.appendChild(XMLText(text))
+        cellElement.appendChild(valueElement)
     }
 
     private func setCellType(_ type: String, in cellElement: XMLElement) {
@@ -70,5 +150,9 @@ public final class XLCellStorage: Hashable {
         } else {
             cellElement.attributes.append(XMLAttribute(name: XMLName(name: "t"), value: type))
         }
+    }
+
+    private func removeCellType(in cellElement: XMLElement) {
+        cellElement.attributes.removeAll { $0.name.prefix == nil && $0.name.name == "t" }
     }
 }

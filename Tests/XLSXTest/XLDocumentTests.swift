@@ -234,12 +234,12 @@ struct XLDocumentTests {
         #expect(worksheet.existingRowNumbers == [])
 
         let row = worksheet.row(3)
-        row.storage.cell(column: 2).value = XLCellValue(rawValue: "value")
+        row.storage.cell(column: 2).value = .string("value")
 
         #expect(row.number == 3)
         #expect(worksheet.maxRowNumber == 3)
         #expect(worksheet.existingRowNumbers == [3])
-        #expect(worksheet.existingRow(3)?.storage.existingCell(column: 2)?.value == XLCellValue(rawValue: "value"))
+        #expect(worksheet.existingRow(3)?.storage.existingCell(column: 2)?.value == .string("value"))
     }
 
     @Test func rowExposesCellsThroughHandles() throws {
@@ -252,12 +252,12 @@ struct XLDocumentTests {
         #expect(row.existingColumnNumbers == [])
 
         let cell = row.cell(column: 2)
-        cell.value = XLCellValue(rawValue: "value")
+        cell.value = .string("value")
 
         #expect(cell.reference == XLCellReference(row: 3, column: 2))
         #expect(row.maxColumnNumber == 2)
         #expect(row.existingColumnNumbers == [2])
-        #expect(row.existingCell(column: 2)?.value == XLCellValue(rawValue: "value"))
+        #expect(row.existingCell(column: 2)?.value == .string("value"))
     }
 
     @Test func worksheetExposesCellsThroughHandles() throws {
@@ -268,13 +268,13 @@ struct XLDocumentTests {
         #expect(worksheet.existingCell(row: 3, column: 2) == nil)
         #expect(worksheet.existingCell(reference: reference) == nil)
 
-        worksheet.cell(row: 3, column: 2).value = XLCellValue(rawValue: "left")
-        worksheet.cell(reference: reference).value = XLCellValue(rawValue: "right")
+        worksheet.cell(row: 3, column: 2).value = .string("left")
+        worksheet.cell(reference: reference).value = .string("right")
 
         #expect(worksheet.existingCell(row: 3, column: 2)?.reference == XLCellReference(row: 3, column: 2))
-        #expect(worksheet.existingCell(row: 3, column: 2)?.value == XLCellValue(rawValue: "left"))
+        #expect(worksheet.existingCell(row: 3, column: 2)?.value == .string("left"))
         #expect(worksheet.existingCell(reference: reference)?.reference == reference)
-        #expect(worksheet.existingCell(reference: reference)?.value == XLCellValue(rawValue: "right"))
+        #expect(worksheet.existingCell(reference: reference)?.value == .string("right"))
     }
 
     @Test func appendsWorksheet() throws {

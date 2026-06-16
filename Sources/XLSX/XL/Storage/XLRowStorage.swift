@@ -35,7 +35,7 @@ public final class XLRowStorage: Hashable {
             return cell
         }
 
-        let cell = XLCellStorage(value: XLCellValue(rawValue: ""))
+        let cell = XLCellStorage(value: .string(""))
         cellByColumn[column] = cell
         return cell
     }

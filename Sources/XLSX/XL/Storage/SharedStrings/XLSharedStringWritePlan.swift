@@ -65,6 +65,8 @@ struct XLSharedStringWritePlan {
                 throw OPCError.invalidSharedStringsFile
             }
             return index
+        case .number, .boolean, .error:
+            throw OPCError.invalidSharedStringsFile
         }
     }
 }
