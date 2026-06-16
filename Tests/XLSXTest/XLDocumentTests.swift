@@ -615,7 +615,7 @@ struct XLDocumentTests {
         let cell = row.cell(column: 2)
         cell.value = .string("value")
 
-        #expect(cell.reference == XLCellReference(row: 3, column: 2))
+        #expect(cell.address == XLCellAddress(row: 3, column: 2))
         #expect(row.maxColumnNumber == 2)
         #expect(row.existingColumnNumbers == [2])
         #expect(row.existingCell(column: 2)?.value == .string("value"))
@@ -624,18 +624,18 @@ struct XLDocumentTests {
     @Test func worksheetExposesCellsThroughHandles() throws {
         let document = XLDocument()
         let worksheet = try #require(document.workbook.worksheets.first)
-        let reference = try #require(XLCellReference("D4"))
+        let address = try #require(XLCellAddress("D4"))
 
         #expect(worksheet.existingCell(row: 3, column: 2) == nil)
-        #expect(worksheet.existingCell(reference: reference) == nil)
+        #expect(worksheet.existingCell(address: address) == nil)
 
         worksheet.cell(row: 3, column: 2).value = .string("left")
-        worksheet.cell(reference: reference).value = .string("right")
+        worksheet.cell(address: address).value = .string("right")
 
-        #expect(worksheet.existingCell(row: 3, column: 2)?.reference == XLCellReference(row: 3, column: 2))
+        #expect(worksheet.existingCell(row: 3, column: 2)?.address == XLCellAddress(row: 3, column: 2))
         #expect(worksheet.existingCell(row: 3, column: 2)?.value == .string("left"))
-        #expect(worksheet.existingCell(reference: reference)?.reference == reference)
-        #expect(worksheet.existingCell(reference: reference)?.value == .string("right"))
+        #expect(worksheet.existingCell(address: address)?.address == address)
+        #expect(worksheet.existingCell(address: address)?.value == .string("right"))
     }
 
     @Test func appendsWorksheet() throws {

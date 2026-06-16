@@ -6,8 +6,8 @@ public struct XLCell {
     public var column: Int
     public var storage: XLCellStorage
 
-    public var reference: XLCellReference {
-        XLCellReference(row: row, column: column)
+    public var address: XLCellAddress {
+        XLCellAddress(row: row, column: column)
     }
 
     public var value: XLCellValue {

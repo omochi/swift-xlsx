@@ -49,12 +49,12 @@ public struct XLWorksheet {
         existingRow(row)?.existingCell(column: column)
     }
 
-    public func cell(reference: XLCellReference) -> XLCell {
-        cell(row: reference.row, column: reference.column)
+    public func cell(address: XLCellAddress) -> XLCell {
+        cell(row: address.row, column: address.column)
     }
 
-    public func existingCell(reference: XLCellReference) -> XLCell? {
-        existingCell(row: reference.row, column: reference.column)
+    public func existingCell(address: XLCellAddress) -> XLCell? {
+        existingCell(row: address.row, column: address.column)
     }
 
     private var sheetIndex: Int {

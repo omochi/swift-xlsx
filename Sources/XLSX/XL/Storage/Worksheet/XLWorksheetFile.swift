@@ -51,8 +51,8 @@ public final class XLWorksheetFile {
         self.row(row).cell(column: column)
     }
 
-    public func cell(reference: XLCellReference) -> XLCellStorage {
-        cell(row: reference.row, column: reference.column)
+    public func cell(address: XLCellAddress) -> XLCellStorage {
+        cell(row: address.row, column: address.column)
     }
 
     public func xmlDocument() throws -> XMLDocument {

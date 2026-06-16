@@ -10,9 +10,9 @@ public final class XLRowStorage {
     ) {
         var cells: [Int: XLCellStorage] = [:]
         for cellElement in rowElement.elements(name: "c") {
-            guard let referenceText = cellElement.attribute(name: "r"),
-                  let reference = XLCellReference(referenceText),
-                  reference.row == rowNumber,
+            guard let addressText = cellElement.attribute(name: "r"),
+                  let address = XLCellAddress(addressText),
+                  address.row == rowNumber,
                   let cell = XLCellStorage(
                     cellElement: cellElement,
                     sharedStrings: sharedStrings,
@@ -22,7 +22,7 @@ public final class XLRowStorage {
                 continue
             }
 
-            cells[reference.column] = cell
+            cells[address.column] = cell
         }
 
         self.cellByColumn = cells
@@ -68,9 +68,9 @@ public final class XLRowStorage {
                 continue
             }
 
-            let reference = XLCellReference(row: rowNumber, column: column)
+            let address = XLCellAddress(row: rowNumber, column: column)
             let cellElement = cellElementForWriting(
-                reference: reference,
+                address: address,
                 in: rowElement,
                 cellElementByColumn: &cellElementByColumn
             )
@@ -124,22 +124,22 @@ public final class XLRowStorage {
     }
 
     private func cellElementForWriting(
-        reference: XLCellReference,
+        address: XLCellAddress,
         in rowElement: XMLElement,
         cellElementByColumn: inout [Int: XMLElement]
     ) -> XMLElement {
-        if let element = cellElementByColumn[reference.column] {
+        if let element = cellElementByColumn[address.column] {
             return element
         }
 
         let element = XMLElement(
             name: XMLName(name: "c"),
             attributes: [
-                XMLAttribute(name: XMLName(name: "r"), value: reference.description),
+                XMLAttribute(name: XMLName(name: "r"), value: address.description),
             ]
         )
         rowElement.appendChild(element)
-        cellElementByColumn[reference.column] = element
+        cellElementByColumn[address.column] = element
         return element
     }
 
@@ -152,15 +152,15 @@ public final class XLRowStorage {
         for child in rowElement.children {
             guard let cellElement = child as? XMLElement,
                   cellElement.name.name == "c",
-                  let referenceText = cellElement.attribute(name: "r"),
-                  let reference = XLCellReference(referenceText),
-                  reference.row == rowNumber
+                  let addressText = cellElement.attribute(name: "r"),
+                  let address = XLCellAddress(addressText),
+                  address.row == rowNumber
             else {
                 otherChildren.append(child)
                 continue
             }
 
-            cellElementByColumn[reference.column] = cellElement
+            cellElementByColumn[address.column] = cellElement
         }
 
         return (cellElementByColumn, otherChildren)

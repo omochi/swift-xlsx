@@ -261,7 +261,7 @@ struct XLWorksheetFileTests {
         let worksheet = XLWorksheetFile()
 
         worksheet.cell(row: 3, column: 2).value = .string("left")
-        worksheet.cell(reference: try #require(XLCellReference("D4"))).value = .string("right")
+        worksheet.cell(address: try #require(XLCellAddress("D4"))).value = .string("right")
 
         #expect(worksheet.existingRow(3)?.existingCell(column: 2)?.value == .string("left"))
         #expect(worksheet.existingRow(4)?.existingCell(column: 4)?.value == .string("right"))

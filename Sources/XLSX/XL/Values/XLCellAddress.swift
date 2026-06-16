@@ -1,7 +1,7 @@
 import MemberwiseInit
 
 @MemberwiseInit(.public)
-public struct XLCellReference: Sendable & Hashable & LosslessStringConvertible {
+public struct XLCellAddress: Sendable & Hashable & LosslessStringConvertible {
     public init?(_ description: String) {
         var column = 0
         var index = description.unicodeScalars.startIndex
@@ -57,8 +57,8 @@ public struct XLCellReference: Sendable & Hashable & LosslessStringConvertible {
     public var column: Int
 
     public var description: String {
-        precondition(row > 0, "XLCellReference row must be positive.")
-        precondition(column > 0, "XLCellReference column must be positive.")
+        precondition(row > 0, "XLCellAddress row must be positive.")
+        precondition(column > 0, "XLCellAddress column must be positive.")
 
         var remainingColumn = column
         var scalars: [UnicodeScalar] = []

@@ -20,7 +20,7 @@ Excel の workbook / worksheet / row / cell は、永続化するデータ構造
 
 ハンドルレイヤーは、利用者向けの軽い値型 API として提供する。`XLWorkbook`、`XLWorksheet`、`XLRow`、`XLCell` は、必要な識別情報と対応する storage への参照を持つ。ハンドル自体は値として渡せるが、変更対象の実体は storage にある。
 
-`XLWorksheet` は `XLWorksheetFile` を包み、行へのアクセサを提供する。`XLRow` は `XLRowStorage` を包み、セルへのアクセサを提供する。`XLCell` は `XLCellReference` と `XLCellStorage` を持つ。
+`XLWorksheet` は `XLWorksheetFile` を包み、行へのアクセサを提供する。`XLRow` は `XLRowStorage` を包み、セルへのアクセサを提供する。`XLCell` は `XLCellAddress` と `XLCellStorage` を持つ。
 
 作成を伴うアクセサと、既存要素だけを見るアクセサは分ける。`row(_:)` と `cell(...)` は存在しない row / cell を作成して返す。`existingRow(_:)` と `existingCell(...)` は存在する場合だけ返し、存在しない要素を作成しない。
 
