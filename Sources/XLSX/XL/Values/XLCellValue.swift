@@ -19,4 +19,19 @@ public enum XLCellValue: Sendable, Hashable, CustomStringConvertible {
             return String(index)
         }
     }
+
+    public static func readBool(string: String) -> Bool? {
+        if let number = Int(string) {
+            return number != 0
+        }
+
+        switch string.lowercased() {
+        case "true", "t", "yes", "y":
+            return true
+        case "false", "f", "no", "n":
+            return false
+        default:
+            return nil
+        }
+    }
 }

@@ -83,7 +83,7 @@ public final class XLCellStorage: Hashable {
             }
             return .string(valueText)
         case "b":
-            return .boolean(booleanValue(valueText))
+            return .boolean(XLCellValue.readBool(string: valueText) ?? false)
         case "d":
             return .string(valueText)
         case "e":
@@ -116,15 +116,6 @@ public final class XLCellStorage: Hashable {
             return text.value
         }
         return node.children.map { textContent(in: $0) }.joined()
-    }
-
-    private static func booleanValue(_ value: String) -> Bool {
-        if let number = Int(value) {
-            return number != 0
-        }
-
-        let lowercased = value.lowercased()
-        return lowercased.hasPrefix("t") || lowercased.hasPrefix("y")
     }
 
     private static func isNumber(_ value: String) -> Bool {
