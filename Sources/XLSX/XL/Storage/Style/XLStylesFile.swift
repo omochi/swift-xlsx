@@ -2,23 +2,10 @@ import Foundation
 
 public final class XLStylesFile: XMLDocumentConvertible {
     public init(
-        fonts: [XLFontRecord] = [],
-        fills: [XLFill] = [],
-        borders: [XLBorder] = [],
-        cellFormats: [XLCellFormatRecord] = []
-    ) {
-        self.fonts = XLFontRecordsStorage(records: fonts)
-        self.fills = XLFillsStorage(records: fills)
-        self.borders = XLBordersStorage(records: borders)
-        self.cellFormats = XLCellFormatRecordsStorage(records: cellFormats)
-        self.original = nil
-    }
-
-    public init(
         fonts: XLFontRecordsStorage = XLFontRecordsStorage(),
         fills: XLFillsStorage = XLFillsStorage(),
         borders: XLBordersStorage = XLBordersStorage(),
-        cellFormats: XLCellFormatRecordsStorage
+        cellFormats: XLCellFormatRecordsStorage = XLCellFormatRecordsStorage()
     ) {
         self.fonts = fonts
         self.fills = fills
@@ -57,6 +44,22 @@ public final class XLStylesFile: XMLDocumentConvertible {
 
     public var isEmpty: Bool {
         fonts.records.isEmpty && fills.records.isEmpty && borders.records.isEmpty && cellFormats.records.isEmpty
+    }
+
+    func resetToDefault() {
+        fonts = XLFontRecordsStorage(records: [
+            XLFontRecord(),
+        ])
+        fills = XLFillsStorage(records: [
+            .pattern(XLFill.Pattern(patternType: "none")),
+            .pattern(XLFill.Pattern(patternType: "gray125")),
+        ])
+        borders = XLBordersStorage(records: [
+            XLBorder(),
+        ])
+        cellFormats = XLCellFormatRecordsStorage(records: [
+            XLCellFormatRecord(numberFormatID: 0, fontID: 0, fillID: 0, borderID: 0, formatID: 0),
+        ])
     }
 
     public func xmlDocument() throws -> XMLDocument {

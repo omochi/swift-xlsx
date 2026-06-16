@@ -73,11 +73,11 @@ public struct XLCellFormat: Sendable & Hashable {
         fills: XLFillsStorage,
         borders: XLBordersStorage
     ) throws -> XLCellFormatRecord {
-        try XLCellFormatRecord(
+        XLCellFormatRecord(
             numberFormatID: numberFormatID,
-            fontID: fontID(in: fonts),
-            fillID: fillID(in: fills),
-            borderID: borderID(in: borders),
+            fontID: try fontID(in: fonts),
+            fillID: try fillID(in: fills),
+            borderID: try borderID(in: borders),
             formatID: formatID,
             applyNumberFormat: applyNumberFormat,
             applyFont: applyFont,

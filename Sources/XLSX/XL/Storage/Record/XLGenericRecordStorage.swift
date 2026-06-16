@@ -11,6 +11,10 @@ public final class XLGenericRecordStorage<Record: Hashable> {
     public private(set) var records: [Record]
     private var indexByRecord: [Record: Int]
 
+    public var isEmpty: Bool {
+        records.isEmpty
+    }
+
     @discardableResult
     public func register(_ record: Record) -> Int {
         if let index = indexByRecord[record] {

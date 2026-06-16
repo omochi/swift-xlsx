@@ -33,13 +33,10 @@ public final class XLCellStorage {
 
     func write(
         to cellElement: XMLElement,
-        sharedStrings: XLSharedStringRecordsStorage? = nil,
-        cellFormats: XLCellFormatRecordsStorage? = nil,
-        fonts: XLFontRecordsStorage? = nil,
-        fills: XLFillsStorage? = nil,
-        borders: XLBordersStorage? = nil
+        sharedStrings: XLSharedStringsFile? = nil,
+        styles: XLStylesFile? = nil
     ) throws {
-        try writeFormat(to: cellElement, cellFormats: cellFormats, fonts: fonts, fills: fills, borders: borders)
+        try writeFormat(to: cellElement, styles: styles)
 
         cellElement.children = cellElement.children.filter { child in
             guard let element = child as? XMLElement else {
@@ -48,47 +45,38 @@ public final class XLCellStorage {
             return element.name.name != "v" && element.name.name != "is"
         }
 
-        try value.write(to: cellElement, sharedStrings: sharedStrings)
+        try value.write(to: cellElement, sharedStrings: sharedStrings?.records)
     }
 
-    func collectSharedStrings(into sharedStrings: XLSharedStringRecordsStorage) {
+    func collectSharedStrings(sharedStrings: XLSharedStringsFile) {
         switch value {
         case let .string(text):
-            sharedStrings.register(text)
+            sharedStrings.records.register(text)
         case let .opaqueSharedString(xmlString):
-            sharedStrings.register(.opaque(xmlString: xmlString))
+            sharedStrings.records.register(.opaque(xmlString: xmlString))
         case .number, .boolean, .error:
             break
         }
     }
 
-    func collectCellFormatStyleItems(
-        fonts: XLFontRecordsStorage,
-        fills: XLFillsStorage,
-        borders: XLBordersStorage
-    ) {
+    func collectCellFormatStyleItems(styles: XLStylesFile) {
         if let font = format?.font {
-            fonts.register(font.record)
+            styles.fonts.register(font.record)
         }
         if let fill = format?.fill {
-            fills.register(fill)
+            styles.fills.register(fill)
         }
         if let border = format?.border {
-            borders.register(border)
+            styles.borders.register(border)
         }
     }
 
-    func collectCellFormats(
-        into cellFormats: XLCellFormatRecordsStorage,
-        fonts: XLFontRecordsStorage,
-        fills: XLFillsStorage,
-        borders: XLBordersStorage
-    ) throws {
+    func collectCellFormats(styles: XLStylesFile) throws {
         guard let format else {
             return
         }
 
-        try cellFormats.register(format, fonts: fonts, fills: fills, borders: borders)
+        try styles.cellFormats.register(format, fonts: styles.fonts, fills: styles.fills, borders: styles.borders)
     }
 
     func clone() -> XLCellStorage {
@@ -119,22 +107,17 @@ public final class XLCellStorage {
 
     private func writeFormat(
         to cellElement: XMLElement,
-        cellFormats: XLCellFormatRecordsStorage?,
-        fonts: XLFontRecordsStorage?,
-        fills: XLFillsStorage?,
-        borders: XLBordersStorage?
+        styles: XLStylesFile?
     ) throws {
         guard let format,
-              let fonts,
-              let fills,
-              let borders
+              let styles
         else {
             removeAttribute(name: "s", in: cellElement)
             return
         }
 
-        let formatRecord = try format.record(fonts: fonts, fills: fills, borders: borders)
-        if let formatIndex = cellFormats?.index(for: formatRecord) {
+        let formatRecord = try format.record(fonts: styles.fonts, fills: styles.fills, borders: styles.borders)
+        if let formatIndex = styles.cellFormats.index(for: formatRecord) {
             cellElement.setAttribute(name: "s", value: String(formatIndex))
         } else {
             removeAttribute(name: "s", in: cellElement)

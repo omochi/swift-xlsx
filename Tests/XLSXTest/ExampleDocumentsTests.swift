@@ -1,28 +1,27 @@
 import Foundation
 import Testing
 import XLSX
-import XLSXTools
 
 @Suite
 struct ExampleDocumentsTests {
     @Test func savesDefaultDocumentFixture() throws {
         try expectGeneratedDocument(
-            ExampleDocumentsCommand.makeDefaultDocument(),
+            XLExampleDocuments.defaultDocument(),
             matchesFixtureNamed: "default"
         )
     }
 
     @Test func savesSimpleDocumentFixture() throws {
         try expectGeneratedDocument(
-            try ExampleDocumentsCommand.makeSimpleDocument(),
+            try XLExampleDocuments.simpleDocument(),
             matchesFixtureNamed: "simple"
         )
     }
 
-    @Test func savesFontsDocumentFixture() throws {
+    @Test func savesStyleDocumentFixture() throws {
         try expectGeneratedDocument(
-            try ExampleDocumentsCommand.makeFontsDocument(),
-            matchesFixtureNamed: "fonts"
+            try XLExampleDocuments.styleDocument(),
+            matchesFixtureNamed: "style"
         )
     }
 

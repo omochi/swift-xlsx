@@ -55,11 +55,8 @@ public final class XLRowStorage {
     func write(
         to rowElement: XMLElement,
         rowNumber: Int,
-        sharedStrings: XLSharedStringRecordsStorage? = nil,
-        cellFormats: XLCellFormatRecordsStorage? = nil,
-        fonts: XLFontRecordsStorage? = nil,
-        fills: XLFillsStorage? = nil,
-        borders: XLBordersStorage? = nil
+        sharedStrings: XLSharedStringsFile? = nil,
+        styles: XLStylesFile? = nil
     ) throws {
         let rowChildren = cellElementsAndOtherChildren(in: rowElement, rowNumber: rowNumber)
         var cellElementByColumn = rowChildren.cellElementByColumn
@@ -77,10 +74,7 @@ public final class XLRowStorage {
             try cell.write(
                 to: cellElement,
                 sharedStrings: sharedStrings,
-                cellFormats: cellFormats,
-                fonts: fonts,
-                fills: fills,
-                borders: borders
+                styles: styles
             )
         }
 
@@ -88,30 +82,21 @@ public final class XLRowStorage {
         rowElement.children = cellElements + rowChildren.otherChildren
     }
 
-    func collectSharedStrings(into sharedStrings: XLSharedStringRecordsStorage) {
+    func collectSharedStrings(sharedStrings: XLSharedStringsFile) {
         for column in cellByColumn.keys.sorted() {
-            cellByColumn[column]?.collectSharedStrings(into: sharedStrings)
+            cellByColumn[column]?.collectSharedStrings(sharedStrings: sharedStrings)
         }
     }
 
-    func collectCellFormatStyleItems(
-        fonts: XLFontRecordsStorage,
-        fills: XLFillsStorage,
-        borders: XLBordersStorage
-    ) {
+    func collectCellFormatStyleItems(styles: XLStylesFile) {
         for column in cellByColumn.keys.sorted() {
-            cellByColumn[column]?.collectCellFormatStyleItems(fonts: fonts, fills: fills, borders: borders)
+            cellByColumn[column]?.collectCellFormatStyleItems(styles: styles)
         }
     }
 
-    func collectCellFormats(
-        into cellFormats: XLCellFormatRecordsStorage,
-        fonts: XLFontRecordsStorage,
-        fills: XLFillsStorage,
-        borders: XLBordersStorage
-    ) throws {
+    func collectCellFormats(styles: XLStylesFile) throws {
         for column in cellByColumn.keys.sorted() {
-            try cellByColumn[column]?.collectCellFormats(into: cellFormats, fonts: fonts, fills: fills, borders: borders)
+            try cellByColumn[column]?.collectCellFormats(styles: styles)
         }
     }
 

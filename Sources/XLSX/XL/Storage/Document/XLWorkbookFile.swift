@@ -107,30 +107,21 @@ public final class XLWorkbookFile: XMLDocumentConvertible {
         return RemovedWorksheet(sheet: sheet, file: file)
     }
 
-    func collectSharedStrings(into sharedStrings: XLSharedStringRecordsStorage) {
+    func collectSharedStrings(sharedStrings: XLSharedStringsFile) {
         for worksheet in worksheets {
-            worksheet.file.collectSharedStrings(into: sharedStrings)
+            worksheet.file.collectSharedStrings(sharedStrings: sharedStrings)
         }
     }
 
-    func collectCellFormatStyleItems(
-        fonts: XLFontRecordsStorage,
-        fills: XLFillsStorage,
-        borders: XLBordersStorage
-    ) {
+    func collectCellFormatStyleItems(styles: XLStylesFile) {
         for worksheet in worksheets {
-            worksheet.file.collectCellFormatStyleItems(fonts: fonts, fills: fills, borders: borders)
+            worksheet.file.collectCellFormatStyleItems(styles: styles)
         }
     }
 
-    func collectCellFormats(
-        into cellFormats: XLCellFormatRecordsStorage,
-        fonts: XLFontRecordsStorage,
-        fills: XLFillsStorage,
-        borders: XLBordersStorage
-    ) throws {
+    func collectCellFormats(styles: XLStylesFile) throws {
         for worksheet in worksheets {
-            try worksheet.file.collectCellFormats(into: cellFormats, fonts: fonts, fills: fills, borders: borders)
+            try worksheet.file.collectCellFormats(styles: styles)
         }
     }
 

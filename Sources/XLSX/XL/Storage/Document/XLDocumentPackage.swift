@@ -104,24 +104,12 @@ public final class XLDocumentPackage {
         )
 
         sharedStrings.file.records = XLSharedStringRecordsStorage()
-        workbook.file.collectSharedStrings(into: sharedStrings.file.records)
+        workbook.file.collectSharedStrings(sharedStrings: sharedStrings.file)
 
-        styles.file.fonts = XLFontRecordsStorage()
-        styles.file.fills = XLFillsStorage()
-        styles.file.borders = XLBordersStorage()
-        workbook.file.collectCellFormatStyleItems(
-            fonts: styles.file.fonts,
-            fills: styles.file.fills,
-            borders: styles.file.borders
-        )
-        styles.file.cellFormats = XLCellFormatRecordsStorage()
-        try workbook.file.collectCellFormats(
-            into: styles.file.cellFormats,
-            fonts: styles.file.fonts,
-            fills: styles.file.fills,
-            borders: styles.file.borders
-        )
-        let writesStyles = styles.file.original != nil || !styles.file.isEmpty
+        styles.file.resetToDefault()
+
+        workbook.file.collectCellFormatStyleItems(styles: styles.file)
+        try workbook.file.collectCellFormats(styles: styles.file)
 
         workbookRels.file.ensureRelationship(
             type: XMLNamespaceURI.sharedStrings.string,
@@ -129,7 +117,7 @@ public final class XLDocumentPackage {
         )
         workbookRels.file.ensureRelationship(
             type: XMLNamespaceURI.styles.string,
-            target: writesStyles ? styles.path.relationshipTarget(relativeTo: workbook.path) : nil
+            target: styles.path.relationshipTarget(relativeTo: workbook.path)
         )
 
         var package = OPCPackage()
@@ -142,26 +130,21 @@ public final class XLDocumentPackage {
         for file in workbookItems.files {
             if !Self.containsOpaqueFile(at: file.path, in: opaqueFiles) {
                 let xml = try file.file.xmlDocument(
-                    sharedStrings: sharedStrings.file.records,
-                    cellFormats: styles.file.cellFormats,
-                    fonts: styles.file.fonts,
-                    fills: styles.file.fills,
-                    borders: styles.file.borders
+                    sharedStrings: sharedStrings.file,
+                    styles: styles.file
                 )
                 try package.insertFile(xmlDocument: xml, at: file.path)
             }
         }
         try package.insertFile(pathWithFile: sharedStrings)
-        if writesStyles {
-            try package.insertFile(pathWithFile: styles)
-        }
+        try package.insertFile(pathWithFile: styles)
         Self.registerRequiredContentTypes(
             in: &contentTypes.file,
             workbookPath: workbook.path,
             workbookContentTypeOverrides: workbookItems.contentTypeOverrides,
             sharedStringsPath: sharedStrings.path,
             stylesPath: styles.path,
-            stylesContentType: writesStyles ? OPCContentTypes.styles : nil
+            stylesContentType: OPCContentTypes.styles
         )
         try package.insertFile(pathWithFile: contentTypes)
 

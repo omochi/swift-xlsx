@@ -201,9 +201,9 @@ struct XLDocumentTests {
             as: UTF8.self
         )
 
-        #expect(worksheetXML.contains(#"<c r="A1" s="0"><v>42</v></c>"#))
-        #expect(stylesXML.contains(#"<cellXfs count="1">"#))
-        #expect(!stylesXML.contains(#"<xf numFmtId="0"/>"#))
+        #expect(worksheetXML.contains(#"<c r="A1" s="1"><v>42</v></c>"#))
+        #expect(stylesXML.contains(#"<cellXfs count="2">"#))
+        #expect(stylesXML.contains(#"<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>"#))
         #expect(stylesXML.contains(#"<xf numFmtId="14" applyNumberFormat="1"/>"#))
         #expect(!stylesXML.contains(#"numFmtId="99""#))
     }
@@ -252,16 +252,21 @@ struct XLDocumentTests {
             as: UTF8.self
         )
 
-        #expect(worksheetXML.contains(#"<c r="A1" s="0"><v>42</v></c>"#))
-        #expect(worksheetXML.contains(#"<c r="B1" s="0"><v>43</v></c>"#))
-        #expect(stylesXML.contains(#"<fonts count="1">"#))
+        #expect(worksheetXML.contains(#"<c r="A1" s="1"><v>42</v></c>"#))
+        #expect(worksheetXML.contains(#"<c r="B1" s="1"><v>43</v></c>"#))
+        #expect(stylesXML.contains(#"<fonts count="2">"#))
+        #expect(stylesXML.contains(#"<font/>"#))
         #expect(stylesXML.contains(#"<font><b/><sz val="12.0"/><name val="Arial"/></font>"#))
-        #expect(stylesXML.contains(#"<fills count="1">"#))
+        #expect(stylesXML.contains(#"<fills count="3">"#))
+        #expect(stylesXML.contains(#"<fill><patternFill patternType="none"/></fill>"#))
+        #expect(stylesXML.contains(#"<fill><patternFill patternType="gray125"/></fill>"#))
         #expect(stylesXML.contains(#"<fill><patternFill patternType="solid"><fgColor rgb="FFFFFF00"/><bgColor indexed="64"/></patternFill></fill>"#))
-        #expect(stylesXML.contains(#"<borders count="1">"#))
+        #expect(stylesXML.contains(#"<borders count="2">"#))
+        #expect(stylesXML.contains(#"<border/>"#))
         #expect(stylesXML.contains(#"<border><left style="thin"><color rgb="FFFF0000"/></left><right style="medium"/></border>"#))
-        #expect(stylesXML.contains(#"<cellXfs count="1">"#))
-        #expect(stylesXML.contains(#"<xf numFmtId="14" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1"/>"#))
+        #expect(stylesXML.contains(#"<cellXfs count="2">"#))
+        #expect(stylesXML.contains(#"<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>"#))
+        #expect(stylesXML.contains(#"<xf numFmtId="14" fontId="1" fillId="2" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1"/>"#))
     }
 
     @Test func rebuildsSharedStringsFromEditedCells() throws {
@@ -301,7 +306,7 @@ struct XLDocumentTests {
         #expect(worksheet.path.description == "/xl/worksheets/sheet1.xml")
     }
 
-    @Test func doesNotSaveEmptyStylesRelationshipContentTypeOrPart() throws {
+    @Test func savesDefaultStylesRelationshipContentTypeAndPart() throws {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("swift-xlsx-tests-\(UUID().uuidString)")
             .appendingPathExtension("xlsx")
@@ -319,9 +324,16 @@ struct XLDocumentTests {
         let workbookRels = try #require(try package.fileWithPath(OPCRelsFile.self, at: workbookRelsPath, read: OPCRelsFile.init(xmlDocument:)))
         let contentTypes = try #require(try package.fileWithPath(OPCContentTypesFile.self, at: contentTypesPath, read: OPCContentTypesFile.init(xmlDocument:)))
 
-        #expect(package.data(at: stylesPath) == nil)
-        #expect(!workbookRels.file.relationships.contains { $0.type == XMLNamespaceURI.styles.string })
-        #expect(contentTypes.file.overrides[stylesPath] == nil)
+        let stylesXML = try String(decoding: #require(package.data(at: stylesPath)), as: UTF8.self)
+        #expect(stylesXML.contains(#"<fonts count="1"><font/></fonts>"#))
+        #expect(stylesXML.contains(#"<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>"#))
+        #expect(stylesXML.contains(#"<borders count="1"><border/></borders>"#))
+        #expect(stylesXML.contains(#"<cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>"#))
+        #expect(workbookRels.file.relationships.contains {
+            $0.type == XMLNamespaceURI.styles.string &&
+            $0.target == "styles.xml"
+        })
+        #expect(contentTypes.file.overrides[stylesPath] == OPCContentTypes.styles)
     }
 
     @Test func preservesOpenedEmptyStylesRelationshipContentTypeAndPart() throws {

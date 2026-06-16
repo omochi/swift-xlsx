@@ -56,15 +56,19 @@ public final class XLWorksheetFile {
     }
 
     public func xmlDocument() throws -> XMLDocument {
-        try xmlDocument(sharedStrings: nil, cellFormats: nil, fonts: nil, fills: nil, borders: nil)
+        try xmlDocument(sharedStrings: nil, styles: nil)
     }
 
     func xmlDocument(
-        sharedStrings: XLSharedStringRecordsStorage?,
-        cellFormats: XLCellFormatRecordsStorage?,
-        fonts: XLFontRecordsStorage?,
-        fills: XLFillsStorage?,
-        borders: XLBordersStorage?
+        sharedStrings: XLSharedStringsFile,
+        styles: XLStylesFile
+    ) throws -> XMLDocument {
+        try xmlDocument(sharedStrings: Optional(sharedStrings), styles: Optional(styles))
+    }
+
+    private func xmlDocument(
+        sharedStrings: XLSharedStringsFile?,
+        styles: XLStylesFile?
     ) throws -> XMLDocument {
         let document = original?.clone() ?? XMLDocument()
         let worksheetElement = worksheetElementForWriting(in: document)
@@ -72,38 +76,26 @@ public final class XLWorksheetFile {
         try writeRows(
             to: worksheetElement,
             sharedStrings: sharedStrings,
-            cellFormats: cellFormats,
-            fonts: fonts,
-            fills: fills,
-            borders: borders
+            styles: styles
         )
         return document
     }
 
-    func collectSharedStrings(into sharedStrings: XLSharedStringRecordsStorage) {
+    func collectSharedStrings(sharedStrings: XLSharedStringsFile) {
         for rowNumber in rowByNumber.keys.sorted() {
-            rowByNumber[rowNumber]?.collectSharedStrings(into: sharedStrings)
+            rowByNumber[rowNumber]?.collectSharedStrings(sharedStrings: sharedStrings)
         }
     }
 
-    func collectCellFormatStyleItems(
-        fonts: XLFontRecordsStorage,
-        fills: XLFillsStorage,
-        borders: XLBordersStorage
-    ) {
+    func collectCellFormatStyleItems(styles: XLStylesFile) {
         for rowNumber in rowByNumber.keys.sorted() {
-            rowByNumber[rowNumber]?.collectCellFormatStyleItems(fonts: fonts, fills: fills, borders: borders)
+            rowByNumber[rowNumber]?.collectCellFormatStyleItems(styles: styles)
         }
     }
 
-    func collectCellFormats(
-        into cellFormats: XLCellFormatRecordsStorage,
-        fonts: XLFontRecordsStorage,
-        fills: XLFillsStorage,
-        borders: XLBordersStorage
-    ) throws {
+    func collectCellFormats(styles: XLStylesFile) throws {
         for rowNumber in rowByNumber.keys.sorted() {
-            try rowByNumber[rowNumber]?.collectCellFormats(into: cellFormats, fonts: fonts, fills: fills, borders: borders)
+            try rowByNumber[rowNumber]?.collectCellFormats(styles: styles)
         }
     }
 
@@ -149,11 +141,8 @@ public final class XLWorksheetFile {
 
     private func writeRows(
         to worksheetElement: XMLElement,
-        sharedStrings: XLSharedStringRecordsStorage? = nil,
-        cellFormats: XLCellFormatRecordsStorage? = nil,
-        fonts: XLFontRecordsStorage? = nil,
-        fills: XLFillsStorage? = nil,
-        borders: XLBordersStorage? = nil
+        sharedStrings: XLSharedStringsFile? = nil,
+        styles: XLStylesFile? = nil
     ) throws {
         guard !rowByNumber.isEmpty else {
             return
@@ -176,10 +165,7 @@ public final class XLWorksheetFile {
                 to: rowElement,
                 rowNumber: rowNumber,
                 sharedStrings: sharedStrings,
-                cellFormats: cellFormats,
-                fonts: fonts,
-                fills: fills,
-                borders: borders
+                styles: styles
             )
         }
 

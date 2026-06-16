@@ -133,12 +133,12 @@ struct XLStylesFileTests {
     }
 
     @Test func writesFontColorVariants() throws {
-        let styles = XLStylesFile(fonts: [
+        let styles = XLStylesFile(fonts: XLFontRecordsStorage(records: [
             XLFontRecord(color: .rgb("FFFF0000")),
             XLFontRecord(color: .indexed(64)),
             XLFontRecord(color: .theme(4, tint: -0.25)),
             XLFontRecord(color: .auto),
-        ])
+        ]))
 
         let xml = try String(decoding: styles.xmlDocument().data, as: UTF8.self)
 
