@@ -92,6 +92,26 @@ struct XLDocumentTests {
         #expect(!sharedStringsXML.contains(#"<t>A</t>"#))
     }
 
+    @Test func rejectsMissingOpaqueSharedStringWhenSaving() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("swift-xlsx-tests-\(UUID().uuidString)")
+            .appendingPathExtension("xlsx")
+        defer {
+            try? FileManager.default.removeItem(at: url)
+        }
+
+        let document = XLDocument()
+        let worksheet = try document.workbook.appendWorksheet(name: "Sheet")
+        worksheet.cell(row: 1, column: 1).value = .opaqueSharedString(index: 999)
+
+        do {
+            try document.save(to: url)
+            Issue.record("Expected invalid shared strings file error.")
+        } catch let error as OPCError {
+            #expect(error == .invalidSharedStringsFile)
+        }
+    }
+
     @Test func opensWorksheetsIntoWorkbookScope() throws {
         let document = try XLDocument.open(try #require(Bundle.module.url(forResource: "simple", withExtension: "xlsx")))
 

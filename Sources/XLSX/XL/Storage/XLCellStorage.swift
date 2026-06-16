@@ -29,34 +29,22 @@ public final class XLCellStorage: Hashable {
         hasher.combine(value)
     }
 
-    func write(to cellElement: XMLElement, sharedStrings: XLSharedStringWritePlan? = nil) {
+    func write(to cellElement: XMLElement, sharedStrings: XLSharedStringWritePlan? = nil) throws {
         if sharedStrings != nil {
             setCellType("s", in: cellElement)
         }
 
         let valueElement = valueElementForWriting(in: cellElement)
         valueElement.children = []
-        valueElement.appendChild(XMLText(valueText(sharedStrings: sharedStrings)))
+        valueElement.appendChild(XMLText(try valueText(sharedStrings: sharedStrings)))
     }
 
     func resolveSharedStrings(_ sharedStrings: XLSharedStringsFile) {
         value = sharedStrings.resolve(value)
     }
 
-    func collectSharedStringValues(
-        usedItems: inout Set<XLSharedStringItem>,
-        orderedItems: inout [XLSharedStringItem],
-        usedOpaqueIndices: inout Set<Int>
-    ) {
-        switch value {
-        case let .string(text):
-            let item = XLSharedStringItem(text: text)
-            if usedItems.insert(item).inserted {
-                orderedItems.append(item)
-            }
-        case let .opaqueSharedString(index):
-            usedOpaqueIndices.insert(index)
-        }
+    func collectSharedStringValues(into collector: inout XLSharedStringCollector) {
+        collector.collect(value)
     }
 
     private func valueElementForWriting(in cellElement: XMLElement) -> XMLElement {
@@ -69,11 +57,11 @@ public final class XLCellStorage: Hashable {
         return element
     }
 
-    private func valueText(sharedStrings: XLSharedStringWritePlan?) -> String {
+    private func valueText(sharedStrings: XLSharedStringWritePlan?) throws -> String {
         guard let sharedStrings else {
             return value.rawValue
         }
-        return String(sharedStrings.index(for: value))
+        return String(try sharedStrings.index(for: value))
     }
 
     private func setCellType(_ type: String, in cellElement: XMLElement) {

@@ -56,7 +56,7 @@ public final class XLRowStorage: Hashable {
         to rowElement: XMLElement,
         rowNumber: Int,
         sharedStrings: XLSharedStringWritePlan? = nil
-    ) {
+    ) throws {
         let rowChildren = cellElementsAndOtherChildren(in: rowElement, rowNumber: rowNumber)
         var cellElementByColumn = rowChildren.cellElementByColumn
         for column in cellByColumn.keys.sorted() {
@@ -70,7 +70,7 @@ public final class XLRowStorage: Hashable {
                 in: rowElement,
                 cellElementByColumn: &cellElementByColumn
             )
-            cell.write(to: cellElement, sharedStrings: sharedStrings)
+            try cell.write(to: cellElement, sharedStrings: sharedStrings)
         }
 
         let cellElements = cellElementByColumn.sorted { $0.key < $1.key }.map { $0.value as XMLNode }
@@ -83,17 +83,9 @@ public final class XLRowStorage: Hashable {
         }
     }
 
-    func collectSharedStringValues(
-        usedItems: inout Set<XLSharedStringItem>,
-        orderedItems: inout [XLSharedStringItem],
-        usedOpaqueIndices: inout Set<Int>
-    ) {
+    func collectSharedStringValues(into collector: inout XLSharedStringCollector) {
         for column in cellByColumn.keys.sorted() {
-            cellByColumn[column]?.collectSharedStringValues(
-                usedItems: &usedItems,
-                orderedItems: &orderedItems,
-                usedOpaqueIndices: &usedOpaqueIndices
-            )
+            cellByColumn[column]?.collectSharedStringValues(into: &collector)
         }
     }
 

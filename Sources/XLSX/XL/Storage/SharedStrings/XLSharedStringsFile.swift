@@ -28,35 +28,42 @@ public final class XLSharedStringsFile: OPCXMLFile {
         return try OPCFilePath(string: "sharedStrings.xml").resolved(relativeTo: workbookPath)
     }
 
-    public func xmlDocument() -> XMLDocument {
+    public func xmlDocument() throws -> XMLDocument {
         let document = original?.clone() ?? XMLDocument()
         let sharedStringsElement = sharedStringsElementForWriting(in: document)
         sharedStringsElement.ensureNamespace(uri: .spreadsheet)
         sharedStringsElement.setAttribute(name: "count", value: String(records.count))
         sharedStringsElement.setAttribute(name: "uniqueCount", value: String(records.count))
-        write(records: records, to: sharedStringsElement)
+        try write(records: records, to: sharedStringsElement)
         return document
     }
 
-    func item(at index: Int) -> XLSharedStringItem? {
-        records.first { $0.index == index }?.item
+    func text(at index: Int) -> String? {
+        guard records.indices.contains(index) else {
+            return nil
+        }
+
+        guard case let .text(text) = records[index] else {
+            return nil
+        }
+        return text
     }
 
     func resolve(_ value: XLCellValue) -> XLCellValue {
         guard case let .opaqueSharedString(index) = value,
-              let item = item(at: index)
+              let text = text(at: index)
         else {
             return value
         }
 
-        return .string(item.text)
+        return .string(text)
     }
 
     func apply(_ plan: XLSharedStringWritePlan) {
         records = plan.records
     }
 
-    private static func item(in element: XMLElement) -> XLSharedStringItem? {
+    private static func text(in element: XMLElement) -> String? {
         let childElements = element.children.compactMap { $0 as? XMLElement }
         let hasNonWhitespaceText = element.children.contains { child in
             guard let text = child as? XMLText else {
@@ -70,7 +77,7 @@ public final class XLSharedStringsFile: OPCXMLFile {
            let text = childElements.first,
            text.name.name == "t"
         {
-            return XLSharedStringItem(text: text.children.compactMap { ($0 as? XMLText)?.value }.joined())
+            return text.children.compactMap { ($0 as? XMLText)?.value }.joined()
         }
 
         return nil
@@ -85,12 +92,11 @@ public final class XLSharedStringsFile: OPCXMLFile {
                 continue
             }
 
-            records.append(XLSharedStringRecord(
-                index: records.count,
-                childIndex: childIndex,
-                item: item(in: element),
-                element: element
-            ))
+            if let text = text(in: element) {
+                records.append(.text(text))
+            } else {
+                records.append(.opaque(originalChildIndex: childIndex))
+            }
         }
         return records
     }
@@ -105,19 +111,10 @@ public final class XLSharedStringsFile: OPCXMLFile {
         return element
     }
 
-    private func write(records: [XLSharedStringRecord], to sharedStringsElement: XMLElement) {
-        var recordsByChildIndex: [Int: XLSharedStringRecord] = [:]
-        var appendedRecords: [XLSharedStringRecord] = []
-        for record in records {
-            if let childIndex = record.childIndex {
-                recordsByChildIndex[childIndex] = record
-            } else {
-                appendedRecords.append(record)
-            }
-        }
-
+    private func write(records: [XLSharedStringRecord], to sharedStringsElement: XMLElement) throws {
         var children: [XMLNode] = []
-        for (childIndex, child) in sharedStringsElement.children.enumerated() {
+        var recordIndex = 0
+        for child in sharedStringsElement.children {
             guard let element = child as? XMLElement,
                   element.name.name == "si"
             else {
@@ -125,25 +122,45 @@ public final class XLSharedStringsFile: OPCXMLFile {
                 continue
             }
 
-            if let record = recordsByChildIndex[childIndex] {
-                children.append(record.element.clone())
+            if records.indices.contains(recordIndex) {
+                children.append(try elementForWriting(record: records[recordIndex], in: sharedStringsElement))
+                recordIndex += 1
             }
         }
 
-        children += appendedRecords.map { $0.element.clone() as XMLNode }
+        children += try records.dropFirst(recordIndex).map { try elementForWriting(record: $0, in: sharedStringsElement) as XMLNode }
         sharedStringsElement.children = children
     }
 
-    static func makeItemElement(for item: XLSharedStringItem) -> XMLElement {
+    private func elementForWriting(
+        record: XLSharedStringRecord,
+        in sharedStringsElement: XMLElement
+    ) throws -> XMLElement {
+        switch record {
+        case let .text(text):
+            return Self.makeTextElement(for: text)
+        case let .opaque(originalChildIndex):
+            guard sharedStringsElement.children.indices.contains(originalChildIndex),
+                  let element = sharedStringsElement.children[originalChildIndex] as? XMLElement,
+                  element.name.name == "si"
+            else {
+                throw OPCError.invalidSharedStringsFile
+            }
+
+            return element.clone()
+        }
+    }
+
+    static func makeTextElement(for text: String) -> XMLElement {
         let itemElement = XMLElement(name: XMLName(name: "si"))
         let textElement = XMLElement(name: XMLName(name: "t"))
-        if item.text != item.text.trimmingCharacters(in: .whitespacesAndNewlines) {
+        if text != text.trimmingCharacters(in: .whitespacesAndNewlines) {
             textElement.attributes.append(XMLAttribute(
                 name: XMLName(prefix: "xml", name: "space"),
                 value: "preserve"
             ))
         }
-        textElement.appendChild(XMLText(item.text))
+        textElement.appendChild(XMLText(text))
         itemElement.appendChild(textElement)
         return itemElement
     }

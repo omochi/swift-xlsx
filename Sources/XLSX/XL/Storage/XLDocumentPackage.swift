@@ -120,7 +120,7 @@ public final class XLDocumentPackage {
         for file in workbookItems.files {
             if !Self.containsOpaqueFile(at: file.path, in: opaqueFiles) {
                 try package.insertFile(
-                    data: file.file.xmlDocument(sharedStrings: sharedStringPlan).data(),
+                    data: try file.file.xmlDocument(sharedStrings: sharedStringPlan).data(),
                     at: file.path
                 )
             }

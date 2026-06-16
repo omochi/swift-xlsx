@@ -13,9 +13,9 @@ struct XLSharedStringsFileTests {
             """.utf8))
 
         #expect(sharedStrings.records.count == 2)
-        #expect(sharedStrings.records.compactMap(\.item) == [
-            XLSharedStringItem(text: "hello"),
-            XLSharedStringItem(text: "world"),
+        #expect(sharedStrings.records == [
+            .text("hello"),
+            .text("world"),
         ])
     }
 
@@ -30,7 +30,7 @@ struct XLSharedStringsFileTests {
             """.utf8))
 
         #expect(sharedStrings.records.count == 1)
-        #expect(sharedStrings.records.first?.item == nil)
+        #expect(sharedStrings.records.first == .opaque(originalChildIndex: 1))
     }
 
     @Test func preservesUnchangedRichTextItemsWhenWriting() throws {
@@ -53,7 +53,7 @@ struct XLSharedStringsFileTests {
               <si><r><rPr><b/></rPr><t>Hello</t></r></si>
             </sst>
             """.utf8))
-        sharedStrings.records.append(sharedStringRecord(index: 1, text: "Changed"))
+        sharedStrings.records.append(sharedStringRecord(text: "Changed"))
 
         let xml = try String(decoding: sharedStrings.data(), as: UTF8.self)
 
@@ -68,7 +68,7 @@ struct XLSharedStringsFileTests {
               <extLst><ext uri="keep"/></extLst>
             </sst>
             """.utf8))
-        sharedStrings.records.append(sharedStringRecord(index: 1, text: "B"))
+        sharedStrings.records.append(sharedStringRecord(text: "B"))
 
         let xml = try String(decoding: sharedStrings.data(), as: UTF8.self)
             .replacingOccurrences(of: "\n", with: "")
@@ -85,7 +85,7 @@ struct XLSharedStringsFileTests {
               <si><t>C</t></si>
             </sst>
             """.utf8))
-        sharedStrings.records.append(sharedStringRecord(index: 3, text: "X"))
+        sharedStrings.records.append(sharedStringRecord(text: "X"))
 
         let xml = try String(decoding: sharedStrings.data(), as: UTF8.self)
             .replacingOccurrences(of: "\n", with: "")
@@ -103,17 +103,20 @@ struct XLSharedStringsFileTests {
         }
     }
 
-    private func sharedStringRecord(index: Int, text: String) -> XLSharedStringRecord {
-        let item = XLSharedStringItem(text: text)
-        let itemElement = XMLElement(name: XMLName(name: "si"))
-        let textElement = XMLElement(name: XMLName(name: "t"))
-        textElement.appendChild(XMLText(text))
-        itemElement.appendChild(textElement)
-        return XLSharedStringRecord(
-            index: index,
-            childIndex: nil,
-            item: item,
-            element: itemElement
-        )
+    @Test func rejectsOpaqueRecordWithMissingOriginalChildWhenWriting() throws {
+        let sharedStrings = XLSharedStringsFile(records: [
+            .opaque(originalChildIndex: 0)
+        ])
+
+        do {
+            _ = try sharedStrings.data()
+            Issue.record("Expected invalid shared strings file error.")
+        } catch let error as OPCError {
+            #expect(error == .invalidSharedStringsFile)
+        }
+    }
+
+    private func sharedStringRecord(text: String) -> XLSharedStringRecord {
+        .text(text)
     }
 }
