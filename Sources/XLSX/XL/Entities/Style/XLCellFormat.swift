@@ -1,7 +1,30 @@
-import MemberwiseInit
-
-@MemberwiseInit(.public)
 public struct XLCellFormat: Sendable & Hashable {
+    public init(
+        numberFormatID: Int? = nil,
+        font: XLFont? = nil,
+        fillID: Int? = nil,
+        borderID: Int? = nil,
+        formatID: Int? = nil,
+        applyNumberFormat: Bool = false,
+        applyFont: Bool? = nil,
+        applyFill: Bool = false,
+        applyBorder: Bool = false,
+        applyAlignment: Bool = false,
+        applyProtection: Bool = false
+    ) {
+        self.numberFormatID = numberFormatID
+        self.font = font
+        self.fillID = fillID
+        self.borderID = borderID
+        self.formatID = formatID
+        self.applyNumberFormat = applyNumberFormat
+        self.applyFont = applyFont ?? (font != nil)
+        self.applyFill = applyFill
+        self.applyBorder = applyBorder
+        self.applyAlignment = applyAlignment
+        self.applyProtection = applyProtection
+    }
+
     public init(
         record: XLCellFormatRecord,
         fonts: XLFontRecordsStorage
@@ -20,7 +43,11 @@ public struct XLCellFormat: Sendable & Hashable {
     }
 
     public var numberFormatID: Int? = nil
-    public var font: XLFont? = nil
+    public var font: XLFont? = nil {
+        didSet {
+            applyFont = font != nil
+        }
+    }
     public var fillID: Int? = nil
     public var borderID: Int? = nil
     public var formatID: Int? = nil

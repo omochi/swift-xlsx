@@ -46,6 +46,22 @@ struct XLStylesFileTests {
         ))
     }
 
+    @Test func cellFormatUpdatesApplyFontWhenFontChanges() {
+        var format = XLCellFormat()
+
+        format.font = XLFont(bold: true)
+        #expect(format.applyFont)
+
+        format.applyFont = false
+        #expect(!format.applyFont)
+
+        format.font = nil
+        #expect(!format.applyFont)
+
+        format.font = XLFont(italic: true)
+        #expect(format.applyFont)
+    }
+
     @Test func cellFormatRecordCopiesOnWrite() {
         let original = XLCellFormatRecord(numberFormatID: 14, applyNumberFormat: true)
         var copy = original
