@@ -10,4 +10,5 @@ public enum OPCError: Error & Equatable {
     case invalidSharedStringsFile
     case invalidStylesFile
     case missingFontRecord
+    case missingFillRecord
 }

@@ -10,7 +10,7 @@ public enum XLCellValue: Sendable & Hashable & CustomStringConvertible {
         case let .number(value):
             return value
         case let .boolean(value):
-            return value ? "1" : "0"
+            return XMLUtils.boolString(value: value)
         case let .string(text):
             return text
         case let .error(value):

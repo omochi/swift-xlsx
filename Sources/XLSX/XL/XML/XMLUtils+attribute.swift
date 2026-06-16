@@ -1,4 +1,8 @@
 extension XMLUtils {
+    static func boolString(value: Bool) -> String {
+        value ? "1" : "0"
+    }
+
     static func boolValue(string: String) -> Bool? {
         if let number = Int(string) {
             return number != 0
@@ -39,31 +43,35 @@ extension XMLUtils {
         return boolValue(string: value) ?? false
     }
 
-    static func setAttribute(name: String, value: Int?, in element: XMLElement) {
+    static func setIntAttribute(name: String, value: Int?, in element: XMLElement) {
         guard let value else {
+            element.removeAttribute(name: name)
             return
         }
         element.setAttribute(name: name, value: String(value))
     }
 
-    static func setAttribute(name: String, value: Double?, in element: XMLElement) {
+    static func setDoubleAttribute(name: String, value: Double?, in element: XMLElement) {
         guard let value else {
+            element.removeAttribute(name: name)
             return
         }
         element.setAttribute(name: name, value: String(value))
     }
 
-    static func setAttribute(name: String, value: String?, in element: XMLElement) {
+    static func setStringAttribute(name: String, value: String?, in element: XMLElement) {
         guard let value else {
+            element.removeAttribute(name: name)
             return
         }
         element.setAttribute(name: name, value: value)
     }
 
-    static func setAttribute(name: String, value: Bool, in element: XMLElement) {
-        guard value else {
+    static func setBoolAttribute(name: String, value: Bool?, in element: XMLElement) {
+        guard let value else {
+            element.removeAttribute(name: name)
             return
         }
-        element.setAttribute(name: name, value: "1")
+        element.setAttribute(name: name, value: boolString(value: value))
     }
 }

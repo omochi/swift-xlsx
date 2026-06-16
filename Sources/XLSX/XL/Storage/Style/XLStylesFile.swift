@@ -3,18 +3,22 @@ import Foundation
 public final class XLStylesFile: XMLDocumentConvertible {
     public init(
         fonts: [XLFontRecord] = [],
+        fills: [XLFill] = [],
         cellFormats: [XLCellFormatRecord] = []
     ) {
         self.fonts = XLFontRecordsStorage(records: fonts)
+        self.fills = XLFillsStorage(records: fills)
         self.cellFormats = XLCellFormatRecordsStorage(records: cellFormats)
         self.original = nil
     }
 
     public init(
         fonts: XLFontRecordsStorage = XLFontRecordsStorage(),
+        fills: XLFillsStorage = XLFillsStorage(),
         cellFormats: XLCellFormatRecordsStorage
     ) {
         self.fonts = fonts
+        self.fills = fills
         self.cellFormats = cellFormats
         self.original = nil
     }
@@ -25,11 +29,13 @@ public final class XLStylesFile: XMLDocumentConvertible {
         }
 
         self.fonts = XLFontRecordsStorage(records: Self.readFonts(in: stylesElement))
+        self.fills = XLFillsStorage(records: Self.readFills(in: stylesElement))
         self.cellFormats = XLCellFormatRecordsStorage(records: Self.readCellFormats(in: stylesElement))
         self.original = xmlDocument
     }
 
     public var fonts: XLFontRecordsStorage
+    public var fills: XLFillsStorage
     public var cellFormats: XLCellFormatRecordsStorage
     public var original: XMLDocument?
 
@@ -44,7 +50,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
     }
 
     public var isEmpty: Bool {
-        fonts.records.isEmpty && cellFormats.records.isEmpty
+        fonts.records.isEmpty && fills.records.isEmpty && cellFormats.records.isEmpty
     }
 
     public func xmlDocument() throws -> XMLDocument {
@@ -52,12 +58,13 @@ public final class XLStylesFile: XMLDocumentConvertible {
         let stylesElement = stylesElementForWriting(in: document)
         stylesElement.ensureNamespace(uri: .spreadsheet)
         try writeFonts(to: stylesElement)
+        try writeFills(to: stylesElement)
         writeCellFormats(to: stylesElement)
         return document
     }
 
     func clone() -> XLStylesFile {
-        let file = XLStylesFile(fonts: fonts.clone(), cellFormats: cellFormats.clone())
+        let file = XLStylesFile(fonts: fonts.clone(), fills: fills.clone(), cellFormats: cellFormats.clone())
         file.original = original
         return file
     }
@@ -67,6 +74,13 @@ public final class XLStylesFile: XMLDocumentConvertible {
             return []
         }
         return fontsElement.elements(name: "font").map(XLFontRecord.init(element:))
+    }
+
+    private static func readFills(in stylesElement: XMLElement) -> [XLFill] {
+        guard let fillsElement = stylesElement.elements(name: "fills").first else {
+            return []
+        }
+        return fillsElement.elements(name: "fill").map(XLFill.init(element:))
     }
 
     private static func readCellFormats(in stylesElement: XMLElement) -> [XLCellFormatRecord] {
@@ -105,6 +119,25 @@ public final class XLStylesFile: XMLDocumentConvertible {
         )
     }
 
+    private func writeFills(to stylesElement: XMLElement) throws {
+        let fills = self.fills.records
+        if fills.isEmpty && stylesElement.elements(name: "fills").isEmpty {
+            return
+        }
+
+        let fillsElement = fillsElementForWriting(in: stylesElement)
+        fillsElement.setAttribute(name: "count", value: String(fills.count))
+
+        fillsElement.children = try XMLUtils.patchChildren(
+            parentElement: fillsElement,
+            replacingElementName: "fill",
+            records: fills,
+            makeElement: { fill in
+                try fill.xmlElement()
+            }
+        )
+    }
+
     private func writeCellFormats(to stylesElement: XMLElement) {
         let cellFormats = self.cellFormats.records
         if cellFormats.isEmpty && stylesElement.elements(name: "cellXfs").isEmpty {
@@ -130,6 +163,16 @@ public final class XLStylesFile: XMLDocumentConvertible {
         }
 
         let element = XMLElement(name: XMLName(name: "fonts"))
+        stylesElement.appendChild(element)
+        return element
+    }
+
+    private func fillsElementForWriting(in stylesElement: XMLElement) -> XMLElement {
+        if let element = stylesElement.elements(name: "fills").first {
+            return element
+        }
+
+        let element = XMLElement(name: XMLName(name: "fills"))
         stylesElement.appendChild(element)
         return element
     }

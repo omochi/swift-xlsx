@@ -174,17 +174,17 @@ public struct XLCellFormatRecord: Sendable & Hashable {
 
     func xmlElement() -> XMLElement {
         let element = XMLElement(name: XMLName(name: "xf"))
-        XMLUtils.setAttribute(name: "numFmtId", value: numberFormatID, in: element)
-        XMLUtils.setAttribute(name: "fontId", value: fontID, in: element)
-        XMLUtils.setAttribute(name: "fillId", value: fillID, in: element)
-        XMLUtils.setAttribute(name: "borderId", value: borderID, in: element)
-        XMLUtils.setAttribute(name: "xfId", value: formatID, in: element)
-        XMLUtils.setAttribute(name: "applyNumberFormat", value: applyNumberFormat, in: element)
-        XMLUtils.setAttribute(name: "applyFont", value: applyFont, in: element)
-        XMLUtils.setAttribute(name: "applyFill", value: applyFill, in: element)
-        XMLUtils.setAttribute(name: "applyBorder", value: applyBorder, in: element)
-        XMLUtils.setAttribute(name: "applyAlignment", value: applyAlignment, in: element)
-        XMLUtils.setAttribute(name: "applyProtection", value: applyProtection, in: element)
+        XMLUtils.setIntAttribute(name: "numFmtId", value: numberFormatID, in: element)
+        XMLUtils.setIntAttribute(name: "fontId", value: fontID, in: element)
+        XMLUtils.setIntAttribute(name: "fillId", value: fillID, in: element)
+        XMLUtils.setIntAttribute(name: "borderId", value: borderID, in: element)
+        XMLUtils.setIntAttribute(name: "xfId", value: formatID, in: element)
+        XMLUtils.setBoolAttribute(name: "applyNumberFormat", value: applyNumberFormat ? true : nil, in: element)
+        XMLUtils.setBoolAttribute(name: "applyFont", value: applyFont ? true : nil, in: element)
+        XMLUtils.setBoolAttribute(name: "applyFill", value: applyFill ? true : nil, in: element)
+        XMLUtils.setBoolAttribute(name: "applyBorder", value: applyBorder ? true : nil, in: element)
+        XMLUtils.setBoolAttribute(name: "applyAlignment", value: applyAlignment ? true : nil, in: element)
+        XMLUtils.setBoolAttribute(name: "applyProtection", value: applyProtection ? true : nil, in: element)
         return element
     }
 }

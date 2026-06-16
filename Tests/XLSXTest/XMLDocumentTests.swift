@@ -244,6 +244,27 @@ struct XMLDocumentTests {
         #expect(child.attributes.first?.value == "rId1")
     }
 
+    @Test func xmlUtilsSetAttributeWritesBoolValuesAndRemovesNilValues() {
+        let element = XMLElement(name: XMLName(name: "element"))
+
+        XMLUtils.setBoolAttribute(name: "enabled", value: true, in: element)
+        #expect(element.attribute(name: "enabled") == XMLUtils.boolString(value: true))
+        #expect(XLCellValue.boolean(true).description == XMLUtils.boolString(value: true))
+
+        XMLUtils.setBoolAttribute(name: "enabled", value: false, in: element)
+        #expect(element.attribute(name: "enabled") == XMLUtils.boolString(value: false))
+        #expect(XLCellValue.boolean(false).description == XMLUtils.boolString(value: false))
+
+        XMLUtils.setBoolAttribute(name: "enabled", value: Optional<Bool>.none, in: element)
+        #expect(element.attribute(name: "enabled") == nil)
+
+        XMLUtils.setIntAttribute(name: "count", value: 1, in: element)
+        #expect(element.attribute(name: "count") == "1")
+
+        XMLUtils.setIntAttribute(name: "count", value: Optional<Int>.none, in: element)
+        #expect(element.attribute(name: "count") == nil)
+    }
+
     @Test func ensureNamespaceURIReusesExistingPrefixForURI() {
         let element = XMLElement(name: XMLName(name: "element"))
         element.ensureNamespace(prefix: "rel", uri: .officeRelationships)

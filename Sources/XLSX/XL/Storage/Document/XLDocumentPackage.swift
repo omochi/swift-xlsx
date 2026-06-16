@@ -107,9 +107,17 @@ public final class XLDocumentPackage {
         workbook.file.collectSharedStrings(into: sharedStrings.file.records)
 
         styles.file.fonts = XLFontRecordsStorage()
-        workbook.file.collectFonts(into: styles.file.fonts)
+        styles.file.fills = XLFillsStorage()
+        workbook.file.collectCellFormatStyleItems(
+            fonts: styles.file.fonts,
+            fills: styles.file.fills
+        )
         styles.file.cellFormats = XLCellFormatRecordsStorage()
-        try workbook.file.collectCellFormats(into: styles.file.cellFormats, fonts: styles.file.fonts)
+        try workbook.file.collectCellFormats(
+            into: styles.file.cellFormats,
+            fonts: styles.file.fonts,
+            fills: styles.file.fills
+        )
         let writesStyles = styles.file.original != nil || !styles.file.isEmpty
 
         workbookRels.file.ensureRelationship(
@@ -133,7 +141,8 @@ public final class XLDocumentPackage {
                 let xml = try file.file.xmlDocument(
                     sharedStrings: sharedStrings.file.records,
                     cellFormats: styles.file.cellFormats,
-                    fonts: styles.file.fonts
+                    fonts: styles.file.fonts,
+                    fills: styles.file.fills
                 )
                 try package.insertFile(xmlDocument: xml, at: file.path)
             }

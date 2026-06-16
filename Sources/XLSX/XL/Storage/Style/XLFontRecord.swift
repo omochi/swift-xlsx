@@ -10,7 +10,7 @@ public struct XLFontRecord: Sendable & Hashable {
         var underlineXMLString: String?
         var verticalAlignmentXMLString: String?
         var size: Double?
-        var colorXMLString: String?
+        var color: XLColor?
         var name: String?
         var familyXMLString: String?
         var charsetXMLString: String?
@@ -28,7 +28,7 @@ public struct XLFontRecord: Sendable & Hashable {
         underlineXMLString: String? = nil,
         verticalAlignmentXMLString: String? = nil,
         size: Double? = nil,
-        colorXMLString: String? = nil,
+        color: XLColor? = nil,
         name: String? = nil,
         familyXMLString: String? = nil,
         charsetXMLString: String? = nil,
@@ -46,7 +46,7 @@ public struct XLFontRecord: Sendable & Hashable {
                 underlineXMLString: underlineXMLString,
                 verticalAlignmentXMLString: verticalAlignmentXMLString,
                 size: size,
-                colorXMLString: colorXMLString,
+                color: color,
                 name: name,
                 familyXMLString: familyXMLString,
                 charsetXMLString: charsetXMLString,
@@ -85,7 +85,7 @@ public struct XLFontRecord: Sendable & Hashable {
             case "sz":
                 size = XMLUtils.doubleAttribute(name: "val", in: childElement)
             case "color":
-                colorXMLString = childElement.xmlString
+                color = XLColor(element: childElement)
             case "name":
                 name = childElement.attribute(name: "val")
             case "family":
@@ -205,11 +205,11 @@ public struct XLFontRecord: Sendable & Hashable {
         }
     }
 
-    public var colorXMLString: String? {
-        get { storage.colorXMLString }
+    public var color: XLColor? {
+        get { storage.color }
         set {
             ensureUniqueObject()
-            storage.colorXMLString = newValue
+            storage.color = newValue
         }
     }
 
@@ -257,7 +257,7 @@ public struct XLFontRecord: Sendable & Hashable {
         try appendElement(xmlString: underlineXMLString, to: element)
         try appendElement(xmlString: verticalAlignmentXMLString, to: element)
         appendFontSize(to: element)
-        try appendElement(xmlString: colorXMLString, to: element)
+        appendColor(to: element)
         appendFontName(to: element)
         try appendElement(xmlString: familyXMLString, to: element)
         try appendElement(xmlString: charsetXMLString, to: element)
@@ -281,8 +281,15 @@ public struct XLFontRecord: Sendable & Hashable {
             return
         }
         let sizeElement = XMLElement(name: XMLName(name: "sz"))
-        XMLUtils.setAttribute(name: "val", value: size, in: sizeElement)
+        XMLUtils.setDoubleAttribute(name: "val", value: size, in: sizeElement)
         element.appendChild(sizeElement)
+    }
+
+    private func appendColor(to element: XMLElement) {
+        guard let color else {
+            return
+        }
+        element.appendChild(color.xmlElement(name: "color"))
     }
 
     private func appendFontName(to element: XMLElement) {
@@ -290,7 +297,7 @@ public struct XLFontRecord: Sendable & Hashable {
             return
         }
         let nameElement = XMLElement(name: XMLName(name: "name"))
-        XMLUtils.setAttribute(name: "val", value: name, in: nameElement)
+        XMLUtils.setStringAttribute(name: "val", value: name, in: nameElement)
         element.appendChild(nameElement)
     }
 

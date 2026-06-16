@@ -110,6 +110,16 @@ public final class XMLElement: XMLNode {
         return attribute
     }
 
+    public func removeAttribute(
+        name: String,
+        namespaceURI: XMLNamespaceURI? = nil
+    ) {
+        attributes.removeAll { attribute in
+            attribute.name.name == name
+                && self.namespaceURI(forAttribute: attribute.name) == namespaceURI
+        }
+    }
+
     public func elements(name: String) -> [XMLElement] {
         children.compactMap { $0 as? XMLElement }.filter { $0.name.name == name }
     }

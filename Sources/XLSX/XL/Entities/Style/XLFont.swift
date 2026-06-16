@@ -13,7 +13,7 @@ public struct XLFont: Sendable & Hashable {
         self.underlineXMLString = record.underlineXMLString
         self.verticalAlignmentXMLString = record.verticalAlignmentXMLString
         self.size = record.size
-        self.colorXMLString = record.colorXMLString
+        self.color = record.color
         self.name = record.name
         self.familyXMLString = record.familyXMLString
         self.charsetXMLString = record.charsetXMLString
@@ -30,7 +30,7 @@ public struct XLFont: Sendable & Hashable {
     public var underlineXMLString: String? = nil
     public var verticalAlignmentXMLString: String? = nil
     public var size: Double? = nil
-    public var colorXMLString: String? = nil
+    public var color: XLColor? = nil
     public var name: String? = nil
     public var familyXMLString: String? = nil
     public var charsetXMLString: String? = nil
@@ -48,7 +48,7 @@ public struct XLFont: Sendable & Hashable {
             underlineXMLString: underlineXMLString,
             verticalAlignmentXMLString: verticalAlignmentXMLString,
             size: size,
-            colorXMLString: colorXMLString,
+            color: color,
             name: name,
             familyXMLString: familyXMLString,
             charsetXMLString: charsetXMLString,

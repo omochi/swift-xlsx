@@ -102,7 +102,11 @@ struct XLDocumentTests {
         let storedRecord = try #require(document.package.styles.file.cellFormats.record(at: 1))
 
         #expect(cell.format == XLCellFormat(numberFormatID: 14, applyNumberFormat: true))
-        #expect(cell.format == XLCellFormat(record: storedRecord, fonts: document.package.styles.file.fonts))
+        #expect(cell.format == XLCellFormat(
+            record: storedRecord,
+            fonts: document.package.styles.file.fonts,
+            fills: document.package.styles.file.fills
+        ))
     }
 
     @Test func removesUnusedCellFormatsWhenSaving() throws {
@@ -207,7 +211,11 @@ struct XLDocumentTests {
         let format = XLCellFormat(
             numberFormatID: 14,
             font: XLFont(bold: true, size: 12, name: "Arial"),
-            fillID: 2,
+            fill: .pattern(XLFill.Pattern(
+                patternType: "solid",
+                foregroundColor: .rgb("FFFFFF00"),
+                backgroundColor: .indexed(64)
+            )),
             borderID: 3,
             formatID: 0,
             applyNumberFormat: true
@@ -235,8 +243,10 @@ struct XLDocumentTests {
         #expect(worksheetXML.contains(#"<c r="B1" s="0"><v>43</v></c>"#))
         #expect(stylesXML.contains(#"<fonts count="1">"#))
         #expect(stylesXML.contains(#"<font><b/><sz val="12.0"/><name val="Arial"/></font>"#))
+        #expect(stylesXML.contains(#"<fills count="1">"#))
+        #expect(stylesXML.contains(#"<fill><patternFill patternType="solid"><fgColor rgb="FFFFFF00"/><bgColor indexed="64"/></patternFill></fill>"#))
         #expect(stylesXML.contains(#"<cellXfs count="1">"#))
-        #expect(stylesXML.contains(#"<xf numFmtId="14" fontId="0" fillId="2" borderId="3" xfId="0" applyNumberFormat="1" applyFont="1"/>"#))
+        #expect(stylesXML.contains(#"<xf numFmtId="14" fontId="0" fillId="0" borderId="3" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1"/>"#))
     }
 
     @Test func rebuildsSharedStringsFromEditedCells() throws {

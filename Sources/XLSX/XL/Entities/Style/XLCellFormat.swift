@@ -2,7 +2,7 @@ public struct XLCellFormat: Sendable & Hashable {
     public init(
         numberFormatID: Int? = nil,
         font: XLFont? = nil,
-        fillID: Int? = nil,
+        fill: XLFill? = nil,
         borderID: Int? = nil,
         formatID: Int? = nil,
         applyNumberFormat: Bool = false,
@@ -14,12 +14,12 @@ public struct XLCellFormat: Sendable & Hashable {
     ) {
         self.numberFormatID = numberFormatID
         self.font = font
-        self.fillID = fillID
+        self.fill = fill
         self.borderID = borderID
         self.formatID = formatID
         self.applyNumberFormat = applyNumberFormat
         self.applyFont = applyFont ?? (font != nil)
-        self.applyFill = applyFill
+        self.applyFill = applyFill || fill != nil
         self.applyBorder = applyBorder
         self.applyAlignment = applyAlignment
         self.applyProtection = applyProtection
@@ -27,11 +27,12 @@ public struct XLCellFormat: Sendable & Hashable {
 
     public init(
         record: XLCellFormatRecord,
-        fonts: XLFontRecordsStorage
+        fonts: XLFontRecordsStorage,
+        fills: XLFillsStorage
     ) {
         self.numberFormatID = record.numberFormatID
         self.font = Self.font(for: record.fontID, in: fonts)
-        self.fillID = record.fillID
+        self.fill = Self.fill(for: record.fillID, in: fills)
         self.borderID = record.borderID
         self.formatID = record.formatID
         self.applyNumberFormat = record.applyNumberFormat
@@ -48,7 +49,11 @@ public struct XLCellFormat: Sendable & Hashable {
             applyFont = font != nil
         }
     }
-    public var fillID: Int? = nil
+    public var fill: XLFill? = nil {
+        didSet {
+            applyFill = fill != nil
+        }
+    }
     public var borderID: Int? = nil
     public var formatID: Int? = nil
     public var applyNumberFormat = false
@@ -58,11 +63,11 @@ public struct XLCellFormat: Sendable & Hashable {
     public var applyAlignment = false
     public var applyProtection = false
 
-    func record(fonts: XLFontRecordsStorage) throws -> XLCellFormatRecord {
+    func record(fonts: XLFontRecordsStorage, fills: XLFillsStorage) throws -> XLCellFormatRecord {
         try XLCellFormatRecord(
             numberFormatID: numberFormatID,
             fontID: fontID(in: fonts),
-            fillID: fillID,
+            fillID: fillID(in: fills),
             borderID: borderID,
             formatID: formatID,
             applyNumberFormat: applyNumberFormat,
@@ -84,6 +89,16 @@ public struct XLCellFormat: Sendable & Hashable {
         return XLFont(record: record)
     }
 
+    private static func fill(for fillID: Int?, in fills: XLFillsStorage) -> XLFill? {
+        guard let fillID,
+              let record = fills.record(at: fillID)
+        else {
+            return nil
+        }
+
+        return record
+    }
+
     private func fontID(in fonts: XLFontRecordsStorage) throws -> Int? {
         guard let font else {
             return nil
@@ -91,6 +106,18 @@ public struct XLCellFormat: Sendable & Hashable {
 
         guard let index = fonts.index(for: font.record) else {
             throw OPCError.missingFontRecord
+        }
+
+        return index
+    }
+
+    private func fillID(in fills: XLFillsStorage) throws -> Int? {
+        guard let fill else {
+            return nil
+        }
+
+        guard let index = fills.index(for: fill) else {
+            throw OPCError.missingFillRecord
         }
 
         return index

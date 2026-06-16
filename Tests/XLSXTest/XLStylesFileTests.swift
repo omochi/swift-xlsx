@@ -10,14 +10,14 @@ struct XLStylesFileTests {
 
         copy.size = 12
         copy.italic = true
-        copy.colorXMLString = #"<color rgb="FFFF0000"/>"#
+        copy.color = .rgb("FFFF0000")
 
         #expect(original == XLFontRecord(bold: true, size: 11, name: "Calibri"))
         #expect(copy == XLFontRecord(
             bold: true,
             italic: true,
             size: 12,
-            colorXMLString: #"<color rgb="FFFF0000"/>"#,
+            color: .rgb("FFFF0000"),
             name: "Calibri"
         ))
     }
@@ -29,7 +29,7 @@ struct XLStylesFileTests {
             condense: true,
             underlineXMLString: #"<u val="single"/>"#,
             size: 12,
-            colorXMLString: #"<color rgb="FFFF0000"/>"#,
+            color: .rgb("FFFF0000"),
             name: "Arial",
             familyXMLString: #"<family val="2"/>"#
         )
@@ -40,7 +40,7 @@ struct XLStylesFileTests {
             condense: true,
             underlineXMLString: #"<u val="single"/>"#,
             size: 12,
-            colorXMLString: #"<color rgb="FFFF0000"/>"#,
+            color: .rgb("FFFF0000"),
             name: "Arial",
             familyXMLString: #"<family val="2"/>"#
         ))
@@ -76,7 +76,7 @@ struct XLStylesFileTests {
     @Test func readsFontsFromFontsElement() throws {
         let styles = try stylesFile(data: Data("""
             <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-              <fonts count="2">
+              <fonts count="3">
                 <font>
                   <b/>
                   <i val="1"/>
@@ -95,7 +95,12 @@ struct XLStylesFileTests {
                 <font>
                   <u val="none"/>
                   <sz val="12.5"/>
+                  <color theme="4" tint="0.4"/>
                   <name val="Arial"/>
+                </font>
+                <font>
+                  <color foo="bar"/>
+                  <name val="Unknown"/>
                 </font>
               </fonts>
             </styleSheet>
@@ -112,7 +117,7 @@ struct XLStylesFileTests {
                 shadow: true,
                 underlineXMLString: #"<u val="single"/>"#,
                 size: 11,
-                colorXMLString: #"<color theme="1"/>"#,
+                color: .theme(1),
                 name: "Calibri",
                 familyXMLString: #"<family val="2"/>"#,
                 schemeXMLString: #"<scheme val="minor"/>"#
@@ -120,9 +125,27 @@ struct XLStylesFileTests {
             XLFontRecord(
                 underlineXMLString: #"<u val="none"/>"#,
                 size: 12.5,
+                color: .theme(4, tint: 0.4),
                 name: "Arial"
             ),
+            XLFontRecord(name: "Unknown"),
         ])
+    }
+
+    @Test func writesFontColorVariants() throws {
+        let styles = XLStylesFile(fonts: [
+            XLFontRecord(color: .rgb("FFFF0000")),
+            XLFontRecord(color: .indexed(64)),
+            XLFontRecord(color: .theme(4, tint: -0.25)),
+            XLFontRecord(color: .auto),
+        ])
+
+        let xml = try String(decoding: styles.xmlDocument().data, as: UTF8.self)
+
+        #expect(xml.contains(#"<font><color rgb="FFFF0000"/></font>"#))
+        #expect(xml.contains(#"<font><color indexed="64"/></font>"#))
+        #expect(xml.contains(#"<font><color theme="4" tint="-0.25"/></font>"#))
+        #expect(xml.contains(#"<font><color auto="1"/></font>"#))
     }
 
     @Test func patchesFontsWithoutRemovingOtherStyleChildren() throws {
@@ -147,7 +170,7 @@ struct XLStylesFileTests {
                 shadow: true,
                 underlineXMLString: #"<u val="single"/>"#,
                 size: 12,
-                colorXMLString: #"<color rgb="FFFF0000"/>"#,
+                color: .rgb("FFFF0000"),
                 name: "Arial",
                 familyXMLString: #"<family val="2"/>"#
             ),
@@ -178,6 +201,105 @@ struct XLStylesFileTests {
 
         #expect(xml.contains(#"<fonts count="0">"#) || xml.contains(#"<fonts count="0"/>"#))
         #expect(!xml.contains("<font>"))
+    }
+
+    @Test func readsFillsFromFillsElement() throws {
+        let styles = try stylesFile(data: Data("""
+            <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+              <fills count="3">
+                <fill><patternFill patternType="none"/></fill>
+                <fill>
+                  <patternFill patternType="solid">
+                    <fgColor rgb="FFFFFF00"/>
+                    <bgColor indexed="64"/>
+                  </patternFill>
+                </fill>
+                <fill>
+                  <gradientFill degree="45">
+                    <stop position="0"><color rgb="FFFFFFFF"/></stop>
+                    <stop position="1"><color rgb="FF000000"/></stop>
+                  </gradientFill>
+                </fill>
+              </fills>
+            </styleSheet>
+            """.utf8))
+
+        #expect(styles.fills.records.count == 3)
+        #expect(styles.fills.records.prefix(2) == [
+            XLFill.pattern(XLFill.Pattern(patternType: "none")),
+            XLFill.pattern(XLFill.Pattern(
+                patternType: "solid",
+                foregroundColor: .rgb("FFFFFF00"),
+                backgroundColor: .indexed(64)
+            )),
+        ])
+        if case let .gradient(xmlString) = styles.fills.records[2] {
+            #expect(xmlString.contains(#"<gradientFill degree="45">"#))
+            #expect(xmlString.contains(#"<stop position="0"><color rgb="FFFFFFFF"/></stop>"#))
+            #expect(xmlString.contains(#"<stop position="1"><color rgb="FF000000"/></stop>"#))
+        } else {
+            Issue.record("Expected gradient fill")
+        }
+    }
+
+    @Test func fillPatternStoresTypedColors() {
+        let fill = XLFill.pattern(XLFill.Pattern(
+            patternType: "solid",
+            foregroundColor: .rgb("FFFF0000"),
+            backgroundColor: .indexed(64)
+        ))
+
+        #expect(fill == .pattern(XLFill.Pattern(
+            patternType: "solid",
+            foregroundColor: .rgb("FFFF0000"),
+            backgroundColor: .indexed(64)
+        )))
+    }
+
+    @Test func patchesFillsWithoutRemovingOtherStyleChildren() throws {
+        let styles = try stylesFile(data: Data("""
+            <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+              <fonts count="1"><font><name val="Calibri"/></font></fonts>
+              <fills count="1">
+                <fill><patternFill patternType="none"/></fill>
+              </fills>
+              <cellXfs count="1"><xf numFmtId="0"/></cellXfs>
+            </styleSheet>
+            """.utf8))
+
+        styles.fills = XLFillsStorage(records: [
+            .pattern(XLFill.Pattern(
+                patternType: "solid",
+                foregroundColor: .rgb("FFFFFF00"),
+                backgroundColor: .indexed(64)
+            )),
+            .gradient(xmlString: #"<gradientFill degree="45"><stop position="0"><color rgb="FFFFFFFF"/></stop></gradientFill>"#),
+        ])
+
+        let xml = try String(decoding: styles.xmlDocument().data, as: UTF8.self)
+
+        #expect(xml.contains(#"<fonts count="1"><font><name val="Calibri"/></font></fonts>"#))
+        #expect(xml.contains(#"<fills count="2">"#))
+        #expect(xml.contains(#"<fill><patternFill patternType="solid"><fgColor rgb="FFFFFF00"/><bgColor indexed="64"/></patternFill></fill>"#))
+        #expect(xml.contains(#"<fill><gradientFill degree="45"><stop position="0"><color rgb="FFFFFFFF"/></stop></gradientFill></fill>"#))
+        #expect(xml.contains(#"<cellXfs count="1"><xf numFmtId="0"/></cellXfs>"#))
+    }
+
+    @Test func preservesExistingFillsTagWhenFillsBecomeEmpty() throws {
+        let styles = try stylesFile(data: Data("""
+            <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+              <fills count="1">
+                <fill><patternFill patternType="none"/></fill>
+              </fills>
+            </styleSheet>
+            """.utf8))
+
+        styles.fills = XLFillsStorage()
+
+        let xml = try String(decoding: styles.xmlDocument().data, as: UTF8.self)
+
+        #expect(xml.contains(#"<fills count="0">"#) || xml.contains(#"<fills count="0"/>"#))
+        #expect(!xml.contains("<fill>"))
     }
 
     @Test func readsCellFormatsFromCellXfs() throws {
