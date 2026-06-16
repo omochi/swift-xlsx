@@ -143,6 +143,9 @@ struct XLWorksheetFileTests {
         worksheet.cell(row: 1, column: 1).value = .string("shared")
         try document.save(to: url)
 
+        #expect(worksheet.existingRow(1)?.existingCell(column: 1)?.value == .string("shared"))
+        #expect(document.package.sharedStrings.file.records == [])
+
         let package = try OPCPackage(data: Data(contentsOf: url))
         let worksheetXML = try String(
             decoding: #require(package.data(at: OPCFilePath(string: "/xl/worksheets/sheet1.xml"))),

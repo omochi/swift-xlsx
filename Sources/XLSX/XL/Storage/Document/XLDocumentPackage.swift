@@ -93,13 +93,6 @@ public final class XLDocumentPackage {
     public var opaqueFiles: [OPCOpaquePathWithFile]
 
     func makeOPCPackage() throws -> OPCPackage {
-        var contentTypes = contentTypes
-        var packageRels = packageRels
-        let workbook = workbook
-        var workbookRels = workbookRels
-        let sharedStrings = sharedStrings
-        let styles = styles
-        let opaqueFiles = opaqueFiles
         let writesStyles = styles.file.original != nil || !styles.file.isEmpty
 
         packageRels.file.ensureRelationship(
@@ -110,11 +103,14 @@ public final class XLDocumentPackage {
             workbookPath: workbook.path,
             workbookRels: &workbookRels.file
         )
-        let sharedStringPlan = XLSharedStringWritePlan(
+
+        let sharedStringNormalization = XLSharedStringNormalization(
             sharedStrings: sharedStrings.file,
             workbook: workbook.file
         )
-        sharedStrings.file.apply(sharedStringPlan)
+        try workbook.file.normalizeSharedString(sharedStringNormalization)
+        sharedStrings.file.normalizeSharedString(sharedStringNormalization)
+
         workbookRels.file.ensureRelationship(
             type: XMLNamespaceURI.sharedStrings.string,
             target: sharedStrings.path.relationshipTarget(relativeTo: workbook.path)
@@ -134,7 +130,7 @@ public final class XLDocumentPackage {
         for file in workbookItems.files {
             if !Self.containsOpaqueFile(at: file.path, in: opaqueFiles) {
                 try package.insertFile(
-                    data: try file.file.xmlDocument(sharedStrings: sharedStringPlan).data(),
+                    data: try file.file.xmlDocument().data(),
                     at: file.path
                 )
             }
@@ -154,6 +150,18 @@ public final class XLDocumentPackage {
         try package.insertFile(contentTypes)
 
         return package
+    }
+
+    func clone() -> XLDocumentPackage {
+        XLDocumentPackage(
+            contentTypes: contentTypes,
+            packageRels: packageRels,
+            workbook: workbook.clone { $0.clone() },
+            workbookRels: workbookRels,
+            sharedStrings: sharedStrings.clone { $0.clone() },
+            styles: styles.clone { $0.clone() },
+            opaqueFiles: opaqueFiles
+        )
     }
 
     private static func readFile<File: OPCFile>(

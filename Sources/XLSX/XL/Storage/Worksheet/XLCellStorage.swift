@@ -15,7 +15,7 @@ public final class XLCellStorage {
     public var value: XLCellValue
     public var formatIndex: Int? = nil
 
-    func write(to cellElement: XMLElement, sharedStrings: XLSharedStringWritePlan? = nil) throws {
+    func write(to cellElement: XMLElement) throws {
         writeFormatIndex(to: cellElement)
 
         cellElement.children = cellElement.children.filter { child in
@@ -33,19 +33,14 @@ public final class XLCellStorage {
             setCellType("b", in: cellElement)
             appendValueElement(to: cellElement, text: value.description)
         case .string:
-            if let sharedStrings {
-                setCellType("s", in: cellElement)
-                appendValueElement(to: cellElement, text: String(try sharedStrings.index(for: value)))
-            } else {
-                removeCellType(in: cellElement)
-                appendValueElement(to: cellElement, text: value.description)
-            }
+            removeCellType(in: cellElement)
+            appendValueElement(to: cellElement, text: value.description)
         case .error:
             setCellType("e", in: cellElement)
             appendValueElement(to: cellElement, text: value.description)
         case .opaqueSharedString:
             setCellType("s", in: cellElement)
-            appendValueElement(to: cellElement, text: try valueText(sharedStrings: sharedStrings))
+            appendValueElement(to: cellElement, text: value.description)
         }
     }
 
@@ -55,6 +50,19 @@ public final class XLCellStorage {
 
     func collectSharedStringValues(into collector: inout XLSharedStringCollector) {
         collector.collect(value)
+    }
+
+    func normalizeSharedString(_ normalization: XLSharedStringNormalization) throws {
+        switch value {
+        case .string, .opaqueSharedString:
+            value = .opaqueSharedString(index: try normalization.index(for: value))
+        case .number, .boolean, .error:
+            break
+        }
+    }
+
+    func clone() -> XLCellStorage {
+        XLCellStorage(value: value, formatIndex: formatIndex)
     }
 
     private static func formatIndex(in cellElement: XMLElement) -> Int? {
@@ -121,13 +129,6 @@ public final class XLCellStorage {
 
     private static func isNumber(_ value: String) -> Bool {
         Double(value) != nil
-    }
-
-    private func valueText(sharedStrings: XLSharedStringWritePlan?) throws -> String {
-        guard let sharedStrings else {
-            return value.description
-        }
-        return String(try sharedStrings.index(for: value))
     }
 
     private func appendValueElement(to cellElement: XMLElement, text: String) {

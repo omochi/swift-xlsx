@@ -1,4 +1,4 @@
-struct XLSharedStringWritePlan {
+struct XLSharedStringNormalization {
     init(
         sharedStrings: XLSharedStringsFile,
         workbook: XLWorkbookFile

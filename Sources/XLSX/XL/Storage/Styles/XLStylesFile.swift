@@ -40,6 +40,12 @@ public final class XLStylesFile: OPCXMLFile {
         return document
     }
 
+    func clone() -> XLStylesFile {
+        let file = XLStylesFile(cellFormats: cellFormats)
+        file.original = original
+        return file
+    }
+
     private static func cellFormats(in stylesElement: XMLElement) -> [XLCellFormatRecord] {
         guard let cellXfsElement = stylesElement.elements(name: "cellXfs").first else {
             return []

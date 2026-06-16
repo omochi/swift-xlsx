@@ -48,14 +48,10 @@ public final class XLWorksheetFile: OPCXMLFile {
     }
 
     public func xmlDocument() throws -> XMLDocument {
-        try xmlDocument(sharedStrings: nil)
-    }
-
-    func xmlDocument(sharedStrings: XLSharedStringWritePlan?) throws -> XMLDocument {
         let document = original?.clone() ?? XMLDocument()
         let worksheetElement = worksheetElementForWriting(in: document)
         worksheetElement.ensureNamespace(uri: .spreadsheet)
-        try writeRows(to: worksheetElement, sharedStrings: sharedStrings)
+        try writeRows(to: worksheetElement)
         return document
     }
 
@@ -69,6 +65,22 @@ public final class XLWorksheetFile: OPCXMLFile {
         for rowNumber in rowByNumber.keys.sorted() {
             rowByNumber[rowNumber]?.collectSharedStringValues(into: &collector)
         }
+    }
+
+    func normalizeSharedString(_ normalization: XLSharedStringNormalization) throws {
+        for rowNumber in rowByNumber.keys.sorted() {
+            try rowByNumber[rowNumber]?.normalizeSharedString(normalization)
+        }
+    }
+
+    func clone() -> XLWorksheetFile {
+        let file = XLWorksheetFile(
+            rowByNumber: rowByNumber.mapValues { row in
+                row.clone()
+            }
+        )
+        file.original = original
+        return file
     }
 
     private static func rows(in document: XMLDocument) -> [Int: XLRowStorage] {
@@ -92,10 +104,7 @@ public final class XLWorksheetFile: OPCXMLFile {
         return rows
     }
 
-    private func writeRows(
-        to worksheetElement: XMLElement,
-        sharedStrings: XLSharedStringWritePlan? = nil
-    ) throws {
+    private func writeRows(to worksheetElement: XMLElement) throws {
         guard !rowByNumber.isEmpty else {
             return
         }
@@ -113,7 +122,7 @@ public final class XLWorksheetFile: OPCXMLFile {
                 in: sheetDataElement,
                 rowElementByNumber: &rowElementByNumber
             )
-            try row.write(to: rowElement, rowNumber: rowNumber, sharedStrings: sharedStrings)
+            try row.write(to: rowElement, rowNumber: rowNumber)
         }
 
         let rowElements = rowElementByNumber.sorted { $0.key < $1.key }.map { $0.value as XMLNode }

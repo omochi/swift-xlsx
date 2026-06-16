@@ -62,8 +62,14 @@ public final class XLSharedStringsFile: OPCXMLFile {
         return value
     }
 
-    func apply(_ plan: XLSharedStringWritePlan) {
-        records = plan.records
+    func normalizeSharedString(_ normalization: XLSharedStringNormalization) {
+        records = normalization.records
+    }
+
+    func clone() -> XLSharedStringsFile {
+        let file = XLSharedStringsFile(records: records)
+        file.original = original
+        return file
     }
 
     private static func text(in element: XMLElement) -> String? {

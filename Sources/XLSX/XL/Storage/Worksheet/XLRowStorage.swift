@@ -45,8 +45,7 @@ public final class XLRowStorage {
 
     func write(
         to rowElement: XMLElement,
-        rowNumber: Int,
-        sharedStrings: XLSharedStringWritePlan? = nil
+        rowNumber: Int
     ) throws {
         let rowChildren = cellElementsAndOtherChildren(in: rowElement, rowNumber: rowNumber)
         var cellElementByColumn = rowChildren.cellElementByColumn
@@ -61,7 +60,7 @@ public final class XLRowStorage {
                 in: rowElement,
                 cellElementByColumn: &cellElementByColumn
             )
-            try cell.write(to: cellElement, sharedStrings: sharedStrings)
+            try cell.write(to: cellElement)
         }
 
         let cellElements = cellElementByColumn.sorted { $0.key < $1.key }.map { $0.value as XMLNode }
@@ -78,6 +77,20 @@ public final class XLRowStorage {
         for column in cellByColumn.keys.sorted() {
             cellByColumn[column]?.collectSharedStringValues(into: &collector)
         }
+    }
+
+    func normalizeSharedString(_ normalization: XLSharedStringNormalization) throws {
+        for column in cellByColumn.keys.sorted() {
+            try cellByColumn[column]?.normalizeSharedString(normalization)
+        }
+    }
+
+    func clone() -> XLRowStorage {
+        XLRowStorage(
+            cellByColumn: cellByColumn.mapValues { cell in
+                cell.clone()
+            }
+        )
     }
 
     private func cellElementForWriting(

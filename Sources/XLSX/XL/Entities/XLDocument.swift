@@ -24,7 +24,7 @@ public struct XLDocument {
     }
 
     public func save(to url: URL) throws {
-        let data = try package.makeOPCPackage().data()
+        let data = try package.clone().makeOPCPackage().data()
         try data.write(to: url, options: .atomic)
     }
 }

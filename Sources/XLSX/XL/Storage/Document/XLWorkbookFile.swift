@@ -100,6 +100,23 @@ public final class XLWorkbookFile: OPCXMLFile {
         }
     }
 
+    func normalizeSharedString(_ normalization: XLSharedStringNormalization) throws {
+        for sheet in sheets {
+            try worksheetByID[sheet.sheetID]?.file.normalizeSharedString(normalization)
+        }
+    }
+
+    func clone() -> XLWorkbookFile {
+        let file = XLWorkbookFile(
+            sheets: sheets,
+            worksheetByID: worksheetByID.mapValues { worksheet in
+                worksheet.clone { $0.clone() }
+            }
+        )
+        file.original = original
+        return file
+    }
+
     private func writeWorkbook(to document: XMLDocument) throws {
         let workbookElement = workbookElementForWriting(in: document)
         workbookElement.ensureNamespace(uri: .spreadsheet)
