@@ -56,12 +56,13 @@ public final class XLWorksheetFile {
     }
 
     public func xmlDocument() throws -> XMLDocument {
-        try xmlDocument(sharedStrings: nil, cellFormats: nil)
+        try xmlDocument(sharedStrings: nil, cellFormats: nil, fonts: nil)
     }
 
     func xmlDocument(
         sharedStrings: XLSharedStringRecordsStorage?,
-        cellFormats: XLCellFormatRecordsStorage?
+        cellFormats: XLCellFormatRecordsStorage?,
+        fonts: XLFontRecordsStorage?
     ) throws -> XMLDocument {
         let document = original?.clone() ?? XMLDocument()
         let worksheetElement = worksheetElementForWriting(in: document)
@@ -69,7 +70,8 @@ public final class XLWorksheetFile {
         try writeRows(
             to: worksheetElement,
             sharedStrings: sharedStrings,
-            cellFormats: cellFormats
+            cellFormats: cellFormats,
+            fonts: fonts
         )
         return document
     }
@@ -80,9 +82,18 @@ public final class XLWorksheetFile {
         }
     }
 
-    func collectCellFormats(into cellFormats: XLCellFormatRecordsStorage) {
+    func collectFonts(into fonts: XLFontRecordsStorage) {
         for rowNumber in rowByNumber.keys.sorted() {
-            rowByNumber[rowNumber]?.collectCellFormats(into: cellFormats)
+            rowByNumber[rowNumber]?.collectFonts(into: fonts)
+        }
+    }
+
+    func collectCellFormats(
+        into cellFormats: XLCellFormatRecordsStorage,
+        fonts: XLFontRecordsStorage
+    ) throws {
+        for rowNumber in rowByNumber.keys.sorted() {
+            try rowByNumber[rowNumber]?.collectCellFormats(into: cellFormats, fonts: fonts)
         }
     }
 
@@ -129,7 +140,8 @@ public final class XLWorksheetFile {
     private func writeRows(
         to worksheetElement: XMLElement,
         sharedStrings: XLSharedStringRecordsStorage? = nil,
-        cellFormats: XLCellFormatRecordsStorage? = nil
+        cellFormats: XLCellFormatRecordsStorage? = nil,
+        fonts: XLFontRecordsStorage? = nil
     ) throws {
         guard !rowByNumber.isEmpty else {
             return
@@ -152,7 +164,8 @@ public final class XLWorksheetFile {
                 to: rowElement,
                 rowNumber: rowNumber,
                 sharedStrings: sharedStrings,
-                cellFormats: cellFormats
+                cellFormats: cellFormats,
+                fonts: fonts
             )
         }
 

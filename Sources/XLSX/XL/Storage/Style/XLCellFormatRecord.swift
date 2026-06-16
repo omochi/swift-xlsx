@@ -45,17 +45,17 @@ public struct XLCellFormatRecord: Sendable & Hashable {
 
     init(element: XMLElement) {
         self.init(
-            numberFormatID: Self.intAttribute(name: "numFmtId", in: element),
-            fontID: Self.intAttribute(name: "fontId", in: element),
-            fillID: Self.intAttribute(name: "fillId", in: element),
-            borderID: Self.intAttribute(name: "borderId", in: element),
-            formatID: Self.intAttribute(name: "xfId", in: element),
-            applyNumberFormat: Self.boolAttribute(name: "applyNumberFormat", in: element),
-            applyFont: Self.boolAttribute(name: "applyFont", in: element),
-            applyFill: Self.boolAttribute(name: "applyFill", in: element),
-            applyBorder: Self.boolAttribute(name: "applyBorder", in: element),
-            applyAlignment: Self.boolAttribute(name: "applyAlignment", in: element),
-            applyProtection: Self.boolAttribute(name: "applyProtection", in: element)
+            numberFormatID: XMLUtils.intAttribute(name: "numFmtId", in: element),
+            fontID: XMLUtils.intAttribute(name: "fontId", in: element),
+            fillID: XMLUtils.intAttribute(name: "fillId", in: element),
+            borderID: XMLUtils.intAttribute(name: "borderId", in: element),
+            formatID: XMLUtils.intAttribute(name: "xfId", in: element),
+            applyNumberFormat: XMLUtils.boolAttribute(name: "applyNumberFormat", in: element),
+            applyFont: XMLUtils.boolAttribute(name: "applyFont", in: element),
+            applyFill: XMLUtils.boolAttribute(name: "applyFill", in: element),
+            applyBorder: XMLUtils.boolAttribute(name: "applyBorder", in: element),
+            applyAlignment: XMLUtils.boolAttribute(name: "applyAlignment", in: element),
+            applyProtection: XMLUtils.boolAttribute(name: "applyProtection", in: element)
         )
     }
 
@@ -174,45 +174,17 @@ public struct XLCellFormatRecord: Sendable & Hashable {
 
     func xmlElement() -> XMLElement {
         let element = XMLElement(name: XMLName(name: "xf"))
-        Self.setAttribute(name: "numFmtId", value: numberFormatID, in: element)
-        Self.setAttribute(name: "fontId", value: fontID, in: element)
-        Self.setAttribute(name: "fillId", value: fillID, in: element)
-        Self.setAttribute(name: "borderId", value: borderID, in: element)
-        Self.setAttribute(name: "xfId", value: formatID, in: element)
-        Self.setAttribute(name: "applyNumberFormat", value: applyNumberFormat, in: element)
-        Self.setAttribute(name: "applyFont", value: applyFont, in: element)
-        Self.setAttribute(name: "applyFill", value: applyFill, in: element)
-        Self.setAttribute(name: "applyBorder", value: applyBorder, in: element)
-        Self.setAttribute(name: "applyAlignment", value: applyAlignment, in: element)
-        Self.setAttribute(name: "applyProtection", value: applyProtection, in: element)
+        XMLUtils.setAttribute(name: "numFmtId", value: numberFormatID, in: element)
+        XMLUtils.setAttribute(name: "fontId", value: fontID, in: element)
+        XMLUtils.setAttribute(name: "fillId", value: fillID, in: element)
+        XMLUtils.setAttribute(name: "borderId", value: borderID, in: element)
+        XMLUtils.setAttribute(name: "xfId", value: formatID, in: element)
+        XMLUtils.setAttribute(name: "applyNumberFormat", value: applyNumberFormat, in: element)
+        XMLUtils.setAttribute(name: "applyFont", value: applyFont, in: element)
+        XMLUtils.setAttribute(name: "applyFill", value: applyFill, in: element)
+        XMLUtils.setAttribute(name: "applyBorder", value: applyBorder, in: element)
+        XMLUtils.setAttribute(name: "applyAlignment", value: applyAlignment, in: element)
+        XMLUtils.setAttribute(name: "applyProtection", value: applyProtection, in: element)
         return element
-    }
-
-    private static func intAttribute(name: String, in element: XMLElement) -> Int? {
-        guard let value = element.attribute(name: name) else {
-            return nil
-        }
-        return Int(value)
-    }
-
-    private static func boolAttribute(name: String, in element: XMLElement) -> Bool {
-        guard let value = element.attribute(name: name) else {
-            return false
-        }
-        return XLCellValue.readBool(string: value) ?? false
-    }
-
-    private static func setAttribute(name: String, value: Int?, in element: XMLElement) {
-        guard let value else {
-            return
-        }
-        element.setAttribute(name: name, value: String(value))
-    }
-
-    private static func setAttribute(name: String, value: Bool, in element: XMLElement) {
-        guard value else {
-            return
-        }
-        element.setAttribute(name: name, value: XLCellValue.boolean(true).description)
     }
 }

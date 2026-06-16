@@ -106,8 +106,10 @@ public final class XLDocumentPackage {
         sharedStrings.file.records = XLSharedStringRecordsStorage()
         workbook.file.collectSharedStrings(into: sharedStrings.file.records)
 
+        styles.file.fonts = XLFontRecordsStorage()
+        workbook.file.collectFonts(into: styles.file.fonts)
         styles.file.cellFormats = XLCellFormatRecordsStorage()
-        workbook.file.collectCellFormats(into: styles.file.cellFormats)
+        try workbook.file.collectCellFormats(into: styles.file.cellFormats, fonts: styles.file.fonts)
         let writesStyles = styles.file.original != nil || !styles.file.isEmpty
 
         workbookRels.file.ensureRelationship(
@@ -130,7 +132,8 @@ public final class XLDocumentPackage {
             if !Self.containsOpaqueFile(at: file.path, in: opaqueFiles) {
                 let xml = try file.file.xmlDocument(
                     sharedStrings: sharedStrings.file.records,
-                    cellFormats: styles.file.cellFormats
+                    cellFormats: styles.file.cellFormats,
+                    fonts: styles.file.fonts
                 )
                 try package.insertFile(xmlDocument: xml, at: file.path)
             }

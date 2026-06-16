@@ -2,7 +2,6 @@ import MemberwiseInit
 
 @MemberwiseInit(.public)
 public struct XLRow {
-    public var package: XLDocumentPackage
     public var number: Int
     public var storage: XLRowStorage
 
@@ -16,7 +15,6 @@ public struct XLRow {
 
     public func cell(column: Int) -> XLCell {
         XLCell(
-            package: package,
             row: number,
             column: column,
             storage: storage.cell(column: column)
@@ -29,7 +27,6 @@ public struct XLRow {
         }
 
         return XLCell(
-            package: package,
             row: number,
             column: column,
             storage: cellStorage

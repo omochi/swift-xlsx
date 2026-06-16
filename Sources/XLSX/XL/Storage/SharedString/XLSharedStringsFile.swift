@@ -105,9 +105,9 @@ public final class XLSharedStringsFile: XMLDocumentConvertible {
 
     private func write(to sharedStringsElement: XMLElement) throws {
         sharedStringsElement.children = try XMLUtils.patchChildren(
-            in: sharedStringsElement,
-            replacingElementsNamed: "si",
-            with: records.records,
+            parentElement: sharedStringsElement,
+            replacingElementName: "si",
+            records: records.records,
             makeElement: { record in
                 try elementForWriting(record: record)
             }

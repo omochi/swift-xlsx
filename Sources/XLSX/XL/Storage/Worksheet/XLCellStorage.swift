@@ -3,10 +3,10 @@ import Foundation
 public final class XLCellStorage {
     public init(
         value: XLCellValue,
-        formatRecord: XLCellFormatRecord? = nil
+        format: XLCellFormat? = nil
     ) {
         self.value = value
-        self.formatRecord = formatRecord
+        self.format = format
     }
 
     init?(
@@ -22,35 +22,22 @@ public final class XLCellStorage {
         }
 
         self.value = value
-        self.formatRecord = Self.formatRecord(
+        self.format = Self.format(
             in: cellElement,
             styles: styles
         )
     }
 
     public var value: XLCellValue
-    public private(set) var formatRecord: XLCellFormatRecord?
-
-    public var format: XLCellFormat? {
-        formatRecord.map(XLCellFormat.init(record:))
-    }
-
-    public func setFormat(
-        _ format: XLCellFormat?,
-        cellFormats: XLCellFormatRecordsStorage
-    ) {
-        formatRecord = format?.record
-        if let formatRecord {
-            cellFormats.register(formatRecord)
-        }
-    }
+    public var format: XLCellFormat?
 
     func write(
         to cellElement: XMLElement,
         sharedStrings: XLSharedStringRecordsStorage? = nil,
-        cellFormats: XLCellFormatRecordsStorage? = nil
+        cellFormats: XLCellFormatRecordsStorage? = nil,
+        fonts: XLFontRecordsStorage? = nil
     ) throws {
-        writeFormat(to: cellElement, cellFormats: cellFormats)
+        try writeFormat(to: cellElement, cellFormats: cellFormats, fonts: fonts)
 
         cellElement.children = cellElement.children.filter { child in
             guard let element = child as? XMLElement else {
@@ -73,16 +60,27 @@ public final class XLCellStorage {
         }
     }
 
-    func collectCellFormats(into cellFormats: XLCellFormatRecordsStorage) {
-        guard let formatRecord else {
+    func collectFonts(into fonts: XLFontRecordsStorage) {
+        guard let font = format?.font else {
             return
         }
 
-        cellFormats.register(formatRecord)
+        fonts.register(font.record)
+    }
+
+    func collectCellFormats(
+        into cellFormats: XLCellFormatRecordsStorage,
+        fonts: XLFontRecordsStorage
+    ) throws {
+        guard let format else {
+            return
+        }
+
+        try cellFormats.register(format, fonts: fonts)
     }
 
     func clone() -> XLCellStorage {
-        XLCellStorage(value: value, formatRecord: formatRecord)
+        XLCellStorage(value: value, format: format)
     }
 
     private static func formatIndex(in cellElement: XMLElement) -> Int? {
@@ -92,24 +90,35 @@ public final class XLCellStorage {
         return Int(value)
     }
 
-    private static func formatRecord(
+    private static func format(
         in cellElement: XMLElement,
         styles: XLStylesFile
-    ) -> XLCellFormatRecord? {
+    ) -> XLCellFormat? {
         guard let formatIndex = formatIndex(in: cellElement) else {
             return nil
         }
 
-        return styles.cellFormats.record(at: formatIndex)
+        guard let record = styles.cellFormats.record(at: formatIndex) else {
+            return nil
+        }
+
+        return XLCellFormat(record: record, fonts: styles.fonts)
     }
 
     private func writeFormat(
         to cellElement: XMLElement,
-        cellFormats: XLCellFormatRecordsStorage?
-    ) {
-        if let formatRecord,
-           let formatIndex = cellFormats?.index(for: formatRecord)
-        {
+        cellFormats: XLCellFormatRecordsStorage?,
+        fonts: XLFontRecordsStorage?
+    ) throws {
+        guard let format,
+              let fonts
+        else {
+            removeAttribute(name: "s", in: cellElement)
+            return
+        }
+
+        let formatRecord = try format.record(fonts: fonts)
+        if let formatIndex = cellFormats?.index(for: formatRecord) {
             cellElement.setAttribute(name: "s", value: String(formatIndex))
         } else {
             removeAttribute(name: "s", in: cellElement)

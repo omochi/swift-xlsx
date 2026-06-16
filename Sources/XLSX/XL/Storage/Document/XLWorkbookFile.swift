@@ -54,6 +54,10 @@ public final class XLWorkbookFile: XMLDocumentConvertible {
         }
     }
 
+    var worksheets: [OPCPathWithFile<XLWorksheetFile>] {
+        worksheetsWithID.map(\.1)
+    }
+
     public static func path(in packageRels: OPCRelsFile) throws -> OPCFilePath {
         if let relationship = packageRels.relationships.first(where: { $0.type == XMLNamespaceURI.officeDocument.string }) {
             return try OPCFilePath(string: relationship.target).resolved(relativeTo: .packageRoot)
@@ -104,14 +108,23 @@ public final class XLWorkbookFile: XMLDocumentConvertible {
     }
 
     func collectSharedStrings(into sharedStrings: XLSharedStringRecordsStorage) {
-        for (_, worksheet) in worksheetsWithID {
+        for worksheet in worksheets {
             worksheet.file.collectSharedStrings(into: sharedStrings)
         }
     }
 
-    func collectCellFormats(into cellFormats: XLCellFormatRecordsStorage) {
-        for (_, worksheet) in worksheetsWithID {
-            worksheet.file.collectCellFormats(into: cellFormats)
+    func collectFonts(into fonts: XLFontRecordsStorage) {
+        for worksheet in worksheets {
+            worksheet.file.collectFonts(into: fonts)
+        }
+    }
+
+    func collectCellFormats(
+        into cellFormats: XLCellFormatRecordsStorage,
+        fonts: XLFontRecordsStorage
+    ) throws {
+        for worksheet in worksheets {
+            try worksheet.file.collectCellFormats(into: cellFormats, fonts: fonts)
         }
     }
 

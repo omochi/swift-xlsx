@@ -9,4 +9,5 @@ public enum OPCError: Error & Equatable {
     case invalidRelationshipsFile
     case invalidSharedStringsFile
     case invalidStylesFile
+    case missingFontRecord
 }

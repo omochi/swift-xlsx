@@ -21,18 +21,7 @@ public enum XLCellValue: Sendable & Hashable & CustomStringConvertible {
     }
 
     public static func readBool(string: String) -> Bool? {
-        if let number = Int(string) {
-            return number != 0
-        }
-
-        switch string.lowercased() {
-        case "true", "yes":
-            return true
-        case "false", "no":
-            return false
-        default:
-            return nil
-        }
+        XMLUtils.boolValue(string: string)
     }
 }
 

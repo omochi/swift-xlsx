@@ -124,11 +124,10 @@ struct XLDocumentTests {
         let document = try XLDocument(opcPackage: package)
         let worksheet = try #require(document.workbook.worksheets.first)
         let cell = try #require(worksheet.existingCell(row: 1, column: 1))
-        let formatRecord = try #require(cell.storage.formatRecord)
         let storedRecord = try #require(document.package.styles.file.cellFormats.record(at: 1))
 
         #expect(cell.format == XLCellFormat(numberFormatID: 14, applyNumberFormat: true))
-        #expect(formatRecord == storedRecord)
+        #expect(cell.format == XLCellFormat(record: storedRecord, fonts: document.package.styles.file.fonts))
     }
 
     @Test func removesUnusedCellFormatsWhenSaving() throws {
@@ -232,7 +231,7 @@ struct XLDocumentTests {
         let worksheet = try #require(document.workbook.worksheets.first)
         let format = XLCellFormat(
             numberFormatID: 14,
-            fontID: 1,
+            font: XLFont(bold: true, size: 12, name: "Arial"),
             fillID: 2,
             borderID: 3,
             formatID: 0,
@@ -243,7 +242,7 @@ struct XLDocumentTests {
         worksheet.cell(row: 1, column: 2).value = .number("43")
         worksheet.cell(row: 1, column: 2).format = format
 
-        #expect(document.package.styles.file.cellFormats.records.count == 1)
+        #expect(document.package.styles.file.cellFormats.records.isEmpty)
 
         try document.save(to: url)
 
@@ -259,8 +258,10 @@ struct XLDocumentTests {
 
         #expect(worksheetXML.contains(#"<c r="A1" s="0"><v>42</v></c>"#))
         #expect(worksheetXML.contains(#"<c r="B1" s="0"><v>43</v></c>"#))
+        #expect(stylesXML.contains(#"<fonts count="1">"#))
+        #expect(stylesXML.contains(#"<font><b/><sz val="12.0"/><name val="Arial"/></font>"#))
         #expect(stylesXML.contains(#"<cellXfs count="1">"#))
-        #expect(stylesXML.contains(#"<xf numFmtId="14" fontId="1" fillId="2" borderId="3" xfId="0" applyNumberFormat="1"/>"#))
+        #expect(stylesXML.contains(#"<xf numFmtId="14" fontId="0" fillId="2" borderId="3" xfId="0" applyNumberFormat="1"/>"#))
     }
 
     @Test func rebuildsSharedStringsFromEditedCells() throws {
