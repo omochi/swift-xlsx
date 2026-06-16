@@ -94,6 +94,12 @@ public final class XLWorkbookFile: OPCXMLFile {
         return RemovedWorksheet(sheet: sheet, file: file)
     }
 
+    func collectSharedStringValues(into collector: inout XLSharedStringCollector) {
+        for sheet in sheets {
+            worksheetByID[sheet.sheetID]?.file.collectSharedStringValues(into: &collector)
+        }
+    }
+
     private func writeWorkbook(to document: XMLDocument) throws {
         let workbookElement = workbookElementForWriting(in: document)
         workbookElement.ensureNamespace(uri: .spreadsheet)

@@ -1,13 +1,10 @@
 struct XLSharedStringWritePlan {
     init(
         sharedStrings: XLSharedStringsFile,
-        worksheets: [OPCPathWithFile<XLWorksheetFile>]
+        workbook: XLWorkbookFile
     ) {
         var collector = XLSharedStringCollector()
-
-        for worksheet in worksheets {
-            worksheet.file.collectSharedStringValues(into: &collector)
-        }
+        workbook.collectSharedStringValues(into: &collector)
 
         var records: [XLSharedStringRecord] = []
         var indexByText: [String: Int] = [:]

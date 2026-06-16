@@ -112,7 +112,7 @@ public final class XLDocumentPackage {
         )
         let sharedStringPlan = XLSharedStringWritePlan(
             sharedStrings: sharedStrings.file,
-            worksheets: workbookItems.files
+            workbook: workbook.file
         )
         sharedStrings.file.apply(sharedStringPlan)
         workbookRels.file.ensureRelationship(
