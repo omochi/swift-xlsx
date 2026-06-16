@@ -2,13 +2,22 @@ import MemberwiseInit
 
 @MemberwiseInit(.public)
 public final class XLRowStorage {
-    init(rowElement: XMLElement, rowNumber: Int) {
+    init(
+        rowElement: XMLElement,
+        rowNumber: Int,
+        sharedStrings: XLSharedStringsFile,
+        styles: XLStylesFile
+    ) {
         var cells: [Int: XLCellStorage] = [:]
         for cellElement in rowElement.elements(name: "c") {
             guard let referenceText = cellElement.attribute(name: "r"),
                   let reference = XLCellReference(referenceText),
                   reference.row == rowNumber,
-                  let cell = XLCellStorage(cellElement: cellElement)
+                  let cell = XLCellStorage(
+                    cellElement: cellElement,
+                    sharedStrings: sharedStrings,
+                    styles: styles
+                  )
             else {
                 continue
             }
@@ -46,7 +55,8 @@ public final class XLRowStorage {
     func write(
         to rowElement: XMLElement,
         rowNumber: Int,
-        sharedStringWritePlan: XLSharedStringWritePlan? = nil
+        sharedStringWritePlan: XLSharedStringWritePlan? = nil,
+        cellFormats: XLCellFormatObjectPool? = nil
     ) throws {
         let rowChildren = cellElementsAndOtherChildren(in: rowElement, rowNumber: rowNumber)
         var cellElementByColumn = rowChildren.cellElementByColumn
@@ -61,22 +71,26 @@ public final class XLRowStorage {
                 in: rowElement,
                 cellElementByColumn: &cellElementByColumn
             )
-            try cell.write(to: cellElement, sharedStringWritePlan: sharedStringWritePlan)
+            try cell.write(
+                to: cellElement,
+                sharedStringWritePlan: sharedStringWritePlan,
+                cellFormats: cellFormats
+            )
         }
 
         let cellElements = cellElementByColumn.sorted { $0.key < $1.key }.map { $0.value as XMLNode }
         rowElement.children = cellElements + rowChildren.otherChildren
     }
 
-    func resolveSharedStrings(_ sharedStrings: XLSharedStringsFile) {
-        for cell in cellByColumn.values {
-            cell.resolveSharedStrings(sharedStrings)
-        }
-    }
-
     func collectSharedStringValues(into collector: inout XLSharedStringCollector) {
         for column in cellByColumn.keys.sorted() {
             cellByColumn[column]?.collectSharedStringValues(into: &collector)
+        }
+    }
+
+    func collectCellFormats(into pool: XLCellFormatObjectPool) {
+        for column in cellByColumn.keys.sorted() {
+            cellByColumn[column]?.collectCellFormats(into: pool)
         }
     }
 

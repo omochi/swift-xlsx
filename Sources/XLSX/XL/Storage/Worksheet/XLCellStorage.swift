@@ -1,25 +1,53 @@
-import MemberwiseInit
 import Foundation
 
-@MemberwiseInit(.public)
 public final class XLCellStorage {
-    init?(cellElement: XMLElement) {
-        guard let value = Self.value(in: cellElement) else {
+    public init(
+        value: XLCellValue,
+        formatObject: XLCellFormatObject? = nil
+    ) {
+        self.value = value
+        self.formatObject = formatObject
+    }
+
+    init?(
+        cellElement: XMLElement,
+        sharedStrings: XLSharedStringsFile,
+        styles: XLStylesFile
+    ) {
+        guard let value = XLCellValue(
+            cellElement: cellElement,
+            sharedStrings: sharedStrings
+        ) else {
             return nil
         }
 
         self.value = value
-        self.formatIndex = Self.formatIndex(in: cellElement)
+        self.formatObject = Self.formatObject(
+            in: cellElement,
+            styles: styles
+        )
     }
 
     public var value: XLCellValue
-    public var formatIndex: Int? = nil
+    public private(set) var formatObject: XLCellFormatObject?
+
+    public var format: XLCellFormat? {
+        formatObject?.format
+    }
+
+    public func setFormat(
+        _ format: XLCellFormat?,
+        pool: XLCellFormatObjectPool
+    ) {
+        formatObject = format.map { pool.intern($0) }
+    }
 
     func write(
         to cellElement: XMLElement,
-        sharedStringWritePlan: XLSharedStringWritePlan? = nil
+        sharedStringWritePlan: XLSharedStringWritePlan? = nil,
+        cellFormats: XLCellFormatObjectPool? = nil
     ) throws {
-        writeFormatIndex(to: cellElement)
+        writeFormat(to: cellElement, cellFormats: cellFormats)
 
         cellElement.children = cellElement.children.filter { child in
             guard let element = child as? XMLElement else {
@@ -31,16 +59,20 @@ public final class XLCellStorage {
         try value.write(to: cellElement, sharedStringWritePlan: sharedStringWritePlan)
     }
 
-    func resolveSharedStrings(_ sharedStrings: XLSharedStringsFile) {
-        value = sharedStrings.resolve(value)
-    }
-
     func collectSharedStringValues(into collector: inout XLSharedStringCollector) {
         collector.collect(value)
     }
 
+    func collectCellFormats(into pool: XLCellFormatObjectPool) {
+        guard let formatObject else {
+            return
+        }
+
+        self.formatObject = pool.intern(formatObject.record)
+    }
+
     func clone() -> XLCellStorage {
-        XLCellStorage(value: value, formatIndex: formatIndex)
+        XLCellStorage(value: value, formatObject: formatObject)
     }
 
     private static func formatIndex(in cellElement: XMLElement) -> Int? {
@@ -50,67 +82,24 @@ public final class XLCellStorage {
         return Int(value)
     }
 
-    private static func value(in cellElement: XMLElement) -> XLCellValue? {
-        let cellType = cellElement.attribute(name: "t")
-        if cellType == "inlineStr" {
-            guard let inlineStringElement = cellElement.elements(name: "is").first else {
-                return nil
-            }
-            return .string(textContent(in: inlineStringElement))
-        }
-
-        guard let valueText = valueText(in: cellElement) else {
+    private static func formatObject(
+        in cellElement: XMLElement,
+        styles: XLStylesFile
+    ) -> XLCellFormatObject? {
+        guard let formatIndex = formatIndex(in: cellElement) else {
             return nil
         }
 
-        switch cellType {
-        case nil, "n":
-            if Self.isNumber(valueText) {
-                return .number(valueText)
-            }
-            return .string(valueText)
-        case "b":
-            return .boolean(XLCellValue.readBool(string: valueText) ?? false)
-        case "d":
-            return .string(valueText)
-        case "e":
-            return .error(valueText)
-        case "s":
-            guard let sharedStringIndex = Int(valueText) else {
-                return nil
-            }
-            return .opaqueSharedString(index: sharedStringIndex)
-        case "str":
-            return .string(valueText)
-        default:
-            return .string(valueText)
-        }
+        return styles.cellFormats.object(at: formatIndex)
     }
 
-    private static func valueText(in cellElement: XMLElement) -> String? {
-        guard let valueElement = cellElement.elements(name: "v").first else {
-            return nil
-        }
-        return textContent(in: valueElement)
-    }
-
-    private static func textContent(in element: XMLElement) -> String {
-        textContent(in: element as XMLNode)
-    }
-
-    private static func textContent(in node: XMLNode) -> String {
-        if let text = node as? XMLText {
-            return text.value
-        }
-        return node.children.map { textContent(in: $0) }.joined()
-    }
-
-    private static func isNumber(_ value: String) -> Bool {
-        Double(value) != nil
-    }
-
-    private func writeFormatIndex(to cellElement: XMLElement) {
-        if let formatIndex {
+    private func writeFormat(
+        to cellElement: XMLElement,
+        cellFormats: XLCellFormatObjectPool?
+    ) {
+        if let formatObject,
+           let formatIndex = cellFormats?.index(for: formatObject)
+        {
             cellElement.setAttribute(name: "s", value: String(formatIndex))
         } else {
             removeAttribute(name: "s", in: cellElement)

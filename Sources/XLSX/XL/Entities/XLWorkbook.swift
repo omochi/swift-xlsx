@@ -5,15 +5,11 @@ public struct XLWorkbook {
     public var package: XLDocumentPackage
 
     public var worksheets: [XLWorksheet] {
-        package.workbook.file.sheets.compactMap { sheet in
-            guard let file = package.workbook.file.worksheetByID[sheet.sheetID]?.file else {
-                return nil
-            }
-
+        package.workbook.file.worksheetsWithID.map { sheetID, worksheet in
             return XLWorksheet(
                 package: package,
-                sheetID: sheet.sheetID,
-                file: file
+                sheetID: sheetID,
+                file: worksheet.file
             )
         }
     }

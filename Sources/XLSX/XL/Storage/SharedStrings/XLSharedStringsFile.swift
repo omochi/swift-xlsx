@@ -49,19 +49,6 @@ public final class XLSharedStringsFile: OPCXMLFile {
         return text
     }
 
-    func resolve(_ value: XLCellValue) -> XLCellValue {
-        switch value {
-        case .opaqueSharedString(index: let index):
-            if let text = text(at: index) {
-                return .string(text)
-            }
-            break
-        default: break
-        }
-
-        return value
-    }
-
     func applySharedStringWritePlan(_ plan: XLSharedStringWritePlan) {
         records = plan.records
     }

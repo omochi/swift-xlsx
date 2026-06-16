@@ -14,7 +14,7 @@ struct XLStylesFileTests {
             </styleSheet>
             """.utf8))
 
-        #expect(styles.cellFormats == [
+        #expect(styles.cellFormats.objects.map(\.record) == [
             XLCellFormatRecord(
                 numberFormatID: 0,
                 fontID: 0,
@@ -45,7 +45,7 @@ struct XLStylesFileTests {
             </styleSheet>
             """.utf8))
 
-        styles.cellFormats = [
+        styles.cellFormats = XLCellFormatObjectPool(records: [
             XLCellFormatRecord(
                 numberFormatID: 164,
                 fontID: 1,
@@ -56,7 +56,7 @@ struct XLStylesFileTests {
                 applyFont: true
             ),
             XLCellFormatRecord(formatID: 0, applyProtection: false),
-        ]
+        ])
 
         let xml = try String(decoding: styles.data(), as: UTF8.self)
 
@@ -90,7 +90,7 @@ struct XLStylesFileTests {
             </styleSheet>
             """.utf8))
 
-        styles.cellFormats = []
+        styles.cellFormats = XLCellFormatObjectPool()
 
         let xml = try String(decoding: styles.data(), as: UTF8.self)
 

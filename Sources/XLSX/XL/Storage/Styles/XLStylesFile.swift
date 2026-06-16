@@ -2,6 +2,11 @@ import Foundation
 
 public final class XLStylesFile: OPCXMLFile {
     public init(cellFormats: [XLCellFormatRecord] = []) {
+        self.cellFormats = XLCellFormatObjectPool(records: cellFormats)
+        self.original = nil
+    }
+
+    public init(cellFormats: XLCellFormatObjectPool) {
         self.cellFormats = cellFormats
         self.original = nil
     }
@@ -11,11 +16,11 @@ public final class XLStylesFile: OPCXMLFile {
             throw OPCError.invalidStylesFile
         }
 
-        self.cellFormats = Self.cellFormats(in: stylesElement)
+        self.cellFormats = XLCellFormatObjectPool(records: Self.readCellFormats(in: stylesElement))
         self.original = xmlDocument
     }
 
-    public var cellFormats: [XLCellFormatRecord]
+    public var cellFormats: XLCellFormatObjectPool
     public var original: XMLDocument?
 
     public static func path(
@@ -29,7 +34,7 @@ public final class XLStylesFile: OPCXMLFile {
     }
 
     public var isEmpty: Bool {
-        cellFormats.isEmpty
+        cellFormats.objects.isEmpty
     }
 
     public func xmlDocument() throws -> XMLDocument {
@@ -41,12 +46,12 @@ public final class XLStylesFile: OPCXMLFile {
     }
 
     func clone() -> XLStylesFile {
-        let file = XLStylesFile(cellFormats: cellFormats)
+        let file = XLStylesFile(cellFormats: cellFormats.clone())
         file.original = original
         return file
     }
 
-    private static func cellFormats(in stylesElement: XMLElement) -> [XLCellFormatRecord] {
+    private static func readCellFormats(in stylesElement: XMLElement) -> [XLCellFormatRecord] {
         guard let cellXfsElement = stylesElement.elements(name: "cellXfs").first else {
             return []
         }
@@ -64,6 +69,7 @@ public final class XLStylesFile: OPCXMLFile {
     }
 
     private func writeCellFormats(to stylesElement: XMLElement) {
+        let cellFormats = self.cellFormats.objects.map(\.record)
         if cellFormats.isEmpty && stylesElement.elements(name: "cellXfs").isEmpty {
             return
         }

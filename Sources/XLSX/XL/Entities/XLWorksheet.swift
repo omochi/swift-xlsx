@@ -25,6 +25,7 @@ public struct XLWorksheet {
 
     public func row(_ number: Int) -> XLRow {
         XLRow(
+            package: package,
             number: number,
             storage: file.row(number)
         )
@@ -36,6 +37,7 @@ public struct XLWorksheet {
         }
 
         return XLRow(
+            package: package,
             number: number,
             storage: storage
         )

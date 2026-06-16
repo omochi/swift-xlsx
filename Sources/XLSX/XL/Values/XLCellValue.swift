@@ -37,6 +37,52 @@ public enum XLCellValue: Sendable & Hashable & CustomStringConvertible {
 }
 
 extension XLCellValue {
+    init?(
+        cellElement: XMLElement,
+        sharedStrings: XLSharedStringsFile? = nil
+    ) {
+        let cellType = cellElement.attribute(name: "t")
+        if cellType == "inlineStr" {
+            guard let inlineStringElement = cellElement.elements(name: "is").first else {
+                return nil
+            }
+            self = .string(Self.textContent(in: inlineStringElement))
+            return
+        }
+
+        guard let valueText = Self.valueText(in: cellElement) else {
+            return nil
+        }
+
+        switch cellType {
+        case nil, "n":
+            if Self.isNumber(valueText) {
+                self = .number(valueText)
+            } else {
+                self = .string(valueText)
+            }
+        case "b":
+            self = .boolean(Self.readBool(string: valueText) ?? false)
+        case "d":
+            self = .string(valueText)
+        case "e":
+            self = .error(valueText)
+        case "s":
+            guard let sharedStringIndex = Int(valueText) else {
+                return nil
+            }
+            if let text = sharedStrings?.text(at: sharedStringIndex) {
+                self = .string(text)
+            } else {
+                self = .opaqueSharedString(index: sharedStringIndex)
+            }
+        case "str":
+            self = .string(valueText)
+        default:
+            self = .string(valueText)
+        }
+    }
+
     func write(
         to cellElement: XMLElement,
         sharedStringWritePlan: XLSharedStringWritePlan? = nil
@@ -88,5 +134,27 @@ extension XLCellValue {
 
     private func removeCellType(in cellElement: XMLElement) {
         cellElement.attributes.removeAll { $0.name.prefix == nil && $0.name.name == "t" }
+    }
+
+    private static func valueText(in cellElement: XMLElement) -> String? {
+        guard let valueElement = cellElement.elements(name: "v").first else {
+            return nil
+        }
+        return textContent(in: valueElement)
+    }
+
+    private static func textContent(in element: XMLElement) -> String {
+        textContent(in: element as XMLNode)
+    }
+
+    private static func textContent(in node: XMLNode) -> String {
+        if let text = node as? XMLText {
+            return text.value
+        }
+        return node.children.map { textContent(in: $0) }.joined()
+    }
+
+    private static func isNumber(_ value: String) -> Bool {
+        Double(value) != nil
     }
 }

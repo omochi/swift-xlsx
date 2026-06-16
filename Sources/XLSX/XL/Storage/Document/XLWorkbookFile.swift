@@ -45,6 +45,15 @@ public final class XLWorkbookFile: OPCXMLFile {
     public var worksheetByID: [Int: OPCPathWithFile<XLWorksheetFile>]
     public var original: XMLDocument?
 
+    var worksheetsWithID: [(Int, OPCPathWithFile<XLWorksheetFile>)] {
+        sheets.compactMap { sheet in
+            guard let worksheet = worksheetByID[sheet.sheetID] else {
+                return nil
+            }
+            return (sheet.sheetID, worksheet)
+        }
+    }
+
     public static func path(in packageRels: OPCRelsFile) throws -> OPCFilePath {
         if let relationship = packageRels.relationships.first(where: { $0.type == XMLNamespaceURI.officeDocument.string }) {
             return try OPCFilePath(string: relationship.target).resolved(relativeTo: .packageRoot)
@@ -95,8 +104,14 @@ public final class XLWorkbookFile: OPCXMLFile {
     }
 
     func collectSharedStringValues(into collector: inout XLSharedStringCollector) {
-        for sheet in sheets {
-            worksheetByID[sheet.sheetID]?.file.collectSharedStringValues(into: &collector)
+        for (_, worksheet) in worksheetsWithID {
+            worksheet.file.collectSharedStringValues(into: &collector)
+        }
+    }
+
+    func collectCellFormats(into pool: XLCellFormatObjectPool) {
+        for (_, worksheet) in worksheetsWithID {
+            worksheet.file.collectCellFormats(into: pool)
         }
     }
 

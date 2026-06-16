@@ -62,6 +62,207 @@ struct XLDocumentTests {
         #expect(worksheet.existingCell(row: 1, column: 1)?.value == .string("A"))
     }
 
+    @Test func opensCellFormatsThroughDocumentStylePool() throws {
+        var package = OPCPackage()
+        try package.insertFile(
+            data: Data("""
+                <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+                  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+                  <Default Extension="xml" ContentType="application/xml"/>
+                  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+                  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+                  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+                </Types>
+                """.utf8),
+            at: OPCFilePath(string: "/[Content_Types].xml")
+        )
+        try package.insertFile(
+            data: Data("""
+                <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+                  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+                </Relationships>
+                """.utf8),
+            at: try OPCRelsFile.path(for: .packageRoot)
+        )
+        try package.insertFile(
+            data: Data("""
+                <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+                  <sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets>
+                </workbook>
+                """.utf8),
+            at: OPCFilePath(string: "/xl/workbook.xml")
+        )
+        try package.insertFile(
+            data: Data("""
+                <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+                  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+                  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+                </Relationships>
+                """.utf8),
+            at: OPCFilePath(string: "/xl/_rels/workbook.xml.rels")
+        )
+        try package.insertFile(
+            data: Data("""
+                <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+                  <sheetData><row r="1"><c r="A1" s="1"><v>42</v></c></row></sheetData>
+                </worksheet>
+                """.utf8),
+            at: OPCFilePath(string: "/xl/worksheets/sheet1.xml")
+        )
+        try package.insertFile(
+            data: Data("""
+                <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+                  <cellXfs count="2">
+                    <xf numFmtId="0"/>
+                    <xf numFmtId="14" applyNumberFormat="1"/>
+                  </cellXfs>
+                </styleSheet>
+                """.utf8),
+            at: OPCFilePath(string: "/xl/styles.xml")
+        )
+
+        let document = try XLDocument(opcPackage: package)
+        let worksheet = try #require(document.workbook.worksheets.first)
+        let cell = try #require(worksheet.existingCell(row: 1, column: 1))
+        let formatObject = try #require(cell.storage.formatObject)
+        let pooledObject = try #require(document.package.styles.file.cellFormats.object(at: 1))
+
+        #expect(cell.format == XLCellFormat(numberFormatID: 14, applyNumberFormat: true))
+        #expect(formatObject === pooledObject)
+    }
+
+    @Test func removesUnusedCellFormatsWhenSaving() throws {
+        var package = OPCPackage()
+        try package.insertFile(
+            data: Data("""
+                <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+                  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+                  <Default Extension="xml" ContentType="application/xml"/>
+                  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+                  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+                  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+                </Types>
+                """.utf8),
+            at: OPCFilePath(string: "/[Content_Types].xml")
+        )
+        try package.insertFile(
+            data: Data("""
+                <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+                  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+                </Relationships>
+                """.utf8),
+            at: try OPCRelsFile.path(for: .packageRoot)
+        )
+        try package.insertFile(
+            data: Data("""
+                <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+                  <sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets>
+                </workbook>
+                """.utf8),
+            at: OPCFilePath(string: "/xl/workbook.xml")
+        )
+        try package.insertFile(
+            data: Data("""
+                <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+                  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+                  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+                </Relationships>
+                """.utf8),
+            at: OPCFilePath(string: "/xl/_rels/workbook.xml.rels")
+        )
+        try package.insertFile(
+            data: Data("""
+                <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+                  <sheetData><row r="1"><c r="A1" s="1"><v>42</v></c></row></sheetData>
+                </worksheet>
+                """.utf8),
+            at: OPCFilePath(string: "/xl/worksheets/sheet1.xml")
+        )
+        try package.insertFile(
+            data: Data("""
+                <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+                  <cellXfs count="2">
+                    <xf numFmtId="0"/>
+                    <xf numFmtId="14" applyNumberFormat="1"/>
+                  </cellXfs>
+                </styleSheet>
+                """.utf8),
+            at: OPCFilePath(string: "/xl/styles.xml")
+        )
+
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("swift-xlsx-tests-\(UUID().uuidString)")
+            .appendingPathExtension("xlsx")
+        defer {
+            try? FileManager.default.removeItem(at: url)
+        }
+
+        let document = try XLDocument(opcPackage: package)
+        _ = document.package.styles.file.cellFormats.intern(
+            XLCellFormatRecord(numberFormatID: 99, applyNumberFormat: true)
+        )
+        try document.save(to: url)
+
+        let savedPackage = try OPCPackage(data: Data(contentsOf: url))
+        let worksheetXML = try String(
+            decoding: #require(savedPackage.data(at: OPCFilePath(string: "/xl/worksheets/sheet1.xml"))),
+            as: UTF8.self
+        )
+        let stylesXML = try String(
+            decoding: #require(savedPackage.data(at: OPCFilePath(string: "/xl/styles.xml"))),
+            as: UTF8.self
+        )
+
+        #expect(worksheetXML.contains(#"<c r="A1" s="0"><v>42</v></c>"#))
+        #expect(stylesXML.contains(#"<cellXfs count="1">"#))
+        #expect(!stylesXML.contains(#"<xf numFmtId="0"/>"#))
+        #expect(stylesXML.contains(#"<xf numFmtId="14" applyNumberFormat="1"/>"#))
+        #expect(!stylesXML.contains(#"numFmtId="99""#))
+    }
+
+    @Test func savesCellFormatsThroughDocumentStylePool() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("swift-xlsx-tests-\(UUID().uuidString)")
+            .appendingPathExtension("xlsx")
+        defer {
+            try? FileManager.default.removeItem(at: url)
+        }
+
+        let document = XLDocument()
+        let worksheet = try #require(document.workbook.worksheets.first)
+        let format = XLCellFormat(
+            numberFormatID: 14,
+            fontID: 1,
+            fillID: 2,
+            borderID: 3,
+            formatID: 0,
+            applyNumberFormat: true
+        )
+        worksheet.cell(row: 1, column: 1).value = .number("42")
+        worksheet.cell(row: 1, column: 1).format = format
+        worksheet.cell(row: 1, column: 2).value = .number("43")
+        worksheet.cell(row: 1, column: 2).format = format
+
+        #expect(document.package.styles.file.cellFormats.objects.count == 1)
+
+        try document.save(to: url)
+
+        let package = try OPCPackage(data: Data(contentsOf: url))
+        let worksheetXML = try String(
+            decoding: #require(package.data(at: OPCFilePath(string: "/xl/worksheets/sheet1.xml"))),
+            as: UTF8.self
+        )
+        let stylesXML = try String(
+            decoding: #require(package.data(at: OPCFilePath(string: "/xl/styles.xml"))),
+            as: UTF8.self
+        )
+
+        #expect(worksheetXML.contains(#"<c r="A1" s="0"><v>42</v></c>"#))
+        #expect(worksheetXML.contains(#"<c r="B1" s="0"><v>43</v></c>"#))
+        #expect(stylesXML.contains(#"<cellXfs count="1">"#))
+        #expect(stylesXML.contains(#"<xf numFmtId="14" fontId="1" fillId="2" borderId="3" xfId="0" applyNumberFormat="1"/>"#))
+    }
+
     @Test func rebuildsSharedStringsFromEditedCells() throws {
         let sourceURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("swift-xlsx-tests-\(UUID().uuidString)")

@@ -11,7 +11,26 @@ public final class XLWorksheetFile: OPCXMLFile {
 
     public init(xmlDocument: XMLDocument) throws {
         self.original = xmlDocument
-        self.rowByNumber = Self.rows(in: xmlDocument)
+        let sharedStrings = XLSharedStringsFile()
+        let styles = XLStylesFile()
+        self.rowByNumber = Self.rows(
+            in: xmlDocument,
+            sharedStrings: sharedStrings,
+            styles: styles
+        )
+    }
+
+    init(
+        xmlDocument: XMLDocument,
+        sharedStrings: XLSharedStringsFile,
+        styles: XLStylesFile
+    ) throws {
+        self.original = xmlDocument
+        self.rowByNumber = Self.rows(
+            in: xmlDocument,
+            sharedStrings: sharedStrings,
+            styles: styles
+        )
     }
 
     public var original: XMLDocument?
@@ -48,26 +67,33 @@ public final class XLWorksheetFile: OPCXMLFile {
     }
 
     public func xmlDocument() throws -> XMLDocument {
-        try xmlDocument(sharedStringWritePlan: nil)
+        try xmlDocument(sharedStringWritePlan: nil, cellFormats: nil)
     }
 
-    func xmlDocument(sharedStringWritePlan: XLSharedStringWritePlan?) throws -> XMLDocument {
+    func xmlDocument(
+        sharedStringWritePlan: XLSharedStringWritePlan?,
+        cellFormats: XLCellFormatObjectPool?
+    ) throws -> XMLDocument {
         let document = original?.clone() ?? XMLDocument()
         let worksheetElement = worksheetElementForWriting(in: document)
         worksheetElement.ensureNamespace(uri: .spreadsheet)
-        try writeRows(to: worksheetElement, sharedStringWritePlan: sharedStringWritePlan)
+        try writeRows(
+            to: worksheetElement,
+            sharedStringWritePlan: sharedStringWritePlan,
+            cellFormats: cellFormats
+        )
         return document
-    }
-
-    func resolveSharedStrings(_ sharedStrings: XLSharedStringsFile) {
-        for row in rowByNumber.values {
-            row.resolveSharedStrings(sharedStrings)
-        }
     }
 
     func collectSharedStringValues(into collector: inout XLSharedStringCollector) {
         for rowNumber in rowByNumber.keys.sorted() {
             rowByNumber[rowNumber]?.collectSharedStringValues(into: &collector)
+        }
+    }
+
+    func collectCellFormats(into pool: XLCellFormatObjectPool) {
+        for rowNumber in rowByNumber.keys.sorted() {
+            rowByNumber[rowNumber]?.collectCellFormats(into: pool)
         }
     }
 
@@ -81,7 +107,11 @@ public final class XLWorksheetFile: OPCXMLFile {
         return file
     }
 
-    private static func rows(in document: XMLDocument) -> [Int: XLRowStorage] {
+    private static func rows(
+        in document: XMLDocument,
+        sharedStrings: XLSharedStringsFile,
+        styles: XLStylesFile
+    ) -> [Int: XLRowStorage] {
         guard let worksheetElement = document.element(name: "worksheet"),
               let sheetDataElement = worksheetElement.elements(name: "sheetData").first
         else {
@@ -96,7 +126,12 @@ public final class XLWorksheetFile: OPCXMLFile {
                 continue
             }
 
-            rows[rowNumber] = XLRowStorage(rowElement: rowElement, rowNumber: rowNumber)
+            rows[rowNumber] = XLRowStorage(
+                rowElement: rowElement,
+                rowNumber: rowNumber,
+                sharedStrings: sharedStrings,
+                styles: styles
+            )
         }
 
         return rows
@@ -104,7 +139,8 @@ public final class XLWorksheetFile: OPCXMLFile {
 
     private func writeRows(
         to worksheetElement: XMLElement,
-        sharedStringWritePlan: XLSharedStringWritePlan? = nil
+        sharedStringWritePlan: XLSharedStringWritePlan? = nil,
+        cellFormats: XLCellFormatObjectPool? = nil
     ) throws {
         guard !rowByNumber.isEmpty else {
             return
@@ -126,7 +162,8 @@ public final class XLWorksheetFile: OPCXMLFile {
             try row.write(
                 to: rowElement,
                 rowNumber: rowNumber,
-                sharedStringWritePlan: sharedStringWritePlan
+                sharedStringWritePlan: sharedStringWritePlan,
+                cellFormats: cellFormats
             )
         }
 

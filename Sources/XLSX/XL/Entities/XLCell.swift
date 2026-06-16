@@ -2,6 +2,7 @@ import MemberwiseInit
 
 @MemberwiseInit(.public)
 public struct XLCell {
+    public var package: XLDocumentPackage
     public var row: Int
     public var column: Int
     public var storage: XLCellStorage
@@ -16,6 +17,15 @@ public struct XLCell {
         }
         nonmutating set {
             storage.value = newValue
+        }
+    }
+
+    public var format: XLCellFormat? {
+        get {
+            storage.format
+        }
+        nonmutating set {
+            storage.setFormat(newValue, pool: package.styles.file.cellFormats)
         }
     }
 }
