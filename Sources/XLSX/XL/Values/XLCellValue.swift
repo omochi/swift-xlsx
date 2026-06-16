@@ -26,12 +26,67 @@ public enum XLCellValue: Sendable & Hashable & CustomStringConvertible {
         }
 
         switch string.lowercased() {
-        case "true", "t", "yes", "y":
+        case "true", "yes":
             return true
-        case "false", "f", "no", "n":
+        case "false", "no":
             return false
         default:
             return nil
         }
+    }
+}
+
+extension XLCellValue {
+    func write(
+        to cellElement: XMLElement,
+        sharedStringWritePlan: XLSharedStringWritePlan? = nil
+    ) throws {
+        switch self {
+        case .number:
+            removeCellType(in: cellElement)
+            appendValueElement(to: cellElement, text: description)
+        case .boolean:
+            setCellType("b", in: cellElement)
+            appendValueElement(to: cellElement, text: description)
+        case .string(let text):
+            if let sharedStringWritePlan {
+                setCellType("s", in: cellElement)
+                appendValueElement(
+                    to: cellElement,
+                    text: String(try sharedStringWritePlan.stringIndex(for: text))
+                )
+            } else {
+                removeCellType(in: cellElement)
+                appendValueElement(to: cellElement, text: description)
+            }
+        case .error:
+            setCellType("e", in: cellElement)
+            appendValueElement(to: cellElement, text: description)
+        case .opaqueSharedString(let originalIndex):
+            setCellType("s", in: cellElement)
+            let index = try sharedStringWritePlan?.opaqueSharedStringIndex(for: originalIndex) ?? originalIndex
+            appendValueElement(
+                to: cellElement,
+                text: String(index)
+            )
+        }
+    }
+
+    private func appendValueElement(to cellElement: XMLElement, text: String) {
+        let valueElement = XMLElement(name: XMLName(name: "v"))
+        valueElement.appendChild(XMLText(text))
+        cellElement.appendChild(valueElement)
+    }
+
+    private func setCellType(_ type: String, in cellElement: XMLElement) {
+        if let index = cellElement.attributes.firstIndex(where: { $0.name.prefix == nil && $0.name.name == "t" }) {
+            cellElement.attributes[index].value = type
+        } else {
+            cellElement.attributes.append(XMLAttribute(name: XMLName(name: "t"), value: type))
+        }
+    }
+
+    private func removeCellType(in cellElement: XMLElement) {
+        cellElement.attributes.removeAll { $0.name.prefix == nil && $0.name.name == "t" }
     }
 }

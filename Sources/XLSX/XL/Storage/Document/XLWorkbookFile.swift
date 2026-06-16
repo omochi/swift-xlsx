@@ -100,12 +100,6 @@ public final class XLWorkbookFile: OPCXMLFile {
         }
     }
 
-    func normalizeSharedString(_ normalization: XLSharedStringNormalization) throws {
-        for sheet in sheets {
-            try worksheetByID[sheet.sheetID]?.file.normalizeSharedString(normalization)
-        }
-    }
-
     func clone() -> XLWorkbookFile {
         let file = XLWorkbookFile(
             sheets: sheets,

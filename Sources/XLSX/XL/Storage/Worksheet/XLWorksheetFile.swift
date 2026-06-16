@@ -48,10 +48,14 @@ public final class XLWorksheetFile: OPCXMLFile {
     }
 
     public func xmlDocument() throws -> XMLDocument {
+        try xmlDocument(sharedStringWritePlan: nil)
+    }
+
+    func xmlDocument(sharedStringWritePlan: XLSharedStringWritePlan?) throws -> XMLDocument {
         let document = original?.clone() ?? XMLDocument()
         let worksheetElement = worksheetElementForWriting(in: document)
         worksheetElement.ensureNamespace(uri: .spreadsheet)
-        try writeRows(to: worksheetElement)
+        try writeRows(to: worksheetElement, sharedStringWritePlan: sharedStringWritePlan)
         return document
     }
 
@@ -64,12 +68,6 @@ public final class XLWorksheetFile: OPCXMLFile {
     func collectSharedStringValues(into collector: inout XLSharedStringCollector) {
         for rowNumber in rowByNumber.keys.sorted() {
             rowByNumber[rowNumber]?.collectSharedStringValues(into: &collector)
-        }
-    }
-
-    func normalizeSharedString(_ normalization: XLSharedStringNormalization) throws {
-        for rowNumber in rowByNumber.keys.sorted() {
-            try rowByNumber[rowNumber]?.normalizeSharedString(normalization)
         }
     }
 
@@ -104,7 +102,10 @@ public final class XLWorksheetFile: OPCXMLFile {
         return rows
     }
 
-    private func writeRows(to worksheetElement: XMLElement) throws {
+    private func writeRows(
+        to worksheetElement: XMLElement,
+        sharedStringWritePlan: XLSharedStringWritePlan? = nil
+    ) throws {
         guard !rowByNumber.isEmpty else {
             return
         }
@@ -122,7 +123,11 @@ public final class XLWorksheetFile: OPCXMLFile {
                 in: sheetDataElement,
                 rowElementByNumber: &rowElementByNumber
             )
-            try row.write(to: rowElement, rowNumber: rowNumber)
+            try row.write(
+                to: rowElement,
+                rowNumber: rowNumber,
+                sharedStringWritePlan: sharedStringWritePlan
+            )
         }
 
         let rowElements = rowElementByNumber.sorted { $0.key < $1.key }.map { $0.value as XMLNode }

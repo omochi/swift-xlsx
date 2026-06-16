@@ -104,12 +104,11 @@ public final class XLDocumentPackage {
             workbookRels: &workbookRels.file
         )
 
-        let sharedStringNormalization = XLSharedStringNormalization(
+        let sharedStringWritePlan = XLSharedStringWritePlan(
             sharedStrings: sharedStrings.file,
             workbook: workbook.file
         )
-        try workbook.file.normalizeSharedString(sharedStringNormalization)
-        sharedStrings.file.normalizeSharedString(sharedStringNormalization)
+        sharedStrings.file.applySharedStringWritePlan(sharedStringWritePlan)
 
         workbookRels.file.ensureRelationship(
             type: XMLNamespaceURI.sharedStrings.string,
@@ -130,7 +129,7 @@ public final class XLDocumentPackage {
         for file in workbookItems.files {
             if !Self.containsOpaqueFile(at: file.path, in: opaqueFiles) {
                 try package.insertFile(
-                    data: try file.file.xmlDocument().data(),
+                    data: try file.file.xmlDocument(sharedStringWritePlan: sharedStringWritePlan).data(),
                     at: file.path
                 )
             }

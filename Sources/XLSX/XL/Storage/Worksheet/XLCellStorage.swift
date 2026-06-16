@@ -15,7 +15,10 @@ public final class XLCellStorage {
     public var value: XLCellValue
     public var formatIndex: Int? = nil
 
-    func write(to cellElement: XMLElement) throws {
+    func write(
+        to cellElement: XMLElement,
+        sharedStringWritePlan: XLSharedStringWritePlan? = nil
+    ) throws {
         writeFormatIndex(to: cellElement)
 
         cellElement.children = cellElement.children.filter { child in
@@ -25,23 +28,7 @@ public final class XLCellStorage {
             return element.name.name != "v" && element.name.name != "is"
         }
 
-        switch value {
-        case .number:
-            removeCellType(in: cellElement)
-            appendValueElement(to: cellElement, text: value.description)
-        case .boolean:
-            setCellType("b", in: cellElement)
-            appendValueElement(to: cellElement, text: value.description)
-        case .string:
-            removeCellType(in: cellElement)
-            appendValueElement(to: cellElement, text: value.description)
-        case .error:
-            setCellType("e", in: cellElement)
-            appendValueElement(to: cellElement, text: value.description)
-        case .opaqueSharedString:
-            setCellType("s", in: cellElement)
-            appendValueElement(to: cellElement, text: value.description)
-        }
+        try value.write(to: cellElement, sharedStringWritePlan: sharedStringWritePlan)
     }
 
     func resolveSharedStrings(_ sharedStrings: XLSharedStringsFile) {
@@ -50,15 +37,6 @@ public final class XLCellStorage {
 
     func collectSharedStringValues(into collector: inout XLSharedStringCollector) {
         collector.collect(value)
-    }
-
-    func normalizeSharedString(_ normalization: XLSharedStringNormalization) throws {
-        switch value {
-        case .string, .opaqueSharedString:
-            value = .opaqueSharedString(index: try normalization.index(for: value))
-        case .number, .boolean, .error:
-            break
-        }
     }
 
     func clone() -> XLCellStorage {
@@ -131,30 +109,12 @@ public final class XLCellStorage {
         Double(value) != nil
     }
 
-    private func appendValueElement(to cellElement: XMLElement, text: String) {
-        let valueElement = XMLElement(name: XMLName(name: "v"))
-        valueElement.appendChild(XMLText(text))
-        cellElement.appendChild(valueElement)
-    }
-
     private func writeFormatIndex(to cellElement: XMLElement) {
         if let formatIndex {
             cellElement.setAttribute(name: "s", value: String(formatIndex))
         } else {
             removeAttribute(name: "s", in: cellElement)
         }
-    }
-
-    private func setCellType(_ type: String, in cellElement: XMLElement) {
-        if let index = cellElement.attributes.firstIndex(where: { $0.name.prefix == nil && $0.name.name == "t" }) {
-            cellElement.attributes[index].value = type
-        } else {
-            cellElement.attributes.append(XMLAttribute(name: XMLName(name: "t"), value: type))
-        }
-    }
-
-    private func removeCellType(in cellElement: XMLElement) {
-        cellElement.attributes.removeAll { $0.name.prefix == nil && $0.name.name == "t" }
     }
 
     private func removeAttribute(name: String, in cellElement: XMLElement) {

@@ -1,4 +1,4 @@
-struct XLSharedStringNormalization {
+struct XLSharedStringWritePlan {
     init(
         sharedStrings: XLSharedStringsFile,
         workbook: XLWorkbookFile
@@ -50,20 +50,17 @@ struct XLSharedStringNormalization {
     private var indexByText: [String: Int]
     private var indexByOpaqueIndex: [Int: Int]
 
-    func index(for value: XLCellValue) throws -> Int {
-        switch value {
-        case let .string(text):
-            guard let index = indexByText[text] else {
-                throw OPCError.invalidSharedStringsFile
-            }
-            return index
-        case let .opaqueSharedString(index):
-            guard let index = indexByOpaqueIndex[index] else {
-                throw OPCError.invalidSharedStringsFile
-            }
-            return index
-        case .number, .boolean, .error:
+    func stringIndex(for text: String) throws -> Int {
+        guard let index = indexByText[text] else {
             throw OPCError.invalidSharedStringsFile
         }
+        return index
+    }
+
+    func opaqueSharedStringIndex(for originalIndex: Int) throws -> Int {
+        guard let index = indexByOpaqueIndex[originalIndex] else {
+            throw OPCError.invalidSharedStringsFile
+        }
+        return index
     }
 }
