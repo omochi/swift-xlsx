@@ -14,7 +14,7 @@ struct XMLDocumentTests {
         </workbook>
         """
 
-        let document = try XMLDocumentReader.parse(Data(xml.utf8))
+        let document = try XMLDocument(data: Data(xml.utf8))
         let workbook = try #require(document.element(name: "workbook"))
         let sheets = try #require(firstChildElement(name: "sheets", of: workbook))
         let sheet = try #require(firstChildElement(name: "sheet", of: sheets))
@@ -31,12 +31,36 @@ struct XMLDocumentTests {
         ) == "rId1")
     }
 
+    @Test func parsesDocumentFromXMLString() throws {
+        let document = try XMLDocument(xmlString: #"<root><child id="1"/></root>"#)
+        let root = try #require(document.element(name: "root"))
+        let child = try #require(firstChildElement(name: "child", of: root))
+
+        #expect(child.attribute(name: "id") == "1")
+        #expect(root.parent === document)
+    }
+
+    @Test func parsesElementFromXMLString() throws {
+        let element = try XLSX.XMLElement(xmlString: #"<root><child id="1"/></root>"#)
+        let child = try #require(firstChildElement(name: "child", of: element))
+
+        #expect(element.parent == nil)
+        #expect(child.parent === element)
+        #expect(child.attribute(name: "id") == "1")
+    }
+
+    @Test func parsesElementFromData() throws {
+        let element = try XLSX.XMLElement(data: Data(#"<root value="a&amp;b"/>"#.utf8))
+
+        #expect(element.attribute(name: "value") == "a&b")
+    }
+
     @Test func serializesUnknownElementsAndEscapesValues() throws {
         let xml = """
         <root xmlns="urn:test" custom="a&amp;b"><known value="&quot;x&quot;"><child>raw &lt; value</child></known></root>
         """
 
-        let document = try XMLDocumentReader.parse(Data(xml.utf8))
+        let document = try XMLDocument(data: Data(xml.utf8))
         let output = document.xmlString
 
         #expect(output.contains(#"<root xmlns="urn:test" custom="a&amp;b">"#))
@@ -72,7 +96,7 @@ struct XMLDocumentTests {
         </root>
         """
 
-        let document = try XMLDocumentReader.parse(Data(xml.utf8))
+        let document = try XMLDocument(data: Data(xml.utf8))
         let root = try #require(document.element(name: "root"))
         let child = try #require(firstChildElement(name: "child", of: root))
         let item = try #require(firstChildElement(name: "item", of: child))
@@ -95,7 +119,7 @@ struct XMLDocumentTests {
         </root>
         """
 
-        let document = try XMLDocumentReader.parse(Data(xml.utf8))
+        let document = try XMLDocument(data: Data(xml.utf8))
         let root = try #require(document.element(name: "root"))
         let child = try #require(firstChildElement(name: "child", of: root))
         let item = try #require(firstChildElement(name: "item", of: child))
@@ -123,7 +147,7 @@ struct XMLDocumentTests {
           <child id="1">value</child>
         </root>
         """
-        let document = try XMLDocumentReader.parse(Data(xml.utf8))
+        let document = try XMLDocument(data: Data(xml.utf8))
         let clone = document.clone()
         let originalRoot = try #require(document.element(name: "root"))
         let clonedRoot = try #require(clone.element(name: "root"))
@@ -147,7 +171,7 @@ struct XMLDocumentTests {
     }
 
     @Test func cloneKeepsInternedNamespaceURIInstances() throws {
-        let document = try XMLDocumentReader.parse(Data(#"<root xmlns="urn:root"/>"#.utf8))
+        let document = try XMLDocument(data: Data(#"<root xmlns="urn:root"/>"#.utf8))
         let clone = document.clone()
         let root = try #require(clone.element(name: "root"))
         let declaredURI = try #require(root.namespaces.uri())

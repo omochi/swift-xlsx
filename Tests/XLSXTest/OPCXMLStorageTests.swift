@@ -3,10 +3,10 @@ import Testing
 import XLSX
 
 @Suite
-struct OPCXMLFileTests {
+struct OPCXMLStorageTests {
     @Test func rejectsContentTypesFileWithoutTypesRoot() throws {
         do {
-            _ = try OPCContentTypesFile(data: Data("<Root/>".utf8))
+            _ = try contentTypesFile(data: Data("<Root/>".utf8))
             Issue.record("Expected invalid content types file error.")
         } catch let error as OPCError {
             #expect(error == .invalidContentTypesFile)
@@ -26,7 +26,7 @@ struct OPCXMLFileTests {
 
     @Test func rejectsRelationshipsFileWithoutRelationshipsRoot() throws {
         do {
-            _ = try OPCRelsFile(data: Data("<Root/>".utf8))
+            _ = try relationshipsFile(data: Data("<Root/>".utf8))
             Issue.record("Expected invalid relationships file error.")
         } catch let error as OPCError {
             #expect(error == .invalidRelationshipsFile)
@@ -69,10 +69,22 @@ struct OPCXMLFileTests {
 
     @Test func rejectsStylesFileWithoutStyleSheetRoot() throws {
         do {
-            _ = try XLStylesFile(data: Data("<Root/>".utf8))
+            _ = try stylesFile(data: Data("<Root/>".utf8))
             Issue.record("Expected invalid styles file error.")
         } catch let error as OPCError {
             #expect(error == .invalidStylesFile)
         }
+    }
+
+    private func contentTypesFile(data: Data) throws -> OPCContentTypesFile {
+        try OPCContentTypesFile(xmlDocument: XMLDocument(data: data))
+    }
+
+    private func relationshipsFile(data: Data) throws -> OPCRelsFile {
+        try OPCRelsFile(xmlDocument: XMLDocument(data: data))
+    }
+
+    private func stylesFile(data: Data) throws -> XLStylesFile {
+        try XLStylesFile(xmlDocument: XMLDocument(data: data))
     }
 }

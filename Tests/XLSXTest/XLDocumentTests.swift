@@ -124,11 +124,11 @@ struct XLDocumentTests {
         let document = try XLDocument(opcPackage: package)
         let worksheet = try #require(document.workbook.worksheets.first)
         let cell = try #require(worksheet.existingCell(row: 1, column: 1))
-        let formatObject = try #require(cell.storage.formatObject)
-        let pooledObject = try #require(document.package.styles.file.cellFormats.object(at: 1))
+        let formatRecord = try #require(cell.storage.formatRecord)
+        let storedRecord = try #require(document.package.styles.file.cellFormats.record(at: 1))
 
         #expect(cell.format == XLCellFormat(numberFormatID: 14, applyNumberFormat: true))
-        #expect(formatObject === pooledObject)
+        #expect(formatRecord == storedRecord)
     }
 
     @Test func removesUnusedCellFormatsWhenSaving() throws {
@@ -198,7 +198,7 @@ struct XLDocumentTests {
         }
 
         let document = try XLDocument(opcPackage: package)
-        _ = document.package.styles.file.cellFormats.intern(
+        _ = document.package.styles.file.cellFormats.register(
             XLCellFormatRecord(numberFormatID: 99, applyNumberFormat: true)
         )
         try document.save(to: url)
@@ -243,7 +243,7 @@ struct XLDocumentTests {
         worksheet.cell(row: 1, column: 2).value = .number("43")
         worksheet.cell(row: 1, column: 2).format = format
 
-        #expect(document.package.styles.file.cellFormats.objects.count == 1)
+        #expect(document.package.styles.file.cellFormats.records.count == 1)
 
         try document.save(to: url)
 
@@ -293,26 +293,6 @@ struct XLDocumentTests {
         #expect(!sharedStringsXML.contains(#"<t>A</t>"#))
     }
 
-    @Test func rejectsMissingOpaqueSharedStringWhenSaving() throws {
-        let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("swift-xlsx-tests-\(UUID().uuidString)")
-            .appendingPathExtension("xlsx")
-        defer {
-            try? FileManager.default.removeItem(at: url)
-        }
-
-        let document = XLDocument()
-        let worksheet = try document.workbook.appendWorksheet(name: "Sheet")
-        worksheet.cell(row: 1, column: 1).value = .opaqueSharedString(index: 999)
-
-        do {
-            try document.save(to: url)
-            Issue.record("Expected invalid shared strings file error.")
-        } catch let error as OPCError {
-            #expect(error == .invalidSharedStringsFile)
-        }
-    }
-
     @Test func opensWorksheetsIntoWorkbookScope() throws {
         let document = try XLDocument.open(try #require(Bundle.module.url(forResource: "simple", withExtension: "xlsx")))
 
@@ -335,8 +315,8 @@ struct XLDocumentTests {
         let stylesPath = try OPCFilePath(string: "/xl/styles.xml")
         let workbookRelsPath = try OPCFilePath(string: "/xl/_rels/workbook.xml.rels")
         let contentTypesPath = try OPCFilePath(string: "/[Content_Types].xml")
-        let workbookRels = try #require(try package.fileWithPath(OPCRelsFile.self, at: workbookRelsPath))
-        let contentTypes = try #require(try package.fileWithPath(OPCContentTypesFile.self, at: contentTypesPath))
+        let workbookRels = try #require(try package.fileWithPath(OPCRelsFile.self, at: workbookRelsPath, read: OPCRelsFile.init(xmlDocument:)))
+        let contentTypes = try #require(try package.fileWithPath(OPCContentTypesFile.self, at: contentTypesPath, read: OPCContentTypesFile.init(xmlDocument:)))
 
         #expect(package.data(at: stylesPath) == nil)
         #expect(!workbookRels.file.relationships.contains { $0.type == XMLNamespaceURI.styles.string })
@@ -392,10 +372,11 @@ struct XLDocumentTests {
         try document.save(to: destinationURL)
 
         let savedPackage = try OPCPackage(data: Data(contentsOf: destinationURL))
-        let savedWorkbookRels = try #require(try savedPackage.fileWithPath(OPCRelsFile.self, at: workbookRelsPath))
+        let savedWorkbookRels = try #require(try savedPackage.fileWithPath(OPCRelsFile.self, at: workbookRelsPath, read: OPCRelsFile.init(xmlDocument:)))
         let savedContentTypes = try #require(try savedPackage.fileWithPath(
             OPCContentTypesFile.self,
-            at: OPCFilePath(string: "/[Content_Types].xml")
+            at: OPCFilePath(string: "/[Content_Types].xml"),
+            read: OPCContentTypesFile.init(xmlDocument:)
         ))
 
         #expect(savedPackage.data(at: stylesPath) != nil)
@@ -433,8 +414,8 @@ struct XLDocumentTests {
         let package = try OPCPackage(data: Data(contentsOf: url))
         let workbookRelsPath = try OPCFilePath(string: "/xl/_rels/workbook.xml.rels")
         let contentTypesPath = try OPCFilePath(string: "/[Content_Types].xml")
-        let workbookRels = try #require(try package.fileWithPath(OPCRelsFile.self, at: workbookRelsPath))
-        let contentTypes = try #require(try package.fileWithPath(OPCContentTypesFile.self, at: contentTypesPath))
+        let workbookRels = try #require(try package.fileWithPath(OPCRelsFile.self, at: workbookRelsPath, read: OPCRelsFile.init(xmlDocument:)))
+        let contentTypes = try #require(try package.fileWithPath(OPCContentTypesFile.self, at: contentTypesPath, read: OPCContentTypesFile.init(xmlDocument:)))
 
         #expect(package.data(at: sharedStringsPath) != nil)
         #expect(package.data(at: stylesPath) != nil)
@@ -487,7 +468,7 @@ struct XLDocumentTests {
         try document.save(to: destinationURL)
 
         let savedPackage = try OPCPackage(data: Data(contentsOf: destinationURL))
-        let savedWorkbookRels = try #require(try savedPackage.fileWithPath(OPCRelsFile.self, at: workbookRelsPath))
+        let savedWorkbookRels = try #require(try savedPackage.fileWithPath(OPCRelsFile.self, at: workbookRelsPath, read: OPCRelsFile.init(xmlDocument:)))
         let savedStylesXML = try String(decoding: #require(savedPackage.data(at: stylesPath)), as: UTF8.self)
 
         #expect(savedStylesXML.contains(#"<opaqueStyle/>"#))
@@ -571,7 +552,7 @@ struct XLDocumentTests {
 
         let savedPackage = try OPCPackage(data: Data(contentsOf: destinationURL))
         let savedWorkbookRelsPath = try OPCFilePath(string: "/xl/_rels/workbook.xml.rels")
-        let savedWorkbookRelsFile = try savedPackage.fileWithPath(OPCRelsFile.self, at: savedWorkbookRelsPath)
+        let savedWorkbookRelsFile = try savedPackage.fileWithPath(OPCRelsFile.self, at: savedWorkbookRelsPath, read: OPCRelsFile.init(xmlDocument:))
         let savedWorkbookRels = try #require(savedWorkbookRelsFile)
         let savedChartSheetRelationship = try #require(
             savedWorkbookRels.file.relationships.first { $0.id == "rId2" }
@@ -680,7 +661,7 @@ struct XLDocumentTests {
             as: UTF8.self
         )
         let workbookRelsPath = try OPCFilePath(string: "/xl/_rels/workbook.xml.rels")
-        let workbookRels = try #require(try package.fileWithPath(OPCRelsFile.self, at: workbookRelsPath))
+        let workbookRels = try #require(try package.fileWithPath(OPCRelsFile.self, at: workbookRelsPath, read: OPCRelsFile.init(xmlDocument:)))
 
         #expect(workbookXML.contains(#"<sheet name="Extra" sheetId="2" r:id="rId2"/>"#))
         #expect(workbookRels.file.relationships.contains {

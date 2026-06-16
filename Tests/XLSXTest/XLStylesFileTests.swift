@@ -4,8 +4,19 @@ import XLSX
 
 @Suite
 struct XLStylesFileTests {
+    @Test func cellFormatRecordCopiesOnWrite() {
+        let original = XLCellFormatRecord(numberFormatID: 14, applyNumberFormat: true)
+        var copy = original
+
+        copy.numberFormatID = 99
+        copy.applyFont = true
+
+        #expect(original == XLCellFormatRecord(numberFormatID: 14, applyNumberFormat: true))
+        #expect(copy == XLCellFormatRecord(numberFormatID: 99, applyNumberFormat: true, applyFont: true))
+    }
+
     @Test func readsCellFormatsFromCellXfs() throws {
-        let styles = try XLStylesFile(data: Data("""
+        let styles = try stylesFile(data: Data("""
             <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
               <cellXfs count="2">
                 <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
@@ -14,7 +25,7 @@ struct XLStylesFileTests {
             </styleSheet>
             """.utf8))
 
-        #expect(styles.cellFormats.objects.map(\.record) == [
+        #expect(styles.cellFormats.records == [
             XLCellFormatRecord(
                 numberFormatID: 0,
                 fontID: 0,
@@ -35,7 +46,7 @@ struct XLStylesFileTests {
     }
 
     @Test func patchesCellFormatsWithoutRemovingOtherStyleChildren() throws {
-        let styles = try XLStylesFile(data: Data("""
+        let styles = try stylesFile(data: Data("""
             <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
               <numFmts count="1"><numFmt numFmtId="164" formatCode="yyyy-mm-dd"/></numFmts>
               <cellXfs count="1">
@@ -45,7 +56,7 @@ struct XLStylesFileTests {
             </styleSheet>
             """.utf8))
 
-        styles.cellFormats = XLCellFormatObjectPool(records: [
+        styles.cellFormats = XLCellFormatRecordsStorage(records: [
             XLCellFormatRecord(
                 numberFormatID: 164,
                 fontID: 1,
@@ -58,7 +69,7 @@ struct XLStylesFileTests {
             XLCellFormatRecord(formatID: 0, applyProtection: false),
         ])
 
-        let xml = try String(decoding: styles.data(), as: UTF8.self)
+        let xml = try String(decoding: styles.xmlDocument().data, as: UTF8.self)
 
         #expect(xml.contains(#"<numFmts count="1"><numFmt numFmtId="164" formatCode="yyyy-mm-dd"/></numFmts>"#))
         #expect(xml.contains(#"<opaqueStyle/>"#))
@@ -69,20 +80,20 @@ struct XLStylesFileTests {
     }
 
     @Test func doesNotCreateCellXfsWhenOriginalHasNoneAndCellFormatsAreEmpty() throws {
-        let styles = try XLStylesFile(data: Data("""
+        let styles = try stylesFile(data: Data("""
             <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
               <opaqueStyle/>
             </styleSheet>
             """.utf8))
 
-        let xml = try String(decoding: styles.data(), as: UTF8.self)
+        let xml = try String(decoding: styles.xmlDocument().data, as: UTF8.self)
 
         #expect(!xml.contains("<cellXfs"))
         #expect(xml.contains(#"<opaqueStyle/>"#))
     }
 
     @Test func preservesExistingCellXfsTagWhenCellFormatsBecomeEmpty() throws {
-        let styles = try XLStylesFile(data: Data("""
+        let styles = try stylesFile(data: Data("""
             <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
               <cellXfs count="1">
                 <xf numFmtId="0"/>
@@ -90,11 +101,15 @@ struct XLStylesFileTests {
             </styleSheet>
             """.utf8))
 
-        styles.cellFormats = XLCellFormatObjectPool()
+        styles.cellFormats = XLCellFormatRecordsStorage()
 
-        let xml = try String(decoding: styles.data(), as: UTF8.self)
+        let xml = try String(decoding: styles.xmlDocument().data, as: UTF8.self)
 
         #expect(xml.contains(#"<cellXfs count="0">"#) || xml.contains(#"<cellXfs count="0"/>"#))
         #expect(!xml.contains(#"<xf "#))
+    }
+
+    private func stylesFile(data: Data) throws -> XLStylesFile {
+        try XLStylesFile(xmlDocument: XMLDocument(data: data))
     }
 }

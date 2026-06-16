@@ -2,7 +2,7 @@ import MemberwiseInit
 import Foundation
 
 @MemberwiseInit(.public)
-public struct OPCContentTypesFile: OPCXMLFile {
+public struct OPCContentTypesFile: XMLDocumentConvertible {
     public init(xmlDocument: XMLDocument) throws {
         guard let root = xmlDocument.element(name: "Types") else {
             throw OPCError.invalidContentTypesFile
@@ -101,4 +101,5 @@ public struct OPCContentTypesFile: OPCXMLFile {
         document.appendChild(root)
         return document
     }
+
 }

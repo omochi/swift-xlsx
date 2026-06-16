@@ -1,6 +1,6 @@
 import Foundation
 
-public struct OPCOpaqueFile: OPCFile {
+public struct OPCOpaqueFile {
     public init(data: Data) {
         self.storage = data
     }

@@ -3,7 +3,7 @@ public enum XLCellValue: Sendable & Hashable & CustomStringConvertible {
     case boolean(Bool)
     case string(String)
     case error(String)
-    case opaqueSharedString(index: Int)
+    case opaqueSharedString(xmlString: String)
 
     public var description: String {
         switch self {
@@ -15,8 +15,8 @@ public enum XLCellValue: Sendable & Hashable & CustomStringConvertible {
             return text
         case let .error(value):
             return value
-        case let .opaqueSharedString(index):
-            return String(index)
+        case let .opaqueSharedString(xmlString):
+            return xmlString
         }
     }
 
@@ -71,10 +71,16 @@ extension XLCellValue {
             guard let sharedStringIndex = Int(valueText) else {
                 return nil
             }
-            if let text = sharedStrings?.text(at: sharedStringIndex) {
+            guard let record = sharedStrings?.record(at: sharedStringIndex) else {
+                return nil
+            }
+
+            if case let .text(text) = record {
                 self = .string(text)
+            } else if case let .opaque(xmlString) = record {
+                self = .opaqueSharedString(xmlString: xmlString)
             } else {
-                self = .opaqueSharedString(index: sharedStringIndex)
+                return nil
             }
         case "str":
             self = .string(valueText)
@@ -85,7 +91,7 @@ extension XLCellValue {
 
     func write(
         to cellElement: XMLElement,
-        sharedStringWritePlan: XLSharedStringWritePlan? = nil
+        sharedStrings: XLSharedStringRecordsStorage? = nil
     ) throws {
         switch self {
         case .number:
@@ -95,11 +101,11 @@ extension XLCellValue {
             setCellType("b", in: cellElement)
             appendValueElement(to: cellElement, text: description)
         case .string(let text):
-            if let sharedStringWritePlan {
+            if let sharedStrings {
                 setCellType("s", in: cellElement)
                 appendValueElement(
                     to: cellElement,
-                    text: String(try sharedStringWritePlan.stringIndex(for: text))
+                    text: String(try sharedStringIndex(for: .text(text), in: sharedStrings))
                 )
             } else {
                 removeCellType(in: cellElement)
@@ -108,14 +114,37 @@ extension XLCellValue {
         case .error:
             setCellType("e", in: cellElement)
             appendValueElement(to: cellElement, text: description)
-        case .opaqueSharedString(let originalIndex):
+        case .opaqueSharedString(let xmlString):
             setCellType("s", in: cellElement)
-            let index = try sharedStringWritePlan?.opaqueSharedStringIndex(for: originalIndex) ?? originalIndex
+            let index = try sharedStringIndex(
+                for: .opaque(xmlString: xmlString),
+                in: sharedStrings
+            )
             appendValueElement(
                 to: cellElement,
                 text: String(index)
             )
         }
+    }
+
+    private func sharedStringIndex(
+        for record: XLSharedStringRecord,
+        in sharedStrings: XLSharedStringRecordsStorage
+    ) throws -> Int {
+        guard let index = sharedStrings.index(for: record) else {
+            throw OPCError.invalidSharedStringsFile
+        }
+        return index
+    }
+
+    private func sharedStringIndex(
+        for record: XLSharedStringRecord,
+        in sharedStrings: XLSharedStringRecordsStorage?
+    ) throws -> Int {
+        guard let sharedStrings else {
+            throw OPCError.invalidSharedStringsFile
+        }
+        return try sharedStringIndex(for: record, in: sharedStrings)
     }
 
     private func appendValueElement(to cellElement: XMLElement, text: String) {

@@ -1,4 +1,4 @@
-public final class XLWorksheetFile: OPCXMLFile {
+public final class XLWorksheetFile {
     public init() {
         self.original = nil
         self.rowByNumber = [:]
@@ -9,18 +9,7 @@ public final class XLWorksheetFile: OPCXMLFile {
         self.rowByNumber = rowByNumber
     }
 
-    public init(xmlDocument: XMLDocument) throws {
-        self.original = xmlDocument
-        let sharedStrings = XLSharedStringsFile()
-        let styles = XLStylesFile()
-        self.rowByNumber = Self.rows(
-            in: xmlDocument,
-            sharedStrings: sharedStrings,
-            styles: styles
-        )
-    }
-
-    init(
+    public init(
         xmlDocument: XMLDocument,
         sharedStrings: XLSharedStringsFile,
         styles: XLStylesFile
@@ -67,33 +56,33 @@ public final class XLWorksheetFile: OPCXMLFile {
     }
 
     public func xmlDocument() throws -> XMLDocument {
-        try xmlDocument(sharedStringWritePlan: nil, cellFormats: nil)
+        try xmlDocument(sharedStrings: nil, cellFormats: nil)
     }
 
     func xmlDocument(
-        sharedStringWritePlan: XLSharedStringWritePlan?,
-        cellFormats: XLCellFormatObjectPool?
+        sharedStrings: XLSharedStringRecordsStorage?,
+        cellFormats: XLCellFormatRecordsStorage?
     ) throws -> XMLDocument {
         let document = original?.clone() ?? XMLDocument()
         let worksheetElement = worksheetElementForWriting(in: document)
         worksheetElement.ensureNamespace(uri: .spreadsheet)
         try writeRows(
             to: worksheetElement,
-            sharedStringWritePlan: sharedStringWritePlan,
+            sharedStrings: sharedStrings,
             cellFormats: cellFormats
         )
         return document
     }
 
-    func collectSharedStringValues(into collector: inout XLSharedStringCollector) {
+    func collectSharedStrings(into sharedStrings: XLSharedStringRecordsStorage) {
         for rowNumber in rowByNumber.keys.sorted() {
-            rowByNumber[rowNumber]?.collectSharedStringValues(into: &collector)
+            rowByNumber[rowNumber]?.collectSharedStrings(into: sharedStrings)
         }
     }
 
-    func collectCellFormats(into pool: XLCellFormatObjectPool) {
+    func collectCellFormats(into cellFormats: XLCellFormatRecordsStorage) {
         for rowNumber in rowByNumber.keys.sorted() {
-            rowByNumber[rowNumber]?.collectCellFormats(into: pool)
+            rowByNumber[rowNumber]?.collectCellFormats(into: cellFormats)
         }
     }
 
@@ -139,8 +128,8 @@ public final class XLWorksheetFile: OPCXMLFile {
 
     private func writeRows(
         to worksheetElement: XMLElement,
-        sharedStringWritePlan: XLSharedStringWritePlan? = nil,
-        cellFormats: XLCellFormatObjectPool? = nil
+        sharedStrings: XLSharedStringRecordsStorage? = nil,
+        cellFormats: XLCellFormatRecordsStorage? = nil
     ) throws {
         guard !rowByNumber.isEmpty else {
             return
@@ -162,7 +151,7 @@ public final class XLWorksheetFile: OPCXMLFile {
             try row.write(
                 to: rowElement,
                 rowNumber: rowNumber,
-                sharedStringWritePlan: sharedStringWritePlan,
+                sharedStrings: sharedStrings,
                 cellFormats: cellFormats
             )
         }

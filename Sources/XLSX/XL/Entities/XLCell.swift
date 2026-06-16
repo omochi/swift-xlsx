@@ -25,7 +25,7 @@ public struct XLCell {
             storage.format
         }
         nonmutating set {
-            storage.setFormat(newValue, pool: package.styles.file.cellFormats)
+            storage.setFormat(newValue, cellFormats: package.styles.file.cellFormats)
         }
     }
 }

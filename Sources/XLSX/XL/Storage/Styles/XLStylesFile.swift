@@ -1,12 +1,12 @@
 import Foundation
 
-public final class XLStylesFile: OPCXMLFile {
+public final class XLStylesFile: XMLDocumentConvertible {
     public init(cellFormats: [XLCellFormatRecord] = []) {
-        self.cellFormats = XLCellFormatObjectPool(records: cellFormats)
+        self.cellFormats = XLCellFormatRecordsStorage(records: cellFormats)
         self.original = nil
     }
 
-    public init(cellFormats: XLCellFormatObjectPool) {
+    public init(cellFormats: XLCellFormatRecordsStorage) {
         self.cellFormats = cellFormats
         self.original = nil
     }
@@ -16,11 +16,11 @@ public final class XLStylesFile: OPCXMLFile {
             throw OPCError.invalidStylesFile
         }
 
-        self.cellFormats = XLCellFormatObjectPool(records: Self.readCellFormats(in: stylesElement))
+        self.cellFormats = XLCellFormatRecordsStorage(records: Self.readCellFormats(in: stylesElement))
         self.original = xmlDocument
     }
 
-    public var cellFormats: XLCellFormatObjectPool
+    public var cellFormats: XLCellFormatRecordsStorage
     public var original: XMLDocument?
 
     public static func path(
@@ -34,7 +34,7 @@ public final class XLStylesFile: OPCXMLFile {
     }
 
     public var isEmpty: Bool {
-        cellFormats.objects.isEmpty
+        cellFormats.records.isEmpty
     }
 
     public func xmlDocument() throws -> XMLDocument {
@@ -69,7 +69,7 @@ public final class XLStylesFile: OPCXMLFile {
     }
 
     private func writeCellFormats(to stylesElement: XMLElement) {
-        let cellFormats = self.cellFormats.objects.map(\.record)
+        let cellFormats = self.cellFormats.records
         if cellFormats.isEmpty && stylesElement.elements(name: "cellXfs").isEmpty {
             return
         }

@@ -117,14 +117,15 @@ struct OPCPackageDirectoryTests {
             at: contentTypesPath
         )
 
-        let loadedPathWithFile = try package.fileWithPath(OPCContentTypesFile.self, at: contentTypesPath)
+        let loadedPathWithFile = try package.fileWithPath(OPCContentTypesFile.self, at: contentTypesPath, read: OPCContentTypesFile.init(xmlDocument:))
         let pathWithFile = try #require(loadedPathWithFile)
 
         #expect(pathWithFile.path == contentTypesPath)
         #expect(pathWithFile.file.defaults["xml"] == "application/xml")
         let missingPathWithFile = try package.fileWithPath(
             OPCContentTypesFile.self,
-            at: OPCFilePath(string: "/missing.xml")
+            at: OPCFilePath(string: "/missing.xml"),
+            read: OPCContentTypesFile.init(xmlDocument:)
         )
         #expect(missingPathWithFile == nil)
     }
@@ -140,6 +141,27 @@ struct OPCPackageDirectoryTests {
         try package.insertFile(pathWithFile)
 
         #expect(package.data(at: path) == Data([0xde, 0xad, 0xbe, 0xef]))
+    }
+
+    @Test func insertsXMLDocumentConvertibleFileWithPath() throws {
+        let path = try OPCFilePath(string: "/xl/_rels/workbook.xml.rels")
+        let pathWithFile = OPCPathWithFile(
+            path: path,
+            file: OPCRelsFile(relationships: [
+                OPCRelationship(
+                    id: "rId1",
+                    type: XMLNamespaceURI.worksheet.string,
+                    target: "worksheets/sheet1.xml"
+                )
+            ])
+        )
+        var package = OPCPackage()
+
+        try package.insertFile(pathWithFile: pathWithFile)
+
+        let data = try #require(package.data(at: path))
+        let xml = String(decoding: data, as: UTF8.self)
+        #expect(xml.contains("worksheets/sheet1.xml"))
     }
 }
 

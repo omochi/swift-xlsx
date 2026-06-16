@@ -55,8 +55,8 @@ public final class XLRowStorage {
     func write(
         to rowElement: XMLElement,
         rowNumber: Int,
-        sharedStringWritePlan: XLSharedStringWritePlan? = nil,
-        cellFormats: XLCellFormatObjectPool? = nil
+        sharedStrings: XLSharedStringRecordsStorage? = nil,
+        cellFormats: XLCellFormatRecordsStorage? = nil
     ) throws {
         let rowChildren = cellElementsAndOtherChildren(in: rowElement, rowNumber: rowNumber)
         var cellElementByColumn = rowChildren.cellElementByColumn
@@ -73,7 +73,7 @@ public final class XLRowStorage {
             )
             try cell.write(
                 to: cellElement,
-                sharedStringWritePlan: sharedStringWritePlan,
+                sharedStrings: sharedStrings,
                 cellFormats: cellFormats
             )
         }
@@ -82,15 +82,15 @@ public final class XLRowStorage {
         rowElement.children = cellElements + rowChildren.otherChildren
     }
 
-    func collectSharedStringValues(into collector: inout XLSharedStringCollector) {
+    func collectSharedStrings(into sharedStrings: XLSharedStringRecordsStorage) {
         for column in cellByColumn.keys.sorted() {
-            cellByColumn[column]?.collectSharedStringValues(into: &collector)
+            cellByColumn[column]?.collectSharedStrings(into: sharedStrings)
         }
     }
 
-    func collectCellFormats(into pool: XLCellFormatObjectPool) {
+    func collectCellFormats(into cellFormats: XLCellFormatRecordsStorage) {
         for column in cellByColumn.keys.sorted() {
-            cellByColumn[column]?.collectCellFormats(into: pool)
+            cellByColumn[column]?.collectCellFormats(into: cellFormats)
         }
     }
 

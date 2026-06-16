@@ -11,50 +11,50 @@ public final class XLDocumentPackage {
         var consumedPaths: Set<OPCFilePath> = []
 
         let contentTypes = try Self.readFile(
-            OPCContentTypesFile.self,
             from: opcPackage,
             at: OPCContentTypesFile.path(),
             default: OPCContentTypesFile(),
+            read: OPCContentTypesFile.init(xmlDocument:),
             consumedPaths: &consumedPaths
         )
 
         let packageRels = try Self.readFile(
-            OPCRelsFile.self,
             from: opcPackage,
             at: try OPCRelsFile.path(for: .packageRoot),
             default: OPCRelsFile(),
+            read: OPCRelsFile.init(xmlDocument:),
             consumedPaths: &consumedPaths
         )
 
         let workbookPath = try XLWorkbookFile.path(in: packageRels.file)
         let workbook = try Self.readFile(
-            XLWorkbookFile.self,
             from: opcPackage,
             at: workbookPath,
             default: XLWorkbookFile(),
+            read: XLWorkbookFile.init(xmlDocument:),
             consumedPaths: &consumedPaths
         )
 
         let workbookRels = try Self.readFile(
-            OPCRelsFile.self,
             from: opcPackage,
             at: try OPCRelsFile.path(for: workbook.path),
             default: OPCRelsFile(),
+            read: OPCRelsFile.init(xmlDocument:),
             consumedPaths: &consumedPaths
         )
 
         let sharedStrings = try Self.readFile(
-            XLSharedStringsFile.self,
             from: opcPackage,
             at: try XLSharedStringsFile.path(workbookPath: workbook.path, workbookRels: workbookRels.file),
             default: XLSharedStringsFile(),
+            read: XLSharedStringsFile.init(xmlDocument:),
             consumedPaths: &consumedPaths
         )
         let styles = try Self.readFile(
-            XLStylesFile.self,
             from: opcPackage,
             at: try XLStylesFile.path(workbookPath: workbook.path, workbookRels: workbookRels.file),
             default: XLStylesFile(),
+            read: XLStylesFile.init(xmlDocument:),
             consumedPaths: &consumedPaths
         )
 
@@ -103,13 +103,10 @@ public final class XLDocumentPackage {
             workbookRels: &workbookRels.file
         )
 
-        let sharedStringWritePlan = XLSharedStringWritePlan(
-            sharedStrings: sharedStrings.file,
-            workbook: workbook.file
-        )
-        sharedStrings.file.applySharedStringWritePlan(sharedStringWritePlan)
+        sharedStrings.file.records = XLSharedStringRecordsStorage()
+        workbook.file.collectSharedStrings(into: sharedStrings.file.records)
 
-        styles.file.cellFormats = XLCellFormatObjectPool()
+        styles.file.cellFormats = XLCellFormatRecordsStorage()
         workbook.file.collectCellFormats(into: styles.file.cellFormats)
         let writesStyles = styles.file.original != nil || !styles.file.isEmpty
 
@@ -124,23 +121,23 @@ public final class XLDocumentPackage {
 
         var package = OPCPackage()
         for opaqueFile in opaqueFiles {
-            try package.insertFile(opaqueFile)
+            try package.insertFile(data: opaqueFile.file.data(), at: opaqueFile.path)
         }
-        try package.insertFile(packageRels)
-        try package.insertFile(workbook)
-        try package.insertFile(workbookRels)
+        try package.insertFile(pathWithFile: packageRels)
+        try package.insertFile(pathWithFile: workbook)
+        try package.insertFile(pathWithFile: workbookRels)
         for file in workbookItems.files {
             if !Self.containsOpaqueFile(at: file.path, in: opaqueFiles) {
                 let xml = try file.file.xmlDocument(
-                    sharedStringWritePlan: sharedStringWritePlan,
+                    sharedStrings: sharedStrings.file.records,
                     cellFormats: styles.file.cellFormats
                 )
-                try package.insertFile(data: xml.data(), at: file.path)
+                try package.insertFile(xmlDocument: xml, at: file.path)
             }
         }
-        try package.insertFile(sharedStrings)
+        try package.insertFile(pathWithFile: sharedStrings)
         if writesStyles {
-            try package.insertFile(styles)
+            try package.insertFile(pathWithFile: styles)
         }
         Self.registerRequiredContentTypes(
             in: &contentTypes.file,
@@ -150,7 +147,7 @@ public final class XLDocumentPackage {
             stylesPath: styles.path,
             stylesContentType: writesStyles ? OPCContentTypes.styles : nil
         )
-        try package.insertFile(contentTypes)
+        try package.insertFile(pathWithFile: contentTypes)
 
         return package
     }
@@ -167,19 +164,22 @@ public final class XLDocumentPackage {
         )
     }
 
-    private static func readFile<File: OPCFile>(
-        _ type: File.Type,
+    private static func readFile<File>(
         from package: OPCPackage,
         at path: OPCFilePath,
         default defaultFile: @autoclosure () -> File,
+        read: (XMLDocument) throws -> File,
         consumedPaths: inout Set<OPCFilePath>
     ) throws -> OPCPathWithFile<File> {
-        guard let pathWithFile = try package.fileWithPath(type, at: path) else {
+        guard let data = package.data(at: path) else {
             return OPCPathWithFile(path: path, file: defaultFile())
         }
 
         consumedPaths.insert(path)
-        return pathWithFile
+        return try OPCPathWithFile(
+            path: path,
+            file: read(XMLDocument(data: data))
+        )
     }
 
     private static func opaqueFiles(
@@ -190,7 +190,10 @@ public final class XLDocumentPackage {
             guard !consumedPaths.contains(path) else {
                 return nil
             }
-            return try? package.fileWithPath(OPCOpaqueFile.self, at: path)
+            guard let data = package.data(at: path) else {
+                return nil
+            }
+            return OPCPathWithFile(path: path, file: OPCOpaqueFile(data: data))
         }
     }
 
@@ -240,7 +243,7 @@ public final class XLDocumentPackage {
         return try OPCPathWithFile(
             path: path,
             file: XLWorksheetFile(
-                xmlDocument: XMLDocumentReader.parse(data),
+                xmlDocument: XMLDocument(data: data),
                 sharedStrings: sharedStrings,
                 styles: styles
             )

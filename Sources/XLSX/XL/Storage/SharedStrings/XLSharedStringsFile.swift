@@ -1,8 +1,8 @@
 import Foundation
 
-public final class XLSharedStringsFile: OPCXMLFile {
+public final class XLSharedStringsFile: XMLDocumentConvertible {
     public init(records: [XLSharedStringRecord] = []) {
-        self.records = records
+        self.records = XLSharedStringRecordsStorage(records: records)
         self.original = nil
     }
 
@@ -11,12 +11,12 @@ public final class XLSharedStringsFile: OPCXMLFile {
             throw OPCError.invalidSharedStringsFile
         }
 
-        self.records = Self.records(in: sharedStringsElement)
+        self.records = XLSharedStringRecordsStorage(records: Self.sharedStringRecords(in: sharedStringsElement))
         self.original = xmlDocument
     }
 
-    public var records: [XLSharedStringRecord]
     public var original: XMLDocument?
+    public var records: XLSharedStringRecordsStorage
 
     public static func path(
         workbookPath: OPCFilePath,
@@ -32,29 +32,25 @@ public final class XLSharedStringsFile: OPCXMLFile {
         let document = original?.clone() ?? XMLDocument()
         let sharedStringsElement = sharedStringsElementForWriting(in: document)
         sharedStringsElement.ensureNamespace(uri: .spreadsheet)
-        sharedStringsElement.setAttribute(name: "count", value: String(records.count))
-        sharedStringsElement.setAttribute(name: "uniqueCount", value: String(records.count))
+        sharedStringsElement.setAttribute(name: "count", value: String(records.records.count))
+        sharedStringsElement.setAttribute(name: "uniqueCount", value: String(records.records.count))
         try write(to: sharedStringsElement)
         return document
     }
 
     func text(at index: Int) -> String? {
-        guard records.indices.contains(index) else {
-            return nil
-        }
-
-        guard case let .text(text) = records[index] else {
+        guard case let .text(text) = records.record(at: index) else {
             return nil
         }
         return text
     }
 
-    func applySharedStringWritePlan(_ plan: XLSharedStringWritePlan) {
-        records = plan.records
+    func record(at index: Int) -> XLSharedStringRecord? {
+        records.record(at: index)
     }
 
     func clone() -> XLSharedStringsFile {
-        let file = XLSharedStringsFile(records: records)
+        let file = XLSharedStringsFile(records: records.records)
         file.original = original
         return file
     }
@@ -79,9 +75,9 @@ public final class XLSharedStringsFile: OPCXMLFile {
         return nil
     }
 
-    private static func records(in sharedStringsElement: XMLElement) -> [XLSharedStringRecord] {
+    private static func sharedStringRecords(in sharedStringsElement: XMLElement) -> [XLSharedStringRecord] {
         var records: [XLSharedStringRecord] = []
-        for (childIndex, child) in sharedStringsElement.children.enumerated() {
+        for child in sharedStringsElement.children {
             guard let element = child as? XMLElement,
                   element.name.name == "si"
             else {
@@ -91,7 +87,7 @@ public final class XLSharedStringsFile: OPCXMLFile {
             if let text = text(in: element) {
                 records.append(.text(text))
             } else {
-                records.append(.opaque(originalChildIndex: childIndex))
+                records.append(.opaque(xmlString: element.xmlString))
             }
         }
         return records
@@ -111,29 +107,21 @@ public final class XLSharedStringsFile: OPCXMLFile {
         sharedStringsElement.children = try XMLUtils.patchChildren(
             in: sharedStringsElement,
             replacingElementsNamed: "si",
-            with: records,
+            with: records.records,
             makeElement: { record in
-                try elementForWriting(record: record, in: sharedStringsElement)
+                try elementForWriting(record: record)
             }
         )
     }
 
     private func elementForWriting(
-        record: XLSharedStringRecord,
-        in sharedStringsElement: XMLElement
+        record: XLSharedStringRecord
     ) throws -> XMLElement {
         switch record {
         case let .text(text):
             return Self.makeTextElement(for: text)
-        case let .opaque(originalChildIndex):
-            guard sharedStringsElement.children.indices.contains(originalChildIndex),
-                  let element = sharedStringsElement.children[originalChildIndex] as? XMLElement,
-                  element.name.name == "si"
-            else {
-                throw OPCError.invalidSharedStringsFile
-            }
-
-            return element.clone()
+        case let .opaque(xmlString):
+            return try XMLElement(xmlString: xmlString)
         }
     }
 

@@ -1,4 +1,6 @@
 import Foundation
+import SAXParser
+import XMLCore
 
 public final class XMLDocument: XMLNode {
     public init(
@@ -11,6 +13,20 @@ public final class XMLDocument: XMLNode {
         }
     }
 
+    public init(data: Data) throws {
+        var parser = SAXParser(handler: XMLDocumentBuilder())
+        try parser.parse(bytes: Array(data).span)
+        self.childNodes = parser.handler.document.children
+        super.init()
+        for child in childNodes {
+            child._setParent(self)
+        }
+    }
+
+    public convenience init(xmlString: String) throws {
+        try self.init(data: Data(xmlString.utf8))
+    }
+
     private var childNodes: [XMLNode]
 
     public override var kind: XMLNodeKind {
@@ -20,14 +36,6 @@ public final class XMLDocument: XMLNode {
     override var _children: [XMLNode] {
         get { childNodes }
         set { childNodes = newValue }
-    }
-
-    public func element(name: String) -> XMLElement? {
-        children.compactMap { $0 as? XMLElement }.first { $0.name.name == name }
-    }
-
-    public func data() -> Data {
-        Data(xmlString.utf8)
     }
 
     public override func clone() -> Self {
@@ -43,4 +51,11 @@ public final class XMLDocument: XMLNode {
         return serializer.serialize(document: self)
     }
 
+    public var data: Data {
+        Data(xmlString.utf8)
+    }
+
+    public func element(name: String) -> XMLElement? {
+        children.compactMap { $0 as? XMLElement }.first { $0.name.name == name }
+    }
 }

@@ -1,6 +1,6 @@
 import Foundation
 
-public final class XLWorkbookFile: OPCXMLFile {
+public final class XLWorkbookFile: XMLDocumentConvertible {
     struct AddedWorksheet {
         var sheet: XLWorkbookFileSheet
         var file: OPCPathWithFile<XLWorksheetFile>
@@ -103,15 +103,15 @@ public final class XLWorkbookFile: OPCXMLFile {
         return RemovedWorksheet(sheet: sheet, file: file)
     }
 
-    func collectSharedStringValues(into collector: inout XLSharedStringCollector) {
+    func collectSharedStrings(into sharedStrings: XLSharedStringRecordsStorage) {
         for (_, worksheet) in worksheetsWithID {
-            worksheet.file.collectSharedStringValues(into: &collector)
+            worksheet.file.collectSharedStrings(into: sharedStrings)
         }
     }
 
-    func collectCellFormats(into pool: XLCellFormatObjectPool) {
+    func collectCellFormats(into cellFormats: XLCellFormatRecordsStorage) {
         for (_, worksheet) in worksheetsWithID {
-            worksheet.file.collectCellFormats(into: pool)
+            worksheet.file.collectCellFormats(into: cellFormats)
         }
     }
 

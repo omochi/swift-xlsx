@@ -69,14 +69,18 @@ public struct OPCPackage: Sendable {
         return file.data
     }
 
-    public func fileWithPath<File: OPCFile>(
+    public func fileWithPath<File>(
         _ type: File.Type,
-        at path: OPCFilePath
+        at path: OPCFilePath,
+        read: (XMLDocument) throws -> File
     ) throws -> OPCPathWithFile<File>? {
         guard let data = data(at: path) else {
             return nil
         }
-        return OPCPathWithFile(path: path, file: try type.init(data: data))
+        return try OPCPathWithFile(
+            path: path,
+            file: read(XMLDocument(data: data))
+        )
     }
 
     public func data() throws -> Data {
@@ -132,7 +136,15 @@ public struct OPCPackage: Sendable {
         nodes[directoryID.rawValue] = .directory(directory)
     }
 
-    public mutating func insertFile<File: OPCFile>(_ pathWithFile: OPCPathWithFile<File>) throws {
+    public mutating func insertFile(xmlDocument: XMLDocument, at path: OPCFilePath) throws {
+        try insertFile(data: xmlDocument.data, at: path)
+    }
+
+    public mutating func insertFile<File>(pathWithFile: OPCPathWithFile<File>) throws where File: XMLDocumentConvertible {
+        try insertFile(xmlDocument: try pathWithFile.file.xmlDocument(), at: pathWithFile.path)
+    }
+
+    public mutating func insertFile(_ pathWithFile: OPCOpaquePathWithFile) throws {
         try insertFile(data: pathWithFile.file.data(), at: pathWithFile.path)
     }
 

@@ -1,7 +1,7 @@
 import MemberwiseInit
 
 @MemberwiseInit(.public)
-public struct OPCPathWithFile<File: OPCFile> {
+public struct OPCPathWithFile<File> {
     public var path: OPCFilePath
     public var file: File
 

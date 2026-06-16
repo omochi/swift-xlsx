@@ -5,7 +5,7 @@ import XLSX
 @Suite
 struct XLWorkbookFileTests {
     @Test func readsSheetsFromWorkbookXML() throws {
-        let workbook = try XLWorkbookFile(data: Data("""
+        let workbook = try workbookFile(data: Data("""
             <workbook xmlns="\(XMLNamespaceURI.spreadsheet.string)" xmlns:rel="\(XMLNamespaceURI.officeRelationships.string)">
               <sheets>
                 <sheet name="First" sheetId="1" rel:id="rId1"/>
@@ -26,14 +26,14 @@ struct XLWorkbookFileTests {
             XLWorkbookFileSheet(name: "Second", sheetID: 4, relationshipID: "rId7"),
         ])
 
-        let xml = try String(decoding: workbook.data(), as: UTF8.self)
+        let xml = try String(decoding: workbook.xmlDocument().data, as: UTF8.self)
 
         #expect(xml.contains(#"<sheet name="First" sheetId="1" r:id="rId1"/>"#))
         #expect(xml.contains(#"<sheet name="Second" sheetId="4" r:id="rId7"/>"#))
     }
 
     @Test func patchesKnownSheetElementsWithoutRemovingUnknownContent() throws {
-        let workbook = try XLWorkbookFile(data: Data("""
+        let workbook = try workbookFile(data: Data("""
             <workbook xmlns="\(XMLNamespaceURI.spreadsheet.string)" xmlns:rel="\(XMLNamespaceURI.officeRelationships.string)">
               <sheets>
                 <sheet name="Old" sheetId="1" rel:id="rId1" state="hidden"/>
@@ -46,7 +46,7 @@ struct XLWorkbookFileTests {
             XLWorkbookFileSheet(name: "Added", sheetID: 2, relationshipID: "rId2"),
         ]
 
-        let xml = try String(decoding: workbook.data(), as: UTF8.self)
+        let xml = try String(decoding: workbook.xmlDocument().data, as: UTF8.self)
 
         #expect(xml.contains(#"<sheet name="New" sheetId="1" rel:id="rId1" state="hidden"/>"#))
         #expect(xml.contains(#"<sheet name="External" sheetId="9" rel:id="rId9" custom="keep"/>"#))
@@ -55,7 +55,7 @@ struct XLWorkbookFileTests {
     }
 
     @Test func patchesSheetElementsBySheetID() throws {
-        let workbook = try XLWorkbookFile(data: Data("""
+        let workbook = try workbookFile(data: Data("""
             <workbook xmlns="\(XMLNamespaceURI.spreadsheet.string)" xmlns:rel="\(XMLNamespaceURI.officeRelationships.string)">
               <sheets>
                 <sheet name="Original" sheetId="1" rel:id="rId1"/>
@@ -67,14 +67,14 @@ struct XLWorkbookFileTests {
             XLWorkbookFileSheet(name: "Moved", sheetID: 1, relationshipID: "rId3"),
         ]
 
-        let xml = try String(decoding: workbook.data(), as: UTF8.self)
+        let xml = try String(decoding: workbook.xmlDocument().data, as: UTF8.self)
 
         #expect(xml.contains(#"<sheet name="Moved" sheetId="1" rel:id="rId3"/>"#))
         #expect(xml.contains(#"<sheet name="Other" sheetId="2" rel:id="rId2"/>"#))
     }
 
     @Test func addsRelationshipNamespaceWithoutOverwritingExistingPrefix() throws {
-        let workbook = try XLWorkbookFile(xmlDocument: XMLDocumentReader.parse(Data("""
+        let workbook = try XLWorkbookFile(xmlDocument: XMLDocument(data: Data("""
             <workbook xmlns="\(XMLNamespaceURI.spreadsheet.string)" xmlns:r="urn:other">
               <sheets/>
             </workbook>
@@ -83,10 +83,14 @@ struct XLWorkbookFileTests {
             XLWorkbookFileSheet(name: "Sheet1", sheetID: 1, relationshipID: "rId1"),
         ]
 
-        let xml = try String(decoding: workbook.data(), as: UTF8.self)
+        let xml = try String(decoding: workbook.xmlDocument().data, as: UTF8.self)
 
         #expect(xml.contains(#"xmlns:r="urn:other""#))
         #expect(xml.contains(#"xmlns:r2="http://schemas.openxmlformats.org/officeDocument/2006/relationships""#))
         #expect(xml.contains(#"<sheet name="Sheet1" sheetId="1" r2:id="rId1"/>"#))
+    }
+
+    private func workbookFile(data: Data) throws -> XLWorkbookFile {
+        try XLWorkbookFile(xmlDocument: XMLDocument(data: data))
     }
 }

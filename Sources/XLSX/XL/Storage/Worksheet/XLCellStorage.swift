@@ -3,10 +3,10 @@ import Foundation
 public final class XLCellStorage {
     public init(
         value: XLCellValue,
-        formatObject: XLCellFormatObject? = nil
+        formatRecord: XLCellFormatRecord? = nil
     ) {
         self.value = value
-        self.formatObject = formatObject
+        self.formatRecord = formatRecord
     }
 
     init?(
@@ -22,30 +22,33 @@ public final class XLCellStorage {
         }
 
         self.value = value
-        self.formatObject = Self.formatObject(
+        self.formatRecord = Self.formatRecord(
             in: cellElement,
             styles: styles
         )
     }
 
     public var value: XLCellValue
-    public private(set) var formatObject: XLCellFormatObject?
+    public private(set) var formatRecord: XLCellFormatRecord?
 
     public var format: XLCellFormat? {
-        formatObject?.format
+        formatRecord.map(XLCellFormat.init(record:))
     }
 
     public func setFormat(
         _ format: XLCellFormat?,
-        pool: XLCellFormatObjectPool
+        cellFormats: XLCellFormatRecordsStorage
     ) {
-        formatObject = format.map { pool.intern($0) }
+        formatRecord = format?.record
+        if let formatRecord {
+            cellFormats.register(formatRecord)
+        }
     }
 
     func write(
         to cellElement: XMLElement,
-        sharedStringWritePlan: XLSharedStringWritePlan? = nil,
-        cellFormats: XLCellFormatObjectPool? = nil
+        sharedStrings: XLSharedStringRecordsStorage? = nil,
+        cellFormats: XLCellFormatRecordsStorage? = nil
     ) throws {
         writeFormat(to: cellElement, cellFormats: cellFormats)
 
@@ -56,23 +59,30 @@ public final class XLCellStorage {
             return element.name.name != "v" && element.name.name != "is"
         }
 
-        try value.write(to: cellElement, sharedStringWritePlan: sharedStringWritePlan)
+        try value.write(to: cellElement, sharedStrings: sharedStrings)
     }
 
-    func collectSharedStringValues(into collector: inout XLSharedStringCollector) {
-        collector.collect(value)
+    func collectSharedStrings(into sharedStrings: XLSharedStringRecordsStorage) {
+        switch value {
+        case let .string(text):
+            sharedStrings.register(text)
+        case let .opaqueSharedString(xmlString):
+            sharedStrings.register(.opaque(xmlString: xmlString))
+        case .number, .boolean, .error:
+            break
+        }
     }
 
-    func collectCellFormats(into pool: XLCellFormatObjectPool) {
-        guard let formatObject else {
+    func collectCellFormats(into cellFormats: XLCellFormatRecordsStorage) {
+        guard let formatRecord else {
             return
         }
 
-        self.formatObject = pool.intern(formatObject.record)
+        cellFormats.register(formatRecord)
     }
 
     func clone() -> XLCellStorage {
-        XLCellStorage(value: value, formatObject: formatObject)
+        XLCellStorage(value: value, formatRecord: formatRecord)
     }
 
     private static func formatIndex(in cellElement: XMLElement) -> Int? {
@@ -82,23 +92,23 @@ public final class XLCellStorage {
         return Int(value)
     }
 
-    private static func formatObject(
+    private static func formatRecord(
         in cellElement: XMLElement,
         styles: XLStylesFile
-    ) -> XLCellFormatObject? {
+    ) -> XLCellFormatRecord? {
         guard let formatIndex = formatIndex(in: cellElement) else {
             return nil
         }
 
-        return styles.cellFormats.object(at: formatIndex)
+        return styles.cellFormats.record(at: formatIndex)
     }
 
     private func writeFormat(
         to cellElement: XMLElement,
-        cellFormats: XLCellFormatObjectPool?
+        cellFormats: XLCellFormatRecordsStorage?
     ) {
-        if let formatObject,
-           let formatIndex = cellFormats?.index(for: formatObject)
+        if let formatRecord,
+           let formatIndex = cellFormats?.index(for: formatRecord)
         {
             cellElement.setAttribute(name: "s", value: String(formatIndex))
         } else {

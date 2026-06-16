@@ -5,7 +5,7 @@ import XLSX
 @Suite
 struct XLWorksheetFileTests {
     @Test func readsSparseRowsAndCellsFromWorksheetXML() throws {
-        let worksheet = try XLWorksheetFile(data: Data("""
+        let worksheet = try worksheetFile(data: Data("""
             <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
               <sheetData>
                 <row r="2">
@@ -28,7 +28,7 @@ struct XLWorksheetFileTests {
     }
 
     @Test func readsCellValueTypesFromWorksheetXML() throws {
-        let worksheet = try XLWorksheetFile(data: Data("""
+        let worksheet = try worksheetFile(data: Data("""
             <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
               <sheetData>
                 <row r="1">
@@ -57,7 +57,7 @@ struct XLWorksheetFileTests {
         #expect(worksheet.existingRow(1)?.existingCell(column: 5)?.value == .string("2026-06-16T09:30:00Z"))
         #expect(worksheet.existingRow(1)?.existingCell(column: 6)?.value == .string("inline"))
         #expect(worksheet.existingRow(1)?.existingCell(column: 7)?.value == .string("cached"))
-        #expect(worksheet.existingRow(1)?.existingCell(column: 8)?.value == .opaqueSharedString(index: 5))
+        #expect(worksheet.existingRow(1)?.existingCell(column: 8) == nil)
         #expect(worksheet.existingRow(1)?.existingCell(column: 9)?.value == .boolean(false))
         #expect(worksheet.existingRow(1)?.existingCell(column: 10)?.value == .boolean(true))
         #expect(worksheet.existingRow(1)?.existingCell(column: 11)?.value == .boolean(true))
@@ -66,7 +66,7 @@ struct XLWorksheetFileTests {
     }
 
     @Test func ignoresStandaloneWorksheetCellFormatWithoutStyles() throws {
-        let worksheet = try XLWorksheetFile(data: Data("""
+        let worksheet = try worksheetFile(data: Data("""
             <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
               <sheetData>
                 <row r="1">
@@ -78,8 +78,7 @@ struct XLWorksheetFileTests {
             """.utf8))
 
         #expect(worksheet.existingRow(1)?.existingCell(column: 1)?.format == nil)
-        #expect(worksheet.existingRow(1)?.existingCell(column: 2)?.format == nil)
-        #expect(worksheet.existingRow(1)?.existingCell(column: 2)?.value == .opaqueSharedString(index: 0))
+        #expect(worksheet.existingRow(1)?.existingCell(column: 2) == nil)
     }
 
     @Test func writesSparseRowsAndCellsToWorksheetXML() throws {
@@ -93,7 +92,7 @@ struct XLWorksheetFileTests {
             ]),
         ])
 
-        let xml = try String(decoding: worksheet.data(), as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
 
         #expect(xml.contains(#"<sheetData><row r="2"><c r="B2"><v>left</v></c><c r="D2"><v>right</v></c></row><row r="10"><c r="C10"><v>bottom</v></c></row></sheetData>"#))
     }
@@ -104,30 +103,28 @@ struct XLWorksheetFileTests {
                 1: XLCellStorage(value: .number("42")),
                 2: XLCellStorage(value: .boolean(false)),
                 3: XLCellStorage(value: .error("#N/A")),
-                4: XLCellStorage(value: .opaqueSharedString(index: 2)),
             ]),
         ])
 
-        let xml = try String(decoding: worksheet.data(), as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
 
         #expect(xml.contains(#"<c r="A1"><v>42</v></c>"#))
         #expect(xml.contains(#"<c r="B1" t="b"><v>0</v></c>"#))
         #expect(xml.contains(#"<c r="C1" t="e"><v>#N/A</v></c>"#))
-        #expect(xml.contains(#"<c r="D1" t="s"><v>2</v></c>"#))
     }
 
     @Test func removesCellFormatWhenStandaloneWorksheetHasNoWritePlan() throws {
-        let pool = XLCellFormatObjectPool()
+        let cellFormats = XLCellFormatRecordsStorage()
         let format = XLCellFormat(numberFormatID: 14, applyNumberFormat: true)
         let formattedCell = XLCellStorage(value: .number("42"))
-        formattedCell.setFormat(format, pool: pool)
+        formattedCell.setFormat(format, cellFormats: cellFormats)
         let worksheet = XLWorksheetFile(rowByNumber: [
             1: XLRowStorage(cellByColumn: [
                 1: formattedCell,
             ]),
         ])
 
-        let xml = try String(decoding: worksheet.data(), as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
 
         #expect(xml.contains(#"<c r="A1"><v>42</v></c>"#))
     }
@@ -146,7 +143,7 @@ struct XLWorksheetFileTests {
         try document.save(to: url)
 
         #expect(worksheet.existingRow(1)?.existingCell(column: 1)?.value == .string("shared"))
-        #expect(document.package.sharedStrings.file.records == [])
+        #expect(document.package.sharedStrings.file.records.records == [])
 
         let package = try OPCPackage(data: Data(contentsOf: url))
         let worksheetXML = try String(
@@ -163,7 +160,7 @@ struct XLWorksheetFileTests {
     }
 
     @Test func writesRowsSortedBeforeOtherSheetDataChildren() throws {
-        let worksheet = try XLWorksheetFile(data: Data("""
+        let worksheet = try worksheetFile(data: Data("""
             <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
               <sheetData>
                 <row r="10">
@@ -179,7 +176,7 @@ struct XLWorksheetFileTests {
 
         worksheet.cell(row: 5, column: 1).value = .string("middle")
 
-        let xml = try String(decoding: worksheet.data(), as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
 
         let row2Range = try #require(xml.range(of: #"<row r="2""#))
         let row5Range = try #require(xml.range(of: #"<row r="5""#))
@@ -192,7 +189,7 @@ struct XLWorksheetFileTests {
     }
 
     @Test func writesCellsSortedBeforeOtherRowChildren() throws {
-        let worksheet = try XLWorksheetFile(data: Data("""
+        let worksheet = try worksheetFile(data: Data("""
             <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
               <sheetData>
                 <row r="2">
@@ -206,7 +203,7 @@ struct XLWorksheetFileTests {
 
         worksheet.cell(row: 2, column: 3).value = .string("middle")
 
-        let xml = try String(decoding: worksheet.data(), as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
 
         let cellBRange = try #require(xml.range(of: #"<c r="B2""#))
         let cellCRange = try #require(xml.range(of: #"<c r="C2""#))
@@ -308,25 +305,25 @@ struct XLWorksheetFileTests {
     }
 
     @Test func patchesKnownCellsWithoutRemovingUnknownCellAttributes() throws {
-        let worksheet = try XLWorksheetFile(data: Data("""
+        let worksheet = try worksheetFile(data: Data("""
             <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
               <sheetData>
                 <row r="1" custom="keep">
-                  <c r="A1" t="s"><v>0</v></c>
+                  <c r="A1"><v>0</v></c>
                 </row>
               </sheetData>
             </worksheet>
             """.utf8))
         worksheet.rowByNumber[1]?.cellByColumn[1]?.value = .string("1")
 
-        let xml = try String(decoding: worksheet.data(), as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
 
         #expect(xml.contains(#"<row r="1" custom="keep">"#))
         #expect(xml.contains(#"<c r="A1"><v>1</v></c>"#))
     }
 
     @Test func removesStandaloneWorksheetCellFormatWhenWritingWithoutPlan() throws {
-        let worksheet = try XLWorksheetFile(data: Data("""
+        let worksheet = try worksheetFile(data: Data("""
             <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
               <sheetData>
                 <row r="1">
@@ -336,8 +333,16 @@ struct XLWorksheetFileTests {
             </worksheet>
             """.utf8))
 
-        let xml = try String(decoding: worksheet.data(), as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
 
         #expect(xml.contains(#"<c r="A1"><v>42</v></c>"#))
+    }
+
+    private func worksheetFile(data: Data) throws -> XLWorksheetFile {
+        try XLWorksheetFile(
+            xmlDocument: XMLDocument(data: data),
+            sharedStrings: XLSharedStringsFile(),
+            styles: XLStylesFile()
+        )
     }
 }

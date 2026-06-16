@@ -1,3 +1,5 @@
+import Foundation
+
 public final class XMLElement: XMLNode {
     public init(
         name: XMLName,
@@ -13,6 +15,23 @@ public final class XMLElement: XMLNode {
         for child in children {
             child._setParent(self)
         }
+    }
+
+    public convenience init(xmlString: String) throws {
+        try self.init(data: Data(xmlString.utf8))
+    }
+
+    public convenience init(data: Data) throws {
+        let document = try XMLDocument(data: data)
+        guard let element = document.children.compactMap({ $0 as? XMLElement }).first else {
+            throw XMLError.missingRootElement
+        }
+        self.init(
+            name: element.name,
+            namespaces: element.namespaces,
+            attributes: element.attributes,
+            children: element.children
+        )
     }
 
     public var name: XMLName
@@ -41,6 +60,10 @@ public final class XMLElement: XMLNode {
     public var xmlString: String {
         let serializer = XMLSerializer()
         return serializer.serialize(element: self)
+    }
+
+    public var data: Data {
+        Data(xmlString.utf8)
     }
 
     public func attribute(name: String, namespaceURI: XMLNamespaceURI? = nil) -> String? {
