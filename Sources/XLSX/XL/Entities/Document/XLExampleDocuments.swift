@@ -25,10 +25,6 @@ public enum XLExampleDocuments {
             ("bold", XLFont(bold: true)),
             ("italic", XLFont(italic: true)),
             ("strike", XLFont(strike: true)),
-            ("condense", XLFont(condense: true)),
-            ("extend", XLFont(extend: true)),
-            ("outline", XLFont(outline: true)),
-            ("shadow", XLFont(shadow: true)),
             ("size", XLFont(size: 18)),
             ("name", XLFont(name: "Courier New")),
         ]
