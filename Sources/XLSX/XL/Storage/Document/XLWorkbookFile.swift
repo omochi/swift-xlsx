@@ -115,20 +115,22 @@ public final class XLWorkbookFile: XMLDocumentConvertible {
 
     func collectCellFormatStyleItems(
         fonts: XLFontRecordsStorage,
-        fills: XLFillsStorage
+        fills: XLFillsStorage,
+        borders: XLBordersStorage
     ) {
         for worksheet in worksheets {
-            worksheet.file.collectCellFormatStyleItems(fonts: fonts, fills: fills)
+            worksheet.file.collectCellFormatStyleItems(fonts: fonts, fills: fills, borders: borders)
         }
     }
 
     func collectCellFormats(
         into cellFormats: XLCellFormatRecordsStorage,
         fonts: XLFontRecordsStorage,
-        fills: XLFillsStorage
+        fills: XLFillsStorage,
+        borders: XLBordersStorage
     ) throws {
         for worksheet in worksheets {
-            try worksheet.file.collectCellFormats(into: cellFormats, fonts: fonts, fills: fills)
+            try worksheet.file.collectCellFormats(into: cellFormats, fonts: fonts, fills: fills, borders: borders)
         }
     }
 

@@ -302,6 +302,111 @@ struct XLStylesFileTests {
         #expect(!xml.contains("<fill>"))
     }
 
+    @Test func readsBordersFromBordersElement() throws {
+        let styles = try stylesFile(data: Data("""
+            <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+              <borders count="2">
+                <border>
+                  <left/>
+                  <right/>
+                  <top/>
+                  <bottom/>
+                  <diagonal/>
+                </border>
+                <border outline="0" diagonalUp="1">
+                  <start style="dotted"/>
+                  <end style="hair"/>
+                  <left style="thin"><color rgb="FFFF0000"/></left>
+                  <right style="medium"/>
+                  <top style="dashDot"/>
+                  <bottom style="mediumDashDot"><color theme="4" tint="0.25"/></bottom>
+                  <diagonal style="double"><color indexed="64"/></diagonal>
+                  <vertical style="dashed"/>
+                  <horizontal style="thick"/>
+                </border>
+              </borders>
+            </styleSheet>
+            """.utf8))
+
+        #expect(styles.borders.records == [
+            XLBorder(
+                left: XLBorder.Line(),
+                right: XLBorder.Line(),
+                top: XLBorder.Line(),
+                bottom: XLBorder.Line(),
+                diagonal: XLBorder.Diagonal(directions: [], line: XLBorder.Line())
+            ),
+            XLBorder(
+                outline: false,
+                start: XLBorder.Line(style: .dotted),
+                end: XLBorder.Line(style: .hair),
+                left: XLBorder.Line(style: .thin, color: .rgb("FFFF0000")),
+                right: XLBorder.Line(style: .medium),
+                top: XLBorder.Line(style: .dashDot),
+                bottom: XLBorder.Line(style: .mediumDashDot, color: .theme(4, tint: 0.25)),
+                diagonal: XLBorder.Diagonal(
+                    directions: .up,
+                    line: XLBorder.Line(style: .double, color: .indexed(64))
+                ),
+                vertical: XLBorder.Line(style: .dashed),
+                horizontal: XLBorder.Line(style: .thick)
+            ),
+        ])
+    }
+
+    @Test func patchesBordersWithoutRemovingOtherStyleChildren() throws {
+        let styles = try stylesFile(data: Data("""
+            <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+              <fonts count="1"><font><name val="Calibri"/></font></fonts>
+              <borders count="1">
+                <border><left/></border>
+              </borders>
+              <cellXfs count="1"><xf borderId="0"/></cellXfs>
+            </styleSheet>
+            """.utf8))
+
+        styles.borders = XLBordersStorage(records: [
+            XLBorder(
+                left: XLBorder.Line(style: .thin, color: .rgb("FFFF0000")),
+                right: XLBorder.Line(style: .medium)
+            ),
+            XLBorder(
+                outline: false,
+                diagonal: XLBorder.Diagonal(
+                    directions: [.up, .down],
+                    line: XLBorder.Line(style: .double, color: .indexed(64))
+                ),
+                vertical: XLBorder.Line(style: .dashed),
+                horizontal: XLBorder.Line(style: .thick)
+            ),
+        ])
+
+        let xml = try String(decoding: styles.xmlDocument().data, as: UTF8.self)
+
+        #expect(xml.contains(#"<fonts count="1"><font><name val="Calibri"/></font></fonts>"#))
+        #expect(xml.contains(#"<borders count="2">"#))
+        #expect(xml.contains(#"<border><left style="thin"><color rgb="FFFF0000"/></left><right style="medium"/></border>"#))
+        #expect(xml.contains(#"<border outline="0" diagonalUp="1" diagonalDown="1"><diagonal style="double"><color indexed="64"/></diagonal><vertical style="dashed"/><horizontal style="thick"/></border>"#))
+        #expect(xml.contains(#"<cellXfs count="1"><xf borderId="0"/></cellXfs>"#))
+    }
+
+    @Test func preservesExistingBordersTagWhenBordersBecomeEmpty() throws {
+        let styles = try stylesFile(data: Data("""
+            <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+              <borders count="1">
+                <border><left/></border>
+              </borders>
+            </styleSheet>
+            """.utf8))
+
+        styles.borders = XLBordersStorage()
+
+        let xml = try String(decoding: styles.xmlDocument().data, as: UTF8.self)
+
+        #expect(xml.contains(#"<borders count="0">"#) || xml.contains(#"<borders count="0"/>"#))
+        #expect(!xml.contains("<border>"))
+    }
+
     @Test func readsCellFormatsFromCellXfs() throws {
         let styles = try stylesFile(data: Data("""
             <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">

@@ -56,14 +56,15 @@ public final class XLWorksheetFile {
     }
 
     public func xmlDocument() throws -> XMLDocument {
-        try xmlDocument(sharedStrings: nil, cellFormats: nil, fonts: nil, fills: nil)
+        try xmlDocument(sharedStrings: nil, cellFormats: nil, fonts: nil, fills: nil, borders: nil)
     }
 
     func xmlDocument(
         sharedStrings: XLSharedStringRecordsStorage?,
         cellFormats: XLCellFormatRecordsStorage?,
         fonts: XLFontRecordsStorage?,
-        fills: XLFillsStorage?
+        fills: XLFillsStorage?,
+        borders: XLBordersStorage?
     ) throws -> XMLDocument {
         let document = original?.clone() ?? XMLDocument()
         let worksheetElement = worksheetElementForWriting(in: document)
@@ -73,7 +74,8 @@ public final class XLWorksheetFile {
             sharedStrings: sharedStrings,
             cellFormats: cellFormats,
             fonts: fonts,
-            fills: fills
+            fills: fills,
+            borders: borders
         )
         return document
     }
@@ -86,20 +88,22 @@ public final class XLWorksheetFile {
 
     func collectCellFormatStyleItems(
         fonts: XLFontRecordsStorage,
-        fills: XLFillsStorage
+        fills: XLFillsStorage,
+        borders: XLBordersStorage
     ) {
         for rowNumber in rowByNumber.keys.sorted() {
-            rowByNumber[rowNumber]?.collectCellFormatStyleItems(fonts: fonts, fills: fills)
+            rowByNumber[rowNumber]?.collectCellFormatStyleItems(fonts: fonts, fills: fills, borders: borders)
         }
     }
 
     func collectCellFormats(
         into cellFormats: XLCellFormatRecordsStorage,
         fonts: XLFontRecordsStorage,
-        fills: XLFillsStorage
+        fills: XLFillsStorage,
+        borders: XLBordersStorage
     ) throws {
         for rowNumber in rowByNumber.keys.sorted() {
-            try rowByNumber[rowNumber]?.collectCellFormats(into: cellFormats, fonts: fonts, fills: fills)
+            try rowByNumber[rowNumber]?.collectCellFormats(into: cellFormats, fonts: fonts, fills: fills, borders: borders)
         }
     }
 
@@ -148,7 +152,8 @@ public final class XLWorksheetFile {
         sharedStrings: XLSharedStringRecordsStorage? = nil,
         cellFormats: XLCellFormatRecordsStorage? = nil,
         fonts: XLFontRecordsStorage? = nil,
-        fills: XLFillsStorage? = nil
+        fills: XLFillsStorage? = nil,
+        borders: XLBordersStorage? = nil
     ) throws {
         guard !rowByNumber.isEmpty else {
             return
@@ -173,7 +178,8 @@ public final class XLWorksheetFile {
                 sharedStrings: sharedStrings,
                 cellFormats: cellFormats,
                 fonts: fonts,
-                fills: fills
+                fills: fills,
+                borders: borders
             )
         }
 

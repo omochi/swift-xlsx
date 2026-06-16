@@ -87,9 +87,12 @@ struct XLDocumentTests {
         try package.insertFile(
             data: Data("""
                 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+                  <borders count="1">
+                    <border><left style="thin"><color rgb="FFFF0000"/></left></border>
+                  </borders>
                   <cellXfs count="2">
                     <xf numFmtId="0"/>
-                    <xf numFmtId="14" applyNumberFormat="1"/>
+                    <xf numFmtId="14" borderId="0" applyNumberFormat="1"/>
                   </cellXfs>
                 </styleSheet>
                 """.utf8),
@@ -100,12 +103,19 @@ struct XLDocumentTests {
         let worksheet = try #require(document.workbook.worksheets.first)
         let cell = try #require(worksheet.existingCell(row: 1, column: 1))
         let storedRecord = try #require(document.package.styles.file.cellFormats.record(at: 1))
+        let border = XLBorder(left: XLBorder.Line(style: .thin, color: .rgb("FFFF0000")))
 
-        #expect(cell.format == XLCellFormat(numberFormatID: 14, applyNumberFormat: true))
+        #expect(cell.format == XLCellFormat(
+            numberFormatID: 14,
+            border: border,
+            applyNumberFormat: true,
+            applyBorder: false
+        ))
         #expect(cell.format == XLCellFormat(
             record: storedRecord,
             fonts: document.package.styles.file.fonts,
-            fills: document.package.styles.file.fills
+            fills: document.package.styles.file.fills,
+            borders: document.package.styles.file.borders
         ))
     }
 
@@ -216,7 +226,10 @@ struct XLDocumentTests {
                 foregroundColor: .rgb("FFFFFF00"),
                 backgroundColor: .indexed(64)
             )),
-            borderID: 3,
+            border: XLBorder(
+                left: XLBorder.Line(style: .thin, color: .rgb("FFFF0000")),
+                right: XLBorder.Line(style: .medium)
+            ),
             formatID: 0,
             applyNumberFormat: true
         )
@@ -245,8 +258,10 @@ struct XLDocumentTests {
         #expect(stylesXML.contains(#"<font><b/><sz val="12.0"/><name val="Arial"/></font>"#))
         #expect(stylesXML.contains(#"<fills count="1">"#))
         #expect(stylesXML.contains(#"<fill><patternFill patternType="solid"><fgColor rgb="FFFFFF00"/><bgColor indexed="64"/></patternFill></fill>"#))
+        #expect(stylesXML.contains(#"<borders count="1">"#))
+        #expect(stylesXML.contains(#"<border><left style="thin"><color rgb="FFFF0000"/></left><right style="medium"/></border>"#))
         #expect(stylesXML.contains(#"<cellXfs count="1">"#))
-        #expect(stylesXML.contains(#"<xf numFmtId="14" fontId="0" fillId="0" borderId="3" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1"/>"#))
+        #expect(stylesXML.contains(#"<xf numFmtId="14" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1"/>"#))
     }
 
     @Test func rebuildsSharedStringsFromEditedCells() throws {

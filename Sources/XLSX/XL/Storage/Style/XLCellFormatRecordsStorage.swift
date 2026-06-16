@@ -5,8 +5,9 @@ extension XLCellFormatRecordsStorage {
     public func register(
         _ format: XLCellFormat,
         fonts: XLFontRecordsStorage,
-        fills: XLFillsStorage
+        fills: XLFillsStorage,
+        borders: XLBordersStorage
     ) throws -> Int {
-        try register(format.record(fonts: fonts, fills: fills))
+        try register(format.record(fonts: fonts, fills: fills, borders: borders))
     }
 }

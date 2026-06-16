@@ -4,10 +4,12 @@ public final class XLStylesFile: XMLDocumentConvertible {
     public init(
         fonts: [XLFontRecord] = [],
         fills: [XLFill] = [],
+        borders: [XLBorder] = [],
         cellFormats: [XLCellFormatRecord] = []
     ) {
         self.fonts = XLFontRecordsStorage(records: fonts)
         self.fills = XLFillsStorage(records: fills)
+        self.borders = XLBordersStorage(records: borders)
         self.cellFormats = XLCellFormatRecordsStorage(records: cellFormats)
         self.original = nil
     }
@@ -15,10 +17,12 @@ public final class XLStylesFile: XMLDocumentConvertible {
     public init(
         fonts: XLFontRecordsStorage = XLFontRecordsStorage(),
         fills: XLFillsStorage = XLFillsStorage(),
+        borders: XLBordersStorage = XLBordersStorage(),
         cellFormats: XLCellFormatRecordsStorage
     ) {
         self.fonts = fonts
         self.fills = fills
+        self.borders = borders
         self.cellFormats = cellFormats
         self.original = nil
     }
@@ -30,12 +34,14 @@ public final class XLStylesFile: XMLDocumentConvertible {
 
         self.fonts = XLFontRecordsStorage(records: Self.readFonts(in: stylesElement))
         self.fills = XLFillsStorage(records: Self.readFills(in: stylesElement))
+        self.borders = XLBordersStorage(records: Self.readBorders(in: stylesElement))
         self.cellFormats = XLCellFormatRecordsStorage(records: Self.readCellFormats(in: stylesElement))
         self.original = xmlDocument
     }
 
     public var fonts: XLFontRecordsStorage
     public var fills: XLFillsStorage
+    public var borders: XLBordersStorage
     public var cellFormats: XLCellFormatRecordsStorage
     public var original: XMLDocument?
 
@@ -50,7 +56,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
     }
 
     public var isEmpty: Bool {
-        fonts.records.isEmpty && fills.records.isEmpty && cellFormats.records.isEmpty
+        fonts.records.isEmpty && fills.records.isEmpty && borders.records.isEmpty && cellFormats.records.isEmpty
     }
 
     public func xmlDocument() throws -> XMLDocument {
@@ -59,12 +65,18 @@ public final class XLStylesFile: XMLDocumentConvertible {
         stylesElement.ensureNamespace(uri: .spreadsheet)
         try writeFonts(to: stylesElement)
         try writeFills(to: stylesElement)
+        writeBorders(to: stylesElement)
         writeCellFormats(to: stylesElement)
         return document
     }
 
     func clone() -> XLStylesFile {
-        let file = XLStylesFile(fonts: fonts.clone(), fills: fills.clone(), cellFormats: cellFormats.clone())
+        let file = XLStylesFile(
+            fonts: fonts.clone(),
+            fills: fills.clone(),
+            borders: borders.clone(),
+            cellFormats: cellFormats.clone()
+        )
         file.original = original
         return file
     }
@@ -81,6 +93,13 @@ public final class XLStylesFile: XMLDocumentConvertible {
             return []
         }
         return fillsElement.elements(name: "fill").map(XLFill.init(element:))
+    }
+
+    private static func readBorders(in stylesElement: XMLElement) -> [XLBorder] {
+        guard let bordersElement = stylesElement.elements(name: "borders").first else {
+            return []
+        }
+        return bordersElement.elements(name: "border").map(XLBorder.init(element:))
     }
 
     private static func readCellFormats(in stylesElement: XMLElement) -> [XLCellFormatRecord] {
@@ -138,6 +157,25 @@ public final class XLStylesFile: XMLDocumentConvertible {
         )
     }
 
+    private func writeBorders(to stylesElement: XMLElement) {
+        let borders = self.borders.records
+        if borders.isEmpty && stylesElement.elements(name: "borders").isEmpty {
+            return
+        }
+
+        let bordersElement = bordersElementForWriting(in: stylesElement)
+        bordersElement.setAttribute(name: "count", value: String(borders.count))
+
+        bordersElement.children = XMLUtils.patchChildren(
+            parentElement: bordersElement,
+            replacingElementName: "border",
+            records: borders,
+            makeElement: { border in
+                border.xmlElement()
+            }
+        )
+    }
+
     private func writeCellFormats(to stylesElement: XMLElement) {
         let cellFormats = self.cellFormats.records
         if cellFormats.isEmpty && stylesElement.elements(name: "cellXfs").isEmpty {
@@ -173,6 +211,16 @@ public final class XLStylesFile: XMLDocumentConvertible {
         }
 
         let element = XMLElement(name: XMLName(name: "fills"))
+        stylesElement.appendChild(element)
+        return element
+    }
+
+    private func bordersElementForWriting(in stylesElement: XMLElement) -> XMLElement {
+        if let element = stylesElement.elements(name: "borders").first {
+            return element
+        }
+
+        let element = XMLElement(name: XMLName(name: "borders"))
         stylesElement.appendChild(element)
         return element
     }

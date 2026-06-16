@@ -58,7 +58,8 @@ public final class XLRowStorage {
         sharedStrings: XLSharedStringRecordsStorage? = nil,
         cellFormats: XLCellFormatRecordsStorage? = nil,
         fonts: XLFontRecordsStorage? = nil,
-        fills: XLFillsStorage? = nil
+        fills: XLFillsStorage? = nil,
+        borders: XLBordersStorage? = nil
     ) throws {
         let rowChildren = cellElementsAndOtherChildren(in: rowElement, rowNumber: rowNumber)
         var cellElementByColumn = rowChildren.cellElementByColumn
@@ -78,7 +79,8 @@ public final class XLRowStorage {
                 sharedStrings: sharedStrings,
                 cellFormats: cellFormats,
                 fonts: fonts,
-                fills: fills
+                fills: fills,
+                borders: borders
             )
         }
 
@@ -94,20 +96,22 @@ public final class XLRowStorage {
 
     func collectCellFormatStyleItems(
         fonts: XLFontRecordsStorage,
-        fills: XLFillsStorage
+        fills: XLFillsStorage,
+        borders: XLBordersStorage
     ) {
         for column in cellByColumn.keys.sorted() {
-            cellByColumn[column]?.collectCellFormatStyleItems(fonts: fonts, fills: fills)
+            cellByColumn[column]?.collectCellFormatStyleItems(fonts: fonts, fills: fills, borders: borders)
         }
     }
 
     func collectCellFormats(
         into cellFormats: XLCellFormatRecordsStorage,
         fonts: XLFontRecordsStorage,
-        fills: XLFillsStorage
+        fills: XLFillsStorage,
+        borders: XLBordersStorage
     ) throws {
         for column in cellByColumn.keys.sorted() {
-            try cellByColumn[column]?.collectCellFormats(into: cellFormats, fonts: fonts, fills: fills)
+            try cellByColumn[column]?.collectCellFormats(into: cellFormats, fonts: fonts, fills: fills, borders: borders)
         }
     }
 
