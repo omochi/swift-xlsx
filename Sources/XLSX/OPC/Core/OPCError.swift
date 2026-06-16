@@ -8,4 +8,5 @@ public enum OPCError: Error & Equatable {
     case invalidContentTypesFile
     case invalidRelationshipsFile
     case invalidSharedStringsFile
+    case invalidStylesFile
 }

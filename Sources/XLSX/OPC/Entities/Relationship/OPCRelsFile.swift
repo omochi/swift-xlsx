@@ -51,10 +51,16 @@ public struct OPCRelsFile: Sendable, OPCXMLFile {
     @discardableResult
     public mutating func ensureRelationship(
         type: String,
-        target: String
-    ) -> OPCRelationship {
-        if let relationship = relationships.first(where: { $0.type == type }) {
-            return relationship
+        target: String?
+    ) -> OPCRelationship? {
+        guard let target else {
+            relationships.removeAll { $0.type == type }
+            return nil
+        }
+
+        if let index = relationships.firstIndex(where: { $0.type == type }) {
+            relationships[index].target = target
+            return relationships[index]
         }
 
         let relationship = OPCRelationship(

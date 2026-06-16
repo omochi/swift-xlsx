@@ -115,8 +115,183 @@ struct XLDocumentTests {
     @Test func opensWorksheetsIntoWorkbookScope() throws {
         let document = try XLDocument.open(try #require(Bundle.module.url(forResource: "simple", withExtension: "xlsx")))
 
-        let worksheet = try #require(document.package.workbook.file.worksheetFromID[1])
+        let worksheet = try #require(document.package.workbook.file.worksheetByID[1])
         #expect(worksheet.path.description == "/xl/worksheets/sheet1.xml")
+    }
+
+    @Test func doesNotSaveEmptyStylesRelationshipContentTypeOrPart() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("swift-xlsx-tests-\(UUID().uuidString)")
+            .appendingPathExtension("xlsx")
+        defer {
+            try? FileManager.default.removeItem(at: url)
+        }
+
+        let document = XLDocument()
+        try document.save(to: url)
+
+        let package = try OPCPackage(data: Data(contentsOf: url))
+        let stylesPath = try OPCFilePath(string: "/xl/styles.xml")
+        let workbookRelsPath = try OPCFilePath(string: "/xl/_rels/workbook.xml.rels")
+        let contentTypesPath = try OPCFilePath(string: "/[Content_Types].xml")
+        let workbookRels = try #require(try package.fileWithPath(OPCRelsFile.self, at: workbookRelsPath))
+        let contentTypes = try #require(try package.fileWithPath(OPCContentTypesFile.self, at: contentTypesPath))
+
+        #expect(package.data(at: stylesPath) == nil)
+        #expect(!workbookRels.file.relationships.contains { $0.type == XMLNamespaceURI.styles.string })
+        #expect(contentTypes.file.overrides[stylesPath] == nil)
+    }
+
+    @Test func removesOpenedEmptyStylesRelationshipContentTypeAndPart() throws {
+        var package = try OPCPackage(data: Data(
+            contentsOf: try #require(Bundle.module.url(forResource: "simple", withExtension: "xlsx"))
+        ))
+        let stylesPath = try OPCFilePath(string: "/xl/styles.xml")
+        let workbookRelsPath = try OPCFilePath(string: "/xl/_rels/workbook.xml.rels")
+        try package.insertFile(
+            data: Data("""
+                <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+                  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+                  <Default Extension="xml" ContentType="application/xml"/>
+                  <Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>
+                  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+                  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+                  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+                </Types>
+                """.utf8),
+            at: OPCFilePath(string: "/[Content_Types].xml")
+        )
+        try package.insertFile(
+            data: Data("""
+                <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+                  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+                  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>
+                  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+                </Relationships>
+                """.utf8),
+            at: workbookRelsPath
+        )
+        try package.insertFile(
+            data: Data("""
+                <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"/>
+                """.utf8),
+            at: stylesPath
+        )
+
+        let destinationURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("swift-xlsx-tests-\(UUID().uuidString)")
+            .appendingPathExtension("xlsx")
+        defer {
+            try? FileManager.default.removeItem(at: destinationURL)
+        }
+
+        let document = try XLDocument(opcPackage: package)
+        try document.save(to: destinationURL)
+
+        let savedPackage = try OPCPackage(data: Data(contentsOf: destinationURL))
+        let savedWorkbookRels = try #require(try savedPackage.fileWithPath(OPCRelsFile.self, at: workbookRelsPath))
+        let savedContentTypes = try #require(try savedPackage.fileWithPath(
+            OPCContentTypesFile.self,
+            at: OPCFilePath(string: "/[Content_Types].xml")
+        ))
+
+        #expect(savedPackage.data(at: stylesPath) == nil)
+        #expect(!savedWorkbookRels.file.relationships.contains { $0.type == XMLNamespaceURI.styles.string })
+        #expect(savedContentTypes.file.overrides[stylesPath] == nil)
+    }
+
+    @Test func savesSharedStringsAndStylesAtStoredPaths() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("swift-xlsx-tests-\(UUID().uuidString)")
+            .appendingPathExtension("xlsx")
+        defer {
+            try? FileManager.default.removeItem(at: url)
+        }
+
+        let document = XLDocument()
+        let sharedStringsPath = try OPCFilePath(string: "/xl/custom/sharedStrings.xml")
+        let stylesPath = try OPCFilePath(string: "/xl/custom/styles.xml")
+        document.package.sharedStrings.path = sharedStringsPath
+        document.package.styles.path = stylesPath
+        document.package.styles.file = try XLStylesFile(xmlDocument: XMLDocument(children: [
+            XMLElement(
+                name: XMLName(name: "styleSheet"),
+                children: [
+                    XMLElement(name: XMLName(name: "opaqueStyle")),
+                ]
+            ),
+        ]))
+
+        try document.save(to: url)
+
+        let package = try OPCPackage(data: Data(contentsOf: url))
+        let workbookRelsPath = try OPCFilePath(string: "/xl/_rels/workbook.xml.rels")
+        let contentTypesPath = try OPCFilePath(string: "/[Content_Types].xml")
+        let workbookRels = try #require(try package.fileWithPath(OPCRelsFile.self, at: workbookRelsPath))
+        let contentTypes = try #require(try package.fileWithPath(OPCContentTypesFile.self, at: contentTypesPath))
+
+        #expect(package.data(at: sharedStringsPath) != nil)
+        #expect(package.data(at: stylesPath) != nil)
+        #expect(package.data(at: try OPCFilePath(string: "/xl/sharedStrings.xml")) == nil)
+        #expect(package.data(at: try OPCFilePath(string: "/xl/styles.xml")) == nil)
+        #expect(workbookRels.file.relationships.contains {
+            $0.type == XMLNamespaceURI.sharedStrings.string &&
+            $0.target == "custom/sharedStrings.xml"
+        })
+        #expect(workbookRels.file.relationships.contains {
+            $0.type == XMLNamespaceURI.styles.string &&
+            $0.target == "custom/styles.xml"
+        })
+        #expect(contentTypes.file.overrides[sharedStringsPath] == OPCContentTypes.sharedStrings)
+        #expect(contentTypes.file.overrides[stylesPath] == OPCContentTypes.styles)
+    }
+
+    @Test func preservesOpenedStylesXMLFromWorkbookRelationship() throws {
+        var package = try OPCPackage(data: Data(
+            contentsOf: try #require(Bundle.module.url(forResource: "simple", withExtension: "xlsx"))
+        ))
+        let stylesPath = try OPCFilePath(string: "/xl/styles/custom.xml")
+        let workbookRelsPath = try OPCFilePath(string: "/xl/_rels/workbook.xml.rels")
+        let stylesData = Data("""
+            <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+              <opaqueStyle/>
+            </styleSheet>
+            """.utf8)
+        try package.insertFile(
+            data: Data("""
+                <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+                  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+                  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>
+                  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles/custom.xml"/>
+                </Relationships>
+                """.utf8),
+            at: workbookRelsPath
+        )
+        try package.insertFile(data: stylesData, at: stylesPath)
+
+        let destinationURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("swift-xlsx-tests-\(UUID().uuidString)")
+            .appendingPathExtension("xlsx")
+        defer {
+            try? FileManager.default.removeItem(at: destinationURL)
+        }
+
+        let document = try XLDocument(opcPackage: package)
+        try document.save(to: destinationURL)
+
+        let savedPackage = try OPCPackage(data: Data(contentsOf: destinationURL))
+        let savedWorkbookRels = try #require(try savedPackage.fileWithPath(OPCRelsFile.self, at: workbookRelsPath))
+        let savedStylesXML = try String(decoding: #require(savedPackage.data(at: stylesPath)), as: UTF8.self)
+
+        #expect(savedStylesXML.contains(#"<opaqueStyle/>"#))
+        #expect(savedPackage.data(at: try OPCFilePath(string: "/xl/styles.xml")) == nil)
+        #expect(savedWorkbookRels.file.relationships.contains {
+            $0.type == XMLNamespaceURI.styles.string &&
+            $0.target == "styles/custom.xml"
+        })
     }
 
     @Test func opensOnlyWorksheetRelationshipTypesAsWorksheets() throws {
@@ -185,7 +360,7 @@ struct XLDocumentTests {
 
         let document = try XLDocument(opcPackage: package)
         #expect(document.package.workbook.file.sheets.map(\.sheetID) == [1, 2])
-        #expect(document.package.workbook.file.worksheetFromID.keys.sorted() == [1])
+        #expect(document.package.workbook.file.worksheetByID.keys.sorted() == [1])
         #expect(document.workbook.worksheets.map(\.sheetID) == [1])
 
         try document.save(to: destinationURL)
@@ -220,7 +395,7 @@ struct XLDocumentTests {
     @Test func workbookWorksheetsShareWorksheetFileInstances() throws {
         let document = XLDocument()
         let worksheet = try #require(document.workbook.worksheets.first)
-        let file = try #require(document.package.workbook.file.worksheetFromID[1]?.file)
+        let file = try #require(document.package.workbook.file.worksheetByID[1]?.file)
 
         #expect(worksheet.file === file)
     }

@@ -6,7 +6,7 @@ public struct XLWorkbook {
 
     public var worksheets: [XLWorksheet] {
         package.workbook.file.sheets.compactMap { sheet in
-            guard let file = package.workbook.file.worksheetFromID[sheet.sheetID]?.file else {
+            guard let file = package.workbook.file.worksheetByID[sheet.sheetID]?.file else {
                 return nil
             }
 
@@ -40,7 +40,7 @@ public struct XLWorkbook {
 
         package.workbookRels.file.removeRelationship(id: removed.sheet.relationshipID)
         if let file = removed.file {
-            package.contentTypes.file.overrides[file.path] = nil
+            package.contentTypes.file.ensureOverride(partName: file.path, contentType: nil)
         }
     }
 }

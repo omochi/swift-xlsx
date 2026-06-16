@@ -42,7 +42,12 @@ public struct OPCContentTypesFile: OPCXMLFile {
         defaults[extensionName] = contentType
     }
 
-    public mutating func ensureOverride(partName: OPCFilePath, contentType: String) {
+    public mutating func ensureOverride(partName: OPCFilePath, contentType: String?) {
+        guard let contentType else {
+            overrides[partName] = nil
+            return
+        }
+
         overrides[partName] = contentType
     }
 

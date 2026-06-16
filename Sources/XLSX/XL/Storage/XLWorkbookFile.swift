@@ -18,31 +18,31 @@ public final class XLWorkbookFile: OPCXMLFile {
 
     public init() {
         self.sheets = []
-        self.worksheetFromID = [:]
+        self.worksheetByID = [:]
         self.original = nil
     }
 
     public convenience init(sheets: [XLWorkbookFileSheet]) {
-        self.init(sheets: sheets, worksheetFromID: [:])
+        self.init(sheets: sheets, worksheetByID: [:])
     }
 
     public init(
         sheets: [XLWorkbookFileSheet],
-        worksheetFromID: [Int: OPCFileWithPath<XLWorksheetFile>]
+        worksheetByID: [Int: OPCFileWithPath<XLWorksheetFile>]
     ) {
         self.sheets = sheets
-        self.worksheetFromID = worksheetFromID
+        self.worksheetByID = worksheetByID
         self.original = nil
     }
 
     public init(xmlDocument: XMLDocument) throws {
         self.sheets = Self.workbookSheets(in: xmlDocument)
-        self.worksheetFromID = [:]
+        self.worksheetByID = [:]
         self.original = xmlDocument
     }
 
     public var sheets: [XLWorkbookFileSheet]
-    public var worksheetFromID: [Int: OPCFileWithPath<XLWorksheetFile>]
+    public var worksheetByID: [Int: OPCFileWithPath<XLWorksheetFile>]
     public var original: XMLDocument?
 
     public static func path(in packageRels: OPCRelsFile) throws -> OPCFilePath {
@@ -74,7 +74,7 @@ public final class XLWorkbookFile: OPCXMLFile {
         )
 
         sheets.append(sheet)
-        worksheetFromID[sheet.sheetID] = file
+        worksheetByID[sheet.sheetID] = file
         workbookRels.ensureRelationship(
             id: sheet.relationshipID,
             type: XMLNamespaceURI.worksheet.string,
@@ -90,7 +90,7 @@ public final class XLWorkbookFile: OPCXMLFile {
         }
 
         let sheet = sheets.remove(at: index)
-        let file = worksheetFromID.removeValue(forKey: sheetID)
+        let file = worksheetByID.removeValue(forKey: sheetID)
         return RemovedWorksheet(sheet: sheet, file: file)
     }
 
@@ -146,7 +146,7 @@ public final class XLWorkbookFile: OPCXMLFile {
         var contentTypeOverrides: [OPCFilePath: String] = [:]
 
         for sheet in sheets {
-            if worksheetFromID[sheet.sheetID] == nil,
+            if worksheetByID[sheet.sheetID] == nil,
                let relationship = workbookRels.relationships.first(where: { $0.id == sheet.relationshipID }),
                relationship.type != XMLNamespaceURI.worksheet.string
             {
@@ -159,7 +159,7 @@ public final class XLWorkbookFile: OPCXMLFile {
                 type: XMLNamespaceURI.worksheet.string,
                 target: file.path.relationshipTarget(relativeTo: workbookPath)
             )
-            worksheetFromID[sheet.sheetID] = file
+            worksheetByID[sheet.sheetID] = file
             files.append(file)
             contentTypeOverrides[file.path] = OPCContentTypes.worksheet
         }
@@ -174,7 +174,7 @@ public final class XLWorkbookFile: OPCXMLFile {
         for sheet: XLWorkbookFileSheet,
         workbookPath: OPCFilePath
     ) throws -> OPCFileWithPath<XLWorksheetFile> {
-        if let existing = worksheetFromID[sheet.sheetID] {
+        if let existing = worksheetByID[sheet.sheetID] {
             return existing
         }
 

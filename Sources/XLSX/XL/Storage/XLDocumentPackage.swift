@@ -50,8 +50,15 @@ public final class XLDocumentPackage {
             default: XLSharedStringsFile(),
             consumedPaths: &consumedPaths
         )
+        let styles = try Self.readFile(
+            XLStylesFile.self,
+            from: opcPackage,
+            at: try XLStylesFile.path(workbookPath: workbook.path, workbookRels: workbookRels.file),
+            default: XLStylesFile(),
+            consumedPaths: &consumedPaths
+        )
 
-        workbook.file.worksheetFromID = try Self.worksheets(
+        workbook.file.worksheetByID = try Self.worksheets(
             in: opcPackage,
             for: workbook.file.sheets,
             workbookPath: workbook.path,
@@ -65,6 +72,7 @@ public final class XLDocumentPackage {
         self.workbook = workbook
         self.workbookRels = workbookRels
         self.sharedStrings = sharedStrings
+        self.styles = styles
         self.opaqueFiles = Self.opaqueFiles(in: opcPackage, excluding: consumedPaths)
 
         if opcPackage.data(at: workbookPath) == nil {
@@ -81,6 +89,7 @@ public final class XLDocumentPackage {
     public var workbook: OPCFileWithPath<XLWorkbookFile>
     public var workbookRels: OPCFileWithPath<OPCRelsFile>
     public var sharedStrings: OPCFileWithPath<XLSharedStringsFile>
+    public var styles: OPCFileWithPath<XLStylesFile>
     public var opaqueFiles: [OPCOpaqueFileWithPath]
 
     func makeOPCPackage() throws -> OPCPackage {
@@ -88,8 +97,12 @@ public final class XLDocumentPackage {
         var packageRels = packageRels
         let workbook = workbook
         var workbookRels = workbookRels
-        var sharedStrings = sharedStrings
+        let sharedStrings = sharedStrings
+        let styles = styles
         let opaqueFiles = opaqueFiles
+        
+        let stylesXMLDocument = try styles.file.xmlDocument()
+        let isEmptyStyles = XLStylesFile.isEmptyStyles(stylesXMLDocument)
 
         packageRels.file.ensureRelationship(
             type: XMLNamespaceURI.officeDocument.string,
@@ -104,11 +117,14 @@ public final class XLDocumentPackage {
             worksheets: workbookItems.files
         )
         sharedStrings.file.apply(sharedStringPlan)
-        let sharedStringsRelationship = workbookRels.file.ensureRelationship(
+        workbookRels.file.ensureRelationship(
             type: XMLNamespaceURI.sharedStrings.string,
-            target: "sharedStrings.xml"
+            target: sharedStrings.path.relationshipTarget(relativeTo: workbook.path)
         )
-        sharedStrings.path = try OPCFilePath(string: sharedStringsRelationship.target).resolved(relativeTo: workbook.path)
+        workbookRels.file.ensureRelationship(
+            type: XMLNamespaceURI.styles.string,
+            target: isEmptyStyles ? nil : styles.path.relationshipTarget(relativeTo: workbook.path)
+        )
 
         var package = OPCPackage()
         for opaqueFile in opaqueFiles {
@@ -128,11 +144,18 @@ public final class XLDocumentPackage {
         if !Self.containsOpaqueFile(at: sharedStrings.path, in: opaqueFiles) {
             try package.insertFile(sharedStrings)
         }
+        if !isEmptyStyles,
+           !Self.containsOpaqueFile(at: styles.path, in: opaqueFiles)
+        {
+            try package.insertFile(data: stylesXMLDocument.data(), at: styles.path)
+        }
         Self.registerRequiredContentTypes(
             in: &contentTypes.file,
             workbookPath: workbook.path,
             workbookContentTypeOverrides: workbookItems.contentTypeOverrides,
-            sharedStringsPath: sharedStrings.path
+            sharedStringsPath: sharedStrings.path,
+            stylesPath: styles.path,
+            stylesContentType: isEmptyStyles ? nil : OPCContentTypes.styles
         )
         try package.insertFile(contentTypes)
 
@@ -206,7 +229,9 @@ public final class XLDocumentPackage {
         in contentTypes: inout OPCContentTypesFile,
         workbookPath: OPCFilePath,
         workbookContentTypeOverrides: [OPCFilePath: String],
-        sharedStringsPath: OPCFilePath
+        sharedStringsPath: OPCFilePath,
+        stylesPath: OPCFilePath,
+        stylesContentType: String?
     ) {
         contentTypes.ensureDefault(
             extension: "rels",
@@ -229,6 +254,10 @@ public final class XLDocumentPackage {
         contentTypes.ensureOverride(
             partName: sharedStringsPath,
             contentType: OPCContentTypes.sharedStrings
+        )
+        contentTypes.ensureOverride(
+            partName: stylesPath,
+            contentType: stylesContentType
         )
     }
 
