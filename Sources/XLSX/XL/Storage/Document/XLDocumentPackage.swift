@@ -139,12 +139,8 @@ public final class XLDocumentPackage {
                 )
             }
         }
-        if !Self.containsOpaqueFile(at: sharedStrings.path, in: opaqueFiles) {
-            try package.insertFile(sharedStrings)
-        }
-        if writesStyles,
-           !Self.containsOpaqueFile(at: styles.path, in: opaqueFiles)
-        {
+        try package.insertFile(sharedStrings)
+        if writesStyles {
             try package.insertFile(styles)
         }
         Self.registerRequiredContentTypes(
