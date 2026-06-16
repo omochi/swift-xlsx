@@ -17,7 +17,7 @@ struct XLDocumentTests {
 
         let data = try Data(contentsOf: url)
         let package = try OPCPackage(data: data)
-        let fixtureURL = try #require(Bundle.module.resourceURL?.appendingPathComponent("default-document"))
+        let fixtureURL = try #require(Bundle.module.resourceURL?.appendingPathComponent("example-documents/default"))
         let fixturePackage = try OPCPackage(directoryURL: fixtureURL)
 
         let paths = package.allFilePaths()
@@ -330,11 +330,39 @@ struct XLDocumentTests {
         try document.save(to: url)
 
         let package = try OPCPackage(data: Data(contentsOf: url))
-        let fixtureURL = try #require(Bundle.module.resourceURL?.appendingPathComponent("default-document"))
+        let fixtureURL = try #require(Bundle.module.resourceURL?.appendingPathComponent("example-documents/default"))
         let fixturePackage = try OPCPackage(directoryURL: fixtureURL)
         let paths = package.allFilePaths()
 
         #expect(paths == fixturePackage.allFilePaths())
+        for path in paths {
+            #expect(package.data(at: path) == fixturePackage.data(at: path))
+        }
+    }
+
+    @Test func savesSimpleDocumentFixture() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("swift-xlsx-tests-\(UUID().uuidString)")
+            .appendingPathExtension("xlsx")
+        defer {
+            try? FileManager.default.removeItem(at: url)
+        }
+
+        let document = XLDocument()
+        let worksheet = try #require(document.workbook.worksheets.first)
+        worksheet.cell(row: 1, column: 1).value = .string("A")
+        worksheet.cell(row: 1, column: 2).value = .string("B")
+        worksheet.cell(row: 1, column: 3).value = .string("C")
+        try document.save(to: url)
+
+        let package = try OPCPackage(data: Data(contentsOf: url))
+        let fixtureURL = try #require(Bundle.module.resourceURL?.appendingPathComponent("example-documents/simple"))
+        let fixturePackage = try OPCPackage(directoryURL: fixtureURL)
+
+        let paths = package.allFilePaths()
+        let fixturePaths = fixturePackage.allFilePaths()
+        #expect(paths == fixturePaths)
+
         for path in paths {
             #expect(package.data(at: path) == fixturePackage.data(at: path))
         }

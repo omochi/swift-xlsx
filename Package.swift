@@ -48,7 +48,7 @@ let package = Package(
             dependencies: ["XLSX"],
             resources: [
                 .process("Resources/simple.xlsx"),
-                .copy("Resources/default-document"),
+                .copy("Resources/example-documents"),
             ]
         ),
     ]

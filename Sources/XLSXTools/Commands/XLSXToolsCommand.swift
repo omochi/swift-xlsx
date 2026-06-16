@@ -8,7 +8,7 @@ public struct XLSXToolsCommand: ParsableCommand {
         subcommands: [
             ExtractCommand.self,
             PackCommand.self,
-            TestHelperCommand.self,
+            ExampleDocumentsCommand.self,
         ]
     )
 
