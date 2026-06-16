@@ -117,27 +117,27 @@ struct OPCPackageDirectoryTests {
             at: contentTypesPath
         )
 
-        let loadedFileWithPath = try package.fileWithPath(OPCContentTypesFile.self, at: contentTypesPath)
-        let fileWithPath = try #require(loadedFileWithPath)
+        let loadedPathWithFile = try package.fileWithPath(OPCContentTypesFile.self, at: contentTypesPath)
+        let pathWithFile = try #require(loadedPathWithFile)
 
-        #expect(fileWithPath.path == contentTypesPath)
-        #expect(fileWithPath.file.defaults["xml"] == "application/xml")
-        let missingFileWithPath = try package.fileWithPath(
+        #expect(pathWithFile.path == contentTypesPath)
+        #expect(pathWithFile.file.defaults["xml"] == "application/xml")
+        let missingPathWithFile = try package.fileWithPath(
             OPCContentTypesFile.self,
             at: OPCFilePath(string: "/missing.xml")
         )
-        #expect(missingFileWithPath == nil)
+        #expect(missingPathWithFile == nil)
     }
 
     @Test func insertsFileWithPath() throws {
         let path = try OPCFilePath(string: "/custom/item.bin")
-        let fileWithPath = OPCOpaqueFileWithPath(
+        let pathWithFile = OPCOpaquePathWithFile(
             path: path,
             file: OPCOpaqueFile(data: Data([0xde, 0xad, 0xbe, 0xef]))
         )
         var package = OPCPackage()
 
-        try package.insertFile(fileWithPath)
+        try package.insertFile(pathWithFile)
 
         #expect(package.data(at: path) == Data([0xde, 0xad, 0xbe, 0xef]))
     }

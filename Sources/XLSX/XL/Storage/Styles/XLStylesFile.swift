@@ -28,16 +28,8 @@ public final class XLStylesFile: OPCXMLFile {
         return try OPCFilePath(string: "styles.xml").resolved(relativeTo: workbookPath)
     }
 
-    static func isEmptyStyles(_ document: XMLDocument) -> Bool {
-        let elements = document.children.compactMap { $0 as? XMLElement }
-        guard elements.count == 1,
-              let stylesElement = elements.first,
-              stylesElement.name.name == "styleSheet"
-        else {
-            return false
-        }
-
-        return stylesElement.children.compactMap { $0 as? XMLElement }.isEmpty
+    public var isEmpty: Bool {
+        cellFormats.isEmpty
     }
 
     public func xmlDocument() throws -> XMLDocument {

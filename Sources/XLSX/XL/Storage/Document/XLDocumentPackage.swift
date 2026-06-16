@@ -84,13 +84,13 @@ public final class XLDocumentPackage {
         }
     }
 
-    public var contentTypes: OPCFileWithPath<OPCContentTypesFile>
-    public var packageRels: OPCFileWithPath<OPCRelsFile>
-    public var workbook: OPCFileWithPath<XLWorkbookFile>
-    public var workbookRels: OPCFileWithPath<OPCRelsFile>
-    public var sharedStrings: OPCFileWithPath<XLSharedStringsFile>
-    public var styles: OPCFileWithPath<XLStylesFile>
-    public var opaqueFiles: [OPCOpaqueFileWithPath]
+    public var contentTypes: OPCPathWithFile<OPCContentTypesFile>
+    public var packageRels: OPCPathWithFile<OPCRelsFile>
+    public var workbook: OPCPathWithFile<XLWorkbookFile>
+    public var workbookRels: OPCPathWithFile<OPCRelsFile>
+    public var sharedStrings: OPCPathWithFile<XLSharedStringsFile>
+    public var styles: OPCPathWithFile<XLStylesFile>
+    public var opaqueFiles: [OPCOpaquePathWithFile]
 
     func makeOPCPackage() throws -> OPCPackage {
         var contentTypes = contentTypes
@@ -100,9 +100,7 @@ public final class XLDocumentPackage {
         let sharedStrings = sharedStrings
         let styles = styles
         let opaqueFiles = opaqueFiles
-        
-        let stylesXMLDocument = try styles.file.xmlDocument()
-        let isEmptyStyles = XLStylesFile.isEmptyStyles(stylesXMLDocument)
+        let writesStyles = styles.file.original != nil || !styles.file.isEmpty
 
         packageRels.file.ensureRelationship(
             type: XMLNamespaceURI.officeDocument.string,
@@ -123,7 +121,7 @@ public final class XLDocumentPackage {
         )
         workbookRels.file.ensureRelationship(
             type: XMLNamespaceURI.styles.string,
-            target: isEmptyStyles ? nil : styles.path.relationshipTarget(relativeTo: workbook.path)
+            target: writesStyles ? styles.path.relationshipTarget(relativeTo: workbook.path) : nil
         )
 
         var package = OPCPackage()
@@ -144,10 +142,10 @@ public final class XLDocumentPackage {
         if !Self.containsOpaqueFile(at: sharedStrings.path, in: opaqueFiles) {
             try package.insertFile(sharedStrings)
         }
-        if !isEmptyStyles,
+        if writesStyles,
            !Self.containsOpaqueFile(at: styles.path, in: opaqueFiles)
         {
-            try package.insertFile(data: stylesXMLDocument.data(), at: styles.path)
+            try package.insertFile(styles)
         }
         Self.registerRequiredContentTypes(
             in: &contentTypes.file,
@@ -155,7 +153,7 @@ public final class XLDocumentPackage {
             workbookContentTypeOverrides: workbookItems.contentTypeOverrides,
             sharedStringsPath: sharedStrings.path,
             stylesPath: styles.path,
-            stylesContentType: isEmptyStyles ? nil : OPCContentTypes.styles
+            stylesContentType: writesStyles ? OPCContentTypes.styles : nil
         )
         try package.insertFile(contentTypes)
 
@@ -168,19 +166,19 @@ public final class XLDocumentPackage {
         at path: OPCFilePath,
         default defaultFile: @autoclosure () -> File,
         consumedPaths: inout Set<OPCFilePath>
-    ) throws -> OPCFileWithPath<File> {
-        guard let fileWithPath = try package.fileWithPath(type, at: path) else {
-            return OPCFileWithPath(path: path, file: defaultFile())
+    ) throws -> OPCPathWithFile<File> {
+        guard let pathWithFile = try package.fileWithPath(type, at: path) else {
+            return OPCPathWithFile(path: path, file: defaultFile())
         }
 
         consumedPaths.insert(path)
-        return fileWithPath
+        return pathWithFile
     }
 
     private static func opaqueFiles(
         in package: OPCPackage,
         excluding consumedPaths: Set<OPCFilePath>
-    ) -> [OPCOpaqueFileWithPath] {
+    ) -> [OPCOpaquePathWithFile] {
         package.allFilePaths().compactMap { path in
             guard !consumedPaths.contains(path) else {
                 return nil
@@ -196,8 +194,8 @@ public final class XLDocumentPackage {
         workbookRels: OPCRelsFile,
         sharedStrings: XLSharedStringsFile,
         consumedPaths: inout Set<OPCFilePath>
-    ) throws -> [Int: OPCFileWithPath<XLWorksheetFile>] {
-        var worksheets: [Int: OPCFileWithPath<XLWorksheetFile>] = [:]
+    ) throws -> [Int: OPCPathWithFile<XLWorksheetFile>] {
+        var worksheets: [Int: OPCPathWithFile<XLWorksheetFile>] = [:]
         for sheet in sheets {
             guard let relationship = workbookRels.relationships.first(where: { $0.id == sheet.relationshipID }),
                   relationship.type == XMLNamespaceURI.worksheet.string
@@ -220,7 +218,7 @@ public final class XLDocumentPackage {
 
     private static func containsOpaqueFile(
         at path: OPCFilePath,
-        in opaqueFiles: [OPCOpaqueFileWithPath]
+        in opaqueFiles: [OPCOpaquePathWithFile]
     ) -> Bool {
         opaqueFiles.contains { $0.path == path }
     }

@@ -142,7 +142,7 @@ struct XLDocumentTests {
         #expect(contentTypes.file.overrides[stylesPath] == nil)
     }
 
-    @Test func removesOpenedEmptyStylesRelationshipContentTypeAndPart() throws {
+    @Test func preservesOpenedEmptyStylesRelationshipContentTypeAndPart() throws {
         var package = try OPCPackage(data: Data(
             contentsOf: try #require(Bundle.module.url(forResource: "simple", withExtension: "xlsx"))
         ))
@@ -197,9 +197,12 @@ struct XLDocumentTests {
             at: OPCFilePath(string: "/[Content_Types].xml")
         ))
 
-        #expect(savedPackage.data(at: stylesPath) == nil)
-        #expect(!savedWorkbookRels.file.relationships.contains { $0.type == XMLNamespaceURI.styles.string })
-        #expect(savedContentTypes.file.overrides[stylesPath] == nil)
+        #expect(savedPackage.data(at: stylesPath) != nil)
+        #expect(savedWorkbookRels.file.relationships.contains {
+            $0.type == XMLNamespaceURI.styles.string &&
+            $0.target == "styles.xml"
+        })
+        #expect(savedContentTypes.file.overrides[stylesPath] == OPCContentTypes.styles)
     }
 
     @Test func savesSharedStringsAndStylesAtStoredPaths() throws {

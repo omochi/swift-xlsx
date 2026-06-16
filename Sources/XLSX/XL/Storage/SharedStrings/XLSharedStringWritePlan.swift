@@ -1,7 +1,7 @@
 struct XLSharedStringWritePlan {
     init(
         sharedStrings: XLSharedStringsFile,
-        worksheets: [OPCFileWithPath<XLWorksheetFile>]
+        worksheets: [OPCPathWithFile<XLWorksheetFile>]
     ) {
         var collector = XLSharedStringCollector()
 

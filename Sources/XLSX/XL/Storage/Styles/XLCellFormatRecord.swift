@@ -21,12 +21,12 @@ public struct XLCellFormatRecord: Sendable & Hashable {
     public var fillID: Int? = nil
     public var borderID: Int? = nil
     public var formatID: Int? = nil
-    public var applyNumberFormat: Bool? = nil
-    public var applyFont: Bool? = nil
-    public var applyFill: Bool? = nil
-    public var applyBorder: Bool? = nil
-    public var applyAlignment: Bool? = nil
-    public var applyProtection: Bool? = nil
+    public var applyNumberFormat = false
+    public var applyFont = false
+    public var applyFill = false
+    public var applyBorder = false
+    public var applyAlignment = false
+    public var applyProtection = false
 
     func xmlElement() -> XMLElement {
         let element = XMLElement(name: XMLName(name: "xf"))
@@ -51,11 +51,11 @@ public struct XLCellFormatRecord: Sendable & Hashable {
         return Int(value)
     }
 
-    private static func boolAttribute(name: String, in element: XMLElement) -> Bool? {
+    private static func boolAttribute(name: String, in element: XMLElement) -> Bool {
         guard let value = element.attribute(name: name) else {
-            return nil
+            return false
         }
-        return XLCellValue.readBool(string: value)
+        return XLCellValue.readBool(string: value) ?? false
     }
 
     private static func setAttribute(name: String, value: Int?, in element: XMLElement) {
@@ -65,8 +65,8 @@ public struct XLCellFormatRecord: Sendable & Hashable {
         element.setAttribute(name: name, value: String(value))
     }
 
-    private static func setAttribute(name: String, value: Bool?, in element: XMLElement) {
-        guard value == true else {
+    private static func setAttribute(name: String, value: Bool, in element: XMLElement) {
+        guard value else {
             return
         }
         element.setAttribute(name: name, value: XLCellValue.boolean(true).description)
