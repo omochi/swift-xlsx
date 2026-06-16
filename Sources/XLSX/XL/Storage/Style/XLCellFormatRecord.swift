@@ -1,18 +1,4 @@
 public struct XLCellFormatRecord: Sendable & Hashable {
-    struct Storage: Hashable {
-        var numberFormatID: Int?
-        var fontID: Int?
-        var fillID: Int?
-        var borderID: Int?
-        var formatID: Int?
-        var applyNumberFormat: Bool
-        var applyFont: Bool
-        var applyFill: Bool
-        var applyBorder: Bool
-        var applyAlignment: Bool
-        var applyProtection: Bool
-    }
-
     public init(
         numberFormatID: Int? = nil,
         fontID: Int? = nil,
@@ -26,21 +12,17 @@ public struct XLCellFormatRecord: Sendable & Hashable {
         applyAlignment: Bool = false,
         applyProtection: Bool = false
     ) {
-        self.object = Box(
-            Storage(
-                numberFormatID: numberFormatID,
-                fontID: fontID,
-                fillID: fillID,
-                borderID: borderID,
-                formatID: formatID,
-                applyNumberFormat: applyNumberFormat,
-                applyFont: applyFont,
-                applyFill: applyFill,
-                applyBorder: applyBorder,
-                applyAlignment: applyAlignment,
-                applyProtection: applyProtection
-            )
-        )
+        self.numberFormatID = numberFormatID
+        self.fontID = fontID
+        self.fillID = fillID
+        self.borderID = borderID
+        self.formatID = formatID
+        self.applyNumberFormat = applyNumberFormat
+        self.applyFont = applyFont
+        self.applyFill = applyFill
+        self.applyBorder = applyBorder
+        self.applyAlignment = applyAlignment
+        self.applyProtection = applyProtection
     }
 
     init(element: XMLElement) {
@@ -59,118 +41,17 @@ public struct XLCellFormatRecord: Sendable & Hashable {
         )
     }
 
-    private nonisolated(unsafe) var object: Box<Storage>
-
-    private var storage: Storage {
-        _read {
-            yield object.value
-        }
-        _modify {
-            yield &object.value
-        }
-    }
-
-    private mutating func ensureUniqueObject() {
-        if !isKnownUniquelyReferenced(&object) {
-            object = Box(storage)
-        }
-    }
-
-    public static func == (lhs: XLCellFormatRecord, rhs: XLCellFormatRecord) -> Bool {
-        lhs.storage == rhs.storage
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        storage.hash(into: &hasher)
-    }
-
-    public var numberFormatID: Int? {
-        get { storage.numberFormatID }
-        set {
-            ensureUniqueObject()
-            storage.numberFormatID = newValue
-        }
-    }
-
-    public var fontID: Int? {
-        get { storage.fontID }
-        set {
-            ensureUniqueObject()
-            storage.fontID = newValue
-        }
-    }
-
-    public var fillID: Int? {
-        get { storage.fillID }
-        set {
-            ensureUniqueObject()
-            storage.fillID = newValue
-        }
-    }
-
-    public var borderID: Int? {
-        get { storage.borderID }
-        set {
-            ensureUniqueObject()
-            storage.borderID = newValue
-        }
-    }
-
-    public var formatID: Int? {
-        get { storage.formatID }
-        set {
-            ensureUniqueObject()
-            storage.formatID = newValue
-        }
-    }
-
-    public var applyNumberFormat: Bool {
-        get { storage.applyNumberFormat }
-        set {
-            ensureUniqueObject()
-            storage.applyNumberFormat = newValue
-        }
-    }
-
-    public var applyFont: Bool {
-        get { storage.applyFont }
-        set {
-            ensureUniqueObject()
-            storage.applyFont = newValue
-        }
-    }
-
-    public var applyFill: Bool {
-        get { storage.applyFill }
-        set {
-            ensureUniqueObject()
-            storage.applyFill = newValue
-        }
-    }
-
-    public var applyBorder: Bool {
-        get { storage.applyBorder }
-        set {
-            ensureUniqueObject()
-            storage.applyBorder = newValue
-        }
-    }
-
-    public var applyAlignment: Bool {
-        get { storage.applyAlignment }
-        set {
-            ensureUniqueObject()
-            storage.applyAlignment = newValue
-        }
-    }
-
-    public var applyProtection: Bool {
-        get { storage.applyProtection }
-        set {
-            ensureUniqueObject()
-            storage.applyProtection = newValue
-        }
-    }
+    public var numberFormatID: Int?
+    public var fontID: Int?
+    public var fillID: Int?
+    public var borderID: Int?
+    public var formatID: Int?
+    public var applyNumberFormat: Bool
+    public var applyFont: Bool
+    public var applyFill: Bool
+    public var applyBorder: Bool
+    public var applyAlignment: Bool
+    public var applyProtection: Bool
 
     func xmlElement() -> XMLElement {
         let element = XMLElement(name: XMLName(name: "xf"))

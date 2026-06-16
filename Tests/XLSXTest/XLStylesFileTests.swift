@@ -4,7 +4,7 @@ import XLSX
 
 @Suite
 struct XLStylesFileTests {
-    @Test func fontRecordCopiesOnWrite() {
+    @Test func fontRecordCopiesValues() {
         let original = XLFontRecord(bold: true, size: 11, name: "Calibri")
         var copy = original
 
@@ -62,7 +62,7 @@ struct XLStylesFileTests {
         #expect(format.applyFont)
     }
 
-    @Test func cellFormatRecordCopiesOnWrite() {
+    @Test func cellFormatRecordCopiesValues() {
         let original = XLCellFormatRecord(numberFormatID: 14, applyNumberFormat: true)
         var copy = original
 

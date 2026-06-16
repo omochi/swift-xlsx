@@ -1,22 +1,4 @@
 public struct XLFontRecord: Sendable & Hashable {
-    struct Storage: Hashable {
-        var bold: Bool
-        var italic: Bool
-        var strike: Bool
-        var condense: Bool
-        var extend: Bool
-        var outline: Bool
-        var shadow: Bool
-        var underlineXMLString: String?
-        var verticalAlignmentXMLString: String?
-        var size: Double?
-        var color: XLColor?
-        var name: String?
-        var familyXMLString: String?
-        var charsetXMLString: String?
-        var schemeXMLString: String?
-    }
-
     public init(
         bold: Bool = false,
         italic: Bool = false,
@@ -34,25 +16,21 @@ public struct XLFontRecord: Sendable & Hashable {
         charsetXMLString: String? = nil,
         schemeXMLString: String? = nil
     ) {
-        self.object = Box(
-            Storage(
-                bold: bold,
-                italic: italic,
-                strike: strike,
-                condense: condense,
-                extend: extend,
-                outline: outline,
-                shadow: shadow,
-                underlineXMLString: underlineXMLString,
-                verticalAlignmentXMLString: verticalAlignmentXMLString,
-                size: size,
-                color: color,
-                name: name,
-                familyXMLString: familyXMLString,
-                charsetXMLString: charsetXMLString,
-                schemeXMLString: schemeXMLString
-            )
-        )
+        self.bold = bold
+        self.italic = italic
+        self.strike = strike
+        self.condense = condense
+        self.extend = extend
+        self.outline = outline
+        self.shadow = shadow
+        self.underlineXMLString = underlineXMLString
+        self.verticalAlignmentXMLString = verticalAlignmentXMLString
+        self.size = size
+        self.color = color
+        self.name = name
+        self.familyXMLString = familyXMLString
+        self.charsetXMLString = charsetXMLString
+        self.schemeXMLString = schemeXMLString
     }
 
     init(element: XMLElement) {
@@ -100,150 +78,21 @@ public struct XLFontRecord: Sendable & Hashable {
         }
     }
 
-    private nonisolated(unsafe) var object: Box<Storage>
-
-    private var storage: Storage {
-        _read {
-            yield object.value
-        }
-        _modify {
-            yield &object.value
-        }
-    }
-
-    private mutating func ensureUniqueObject() {
-        if !isKnownUniquelyReferenced(&object) {
-            object = Box(storage)
-        }
-    }
-
-    public static func == (lhs: XLFontRecord, rhs: XLFontRecord) -> Bool {
-        lhs.storage == rhs.storage
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        storage.hash(into: &hasher)
-    }
-
-    public var bold: Bool {
-        get { storage.bold }
-        set {
-            ensureUniqueObject()
-            storage.bold = newValue
-        }
-    }
-
-    public var italic: Bool {
-        get { storage.italic }
-        set {
-            ensureUniqueObject()
-            storage.italic = newValue
-        }
-    }
-
-    public var strike: Bool {
-        get { storage.strike }
-        set {
-            ensureUniqueObject()
-            storage.strike = newValue
-        }
-    }
-
-    public var condense: Bool {
-        get { storage.condense }
-        set {
-            ensureUniqueObject()
-            storage.condense = newValue
-        }
-    }
-
-    public var extend: Bool {
-        get { storage.extend }
-        set {
-            ensureUniqueObject()
-            storage.extend = newValue
-        }
-    }
-
-    public var outline: Bool {
-        get { storage.outline }
-        set {
-            ensureUniqueObject()
-            storage.outline = newValue
-        }
-    }
-
-    public var shadow: Bool {
-        get { storage.shadow }
-        set {
-            ensureUniqueObject()
-            storage.shadow = newValue
-        }
-    }
-
-    public var underlineXMLString: String? {
-        get { storage.underlineXMLString }
-        set {
-            ensureUniqueObject()
-            storage.underlineXMLString = newValue
-        }
-    }
-
-    public var verticalAlignmentXMLString: String? {
-        get { storage.verticalAlignmentXMLString }
-        set {
-            ensureUniqueObject()
-            storage.verticalAlignmentXMLString = newValue
-        }
-    }
-
-    public var size: Double? {
-        get { storage.size }
-        set {
-            ensureUniqueObject()
-            storage.size = newValue
-        }
-    }
-
-    public var color: XLColor? {
-        get { storage.color }
-        set {
-            ensureUniqueObject()
-            storage.color = newValue
-        }
-    }
-
-    public var name: String? {
-        get { storage.name }
-        set {
-            ensureUniqueObject()
-            storage.name = newValue
-        }
-    }
-
-    public var familyXMLString: String? {
-        get { storage.familyXMLString }
-        set {
-            ensureUniqueObject()
-            storage.familyXMLString = newValue
-        }
-    }
-
-    public var charsetXMLString: String? {
-        get { storage.charsetXMLString }
-        set {
-            ensureUniqueObject()
-            storage.charsetXMLString = newValue
-        }
-    }
-
-    public var schemeXMLString: String? {
-        get { storage.schemeXMLString }
-        set {
-            ensureUniqueObject()
-            storage.schemeXMLString = newValue
-        }
-    }
+    public var bold: Bool
+    public var italic: Bool
+    public var strike: Bool
+    public var condense: Bool
+    public var extend: Bool
+    public var outline: Bool
+    public var shadow: Bool
+    public var underlineXMLString: String?
+    public var verticalAlignmentXMLString: String?
+    public var size: Double?
+    public var color: XLColor?
+    public var name: String?
+    public var familyXMLString: String?
+    public var charsetXMLString: String?
+    public var schemeXMLString: String?
 
     func xmlElement() throws -> XMLElement {
         let element = XMLElement(name: XMLName(name: "font"))
