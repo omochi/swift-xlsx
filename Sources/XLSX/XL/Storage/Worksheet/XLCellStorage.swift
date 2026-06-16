@@ -1,8 +1,9 @@
 import Foundation
 
-public final class XLCellStorage: Hashable {
-    public init(value: XLCellValue) {
+public final class XLCellStorage {
+    public init(value: XLCellValue, formatIndex: Int? = nil) {
         self.value = value
+        self.formatIndex = formatIndex
     }
 
     init?(cellElement: XMLElement) {
@@ -11,19 +12,15 @@ public final class XLCellStorage: Hashable {
         }
 
         self.value = value
+        self.formatIndex = Self.formatIndex(in: cellElement)
     }
 
     public var value: XLCellValue
-
-    public static func == (lhs: XLCellStorage, rhs: XLCellStorage) -> Bool {
-        lhs.value == rhs.value
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(value)
-    }
+    public var formatIndex: Int?
 
     func write(to cellElement: XMLElement, sharedStrings: XLSharedStringWritePlan? = nil) throws {
+        writeFormatIndex(to: cellElement)
+
         cellElement.children = cellElement.children.filter { child in
             guard let element = child as? XMLElement else {
                 return true
@@ -61,6 +58,13 @@ public final class XLCellStorage: Hashable {
 
     func collectSharedStringValues(into collector: inout XLSharedStringCollector) {
         collector.collect(value)
+    }
+
+    private static func formatIndex(in cellElement: XMLElement) -> Int? {
+        guard let value = cellElement.attribute(name: "s") else {
+            return nil
+        }
+        return Int(value)
     }
 
     private static func value(in cellElement: XMLElement) -> XLCellValue? {
@@ -135,6 +139,14 @@ public final class XLCellStorage: Hashable {
         cellElement.appendChild(valueElement)
     }
 
+    private func writeFormatIndex(to cellElement: XMLElement) {
+        if let formatIndex {
+            cellElement.setAttribute(name: "s", value: String(formatIndex))
+        } else {
+            removeAttribute(name: "s", in: cellElement)
+        }
+    }
+
     private func setCellType(_ type: String, in cellElement: XMLElement) {
         if let index = cellElement.attributes.firstIndex(where: { $0.name.prefix == nil && $0.name.name == "t" }) {
             cellElement.attributes[index].value = type
@@ -145,5 +157,9 @@ public final class XLCellStorage: Hashable {
 
     private func removeCellType(in cellElement: XMLElement) {
         cellElement.attributes.removeAll { $0.name.prefix == nil && $0.name.name == "t" }
+    }
+
+    private func removeAttribute(name: String, in cellElement: XMLElement) {
+        cellElement.attributes.removeAll { $0.name.prefix == nil && $0.name.name == name }
     }
 }

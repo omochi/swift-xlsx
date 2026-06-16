@@ -1,7 +1,7 @@
 import MemberwiseInit
 
 @MemberwiseInit(.public)
-public struct XLCellReference: Sendable, Hashable, LosslessStringConvertible {
+public struct XLCellReference: Sendable & Hashable & LosslessStringConvertible {
     public init?(_ description: String) {
         var column = 0
         var index = description.unicodeScalars.startIndex

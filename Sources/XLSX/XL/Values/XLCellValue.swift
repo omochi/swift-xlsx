@@ -1,4 +1,4 @@
-public enum XLCellValue: Sendable, Hashable, CustomStringConvertible {
+public enum XLCellValue: Sendable & Hashable & CustomStringConvertible {
     case number(String)
     case boolean(Bool)
     case string(String)

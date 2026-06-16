@@ -1,4 +1,4 @@
-public final class XLRowStorage: Hashable {
+public final class XLRowStorage {
     public init(cellByColumn: [Int: XLCellStorage]) {
         self.cellByColumn = cellByColumn
     }
@@ -42,14 +42,6 @@ public final class XLRowStorage: Hashable {
 
     public func existingCell(column: Int) -> XLCellStorage? {
         cellByColumn[column]
-    }
-
-    public static func == (lhs: XLRowStorage, rhs: XLRowStorage) -> Bool {
-        lhs.cellByColumn == rhs.cellByColumn
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(cellByColumn)
     }
 
     func write(

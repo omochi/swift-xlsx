@@ -19,15 +19,12 @@ struct XLWorksheetFileTests {
             </worksheet>
             """.utf8))
 
-        #expect(worksheet.rowByNumber == [
-            2: XLRowStorage(cellByColumn: [
-                2: XLCellStorage(value: .string("left")),
-                4: XLCellStorage(value: .string("right")),
-            ]),
-            10: XLRowStorage(cellByColumn: [
-                3: XLCellStorage(value: .string("bottom")),
-            ]),
-        ])
+        #expect(worksheet.existingRowNumbers == [2, 10])
+        #expect(worksheet.existingRow(2)?.existingColumnNumbers == [2, 4])
+        #expect(worksheet.existingRow(2)?.existingCell(column: 2)?.value == .string("left"))
+        #expect(worksheet.existingRow(2)?.existingCell(column: 4)?.value == .string("right"))
+        #expect(worksheet.existingRow(10)?.existingColumnNumbers == [3])
+        #expect(worksheet.existingRow(10)?.existingCell(column: 3)?.value == .string("bottom"))
     }
 
     @Test func readsCellValueTypesFromWorksheetXML() throws {
@@ -68,6 +65,23 @@ struct XLWorksheetFileTests {
         #expect(worksheet.existingRow(1)?.existingCell(column: 13)?.value == .number("45292.5"))
     }
 
+    @Test func readsCellFormatIndexFromWorksheetXML() throws {
+        let worksheet = try XLWorksheetFile(data: Data("""
+            <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
+              <sheetData>
+                <row r="1">
+                  <c r="A1" s="2"><v>42</v></c>
+                  <c r="B1" t="s" s="3"><v>0</v></c>
+                </row>
+              </sheetData>
+            </worksheet>
+            """.utf8))
+
+        #expect(worksheet.existingRow(1)?.existingCell(column: 1)?.formatIndex == 2)
+        #expect(worksheet.existingRow(1)?.existingCell(column: 2)?.formatIndex == 3)
+        #expect(worksheet.existingRow(1)?.existingCell(column: 2)?.value == .opaqueSharedString(index: 0))
+    }
+
     @Test func writesSparseRowsAndCellsToWorksheetXML() throws {
         let worksheet = XLWorksheetFile(rowByNumber: [
             10: XLRowStorage(cellByColumn: [
@@ -100,6 +114,20 @@ struct XLWorksheetFileTests {
         #expect(xml.contains(#"<c r="B1" t="b"><v>0</v></c>"#))
         #expect(xml.contains(#"<c r="C1" t="e"><v>#N/A</v></c>"#))
         #expect(xml.contains(#"<c r="D1" t="s"><v>2</v></c>"#))
+    }
+
+    @Test func writesCellFormatIndexToWorksheetXML() throws {
+        let worksheet = XLWorksheetFile(rowByNumber: [
+            1: XLRowStorage(cellByColumn: [
+                1: XLCellStorage(value: .number("42"), formatIndex: 2),
+                2: XLCellStorage(value: .opaqueSharedString(index: 0), formatIndex: 3),
+            ]),
+        ])
+
+        let xml = try String(decoding: worksheet.data(), as: UTF8.self)
+
+        #expect(xml.contains(#"<c r="A1" s="2"><v>42</v></c>"#))
+        #expect(xml.contains(#"<c r="B1" s="3" t="s"><v>0</v></c>"#))
     }
 
     @Test func writesStringCellsToSharedStringsWhenSavingDocument() throws {
@@ -195,16 +223,16 @@ struct XLWorksheetFileTests {
         #expect(worksheet.existingRowNumbers == [2, 10])
     }
 
-    @Test func returnsExistingRowsWithoutCreatingMissingRows() {
+    @Test func returnsExistingRowsWithoutCreatingMissingRows() throws {
         let worksheet = XLWorksheetFile(rowByNumber: [
             2: XLRowStorage(cellByColumn: [
                 1: XLCellStorage(value: .string("left")),
             ]),
         ])
 
-        #expect(worksheet.existingRow(2) == XLRowStorage(cellByColumn: [
-            1: XLCellStorage(value: .string("left")),
-        ]))
+        let row = try #require(worksheet.existingRow(2))
+        #expect(row.existingColumnNumbers == [1])
+        #expect(row.existingCell(column: 1)?.value == .string("left"))
         #expect(worksheet.existingRow(3) == nil)
         #expect(worksheet.existingRowNumbers == [2])
     }
@@ -215,8 +243,8 @@ struct XLWorksheetFileTests {
         #expect(worksheet.maxRowNumber == nil)
         #expect(worksheet.existingRow(3) == nil)
 
-        #expect(worksheet.row(3) == XLRowStorage(cellByColumn: [:]))
-        #expect(worksheet.existingRow(3) == XLRowStorage(cellByColumn: [:]))
+        #expect(worksheet.row(3).cellByColumn.isEmpty)
+        #expect(worksheet.existingRow(3)?.cellByColumn.isEmpty == true)
         #expect(worksheet.maxRowNumber == 3)
         #expect(worksheet.existingRowNumbers == [3])
     }
@@ -254,7 +282,8 @@ struct XLWorksheetFileTests {
             2: XLCellStorage(value: .string("left")),
         ])
 
-        #expect(row.existingCell(column: 2) == XLCellStorage(value: .string("left")))
+        #expect(row.existingCell(column: 2)?.value == .string("left"))
+        #expect(row.existingCell(column: 2)?.formatIndex == nil)
         #expect(row.existingCell(column: 3) == nil)
         #expect(row.existingColumnNumbers == [2])
     }
@@ -265,8 +294,10 @@ struct XLWorksheetFileTests {
         #expect(row.maxColumnNumber == nil)
         #expect(row.existingCell(column: 3) == nil)
 
-        #expect(row.cell(column: 3) == XLCellStorage(value: .string("")))
-        #expect(row.existingCell(column: 3) == XLCellStorage(value: .string("")))
+        #expect(row.cell(column: 3).value == .string(""))
+        #expect(row.cell(column: 3).formatIndex == nil)
+        #expect(row.existingCell(column: 3)?.value == .string(""))
+        #expect(row.existingCell(column: 3)?.formatIndex == nil)
         #expect(row.maxColumnNumber == 3)
         #expect(row.existingColumnNumbers == [3])
     }
@@ -287,5 +318,22 @@ struct XLWorksheetFileTests {
 
         #expect(xml.contains(#"<row r="1" custom="keep">"#))
         #expect(xml.contains(#"<c r="A1"><v>1</v></c>"#))
+    }
+
+    @Test func removesCellFormatIndexWhenStorageHasNoFormatIndex() throws {
+        let worksheet = try XLWorksheetFile(data: Data("""
+            <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
+              <sheetData>
+                <row r="1">
+                  <c r="A1" s="2"><v>42</v></c>
+                </row>
+              </sheetData>
+            </worksheet>
+            """.utf8))
+        worksheet.rowByNumber[1]?.cellByColumn[1]?.formatIndex = nil
+
+        let xml = try String(decoding: worksheet.data(), as: UTF8.self)
+
+        #expect(xml.contains(#"<c r="A1"><v>42</v></c>"#))
     }
 }
