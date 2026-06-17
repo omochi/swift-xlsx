@@ -1,1 +1,1 @@
-public typealias XLCellStyleFormatRefsStorage = XLGenericRecordStorage<XLCellStyleFormatRef>
+public typealias XLCellStyleFormatRefsStorage = XLGenericRecordsStorage<XLCellStyleFormatRef>

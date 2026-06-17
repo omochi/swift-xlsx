@@ -1,12 +1,12 @@
 extension XMLUtils {
-    public static func patchChildren<Record>(
+    public static func patchChildren<Records: Collection>(
         parentElement: XMLElement,
         replacingElementName: String,
-        records: [Record],
-        makeElement: (Record) throws -> XMLElement
+        records: Records,
+        makeElement: (Records.Element) throws -> XMLElement
     ) rethrows -> [XMLNode] {
         var children: [XMLNode] = []
-        var recordIndex = 0
+        var recordIndex = records.startIndex
         for child in parentElement.children {
             guard let element = child as? XMLElement,
                   element.name.name == replacingElementName
@@ -15,13 +15,13 @@ extension XMLUtils {
                 continue
             }
 
-            if records.indices.contains(recordIndex) {
+            if recordIndex != records.endIndex {
                 children.append(try makeElement(records[recordIndex]))
-                recordIndex += 1
+                records.formIndex(after: &recordIndex)
             }
         }
 
-        children += try records.dropFirst(recordIndex).map { try makeElement($0) as XMLNode }
+        children += try records[recordIndex...].map { try makeElement($0) as XMLNode }
         return children
     }
 }

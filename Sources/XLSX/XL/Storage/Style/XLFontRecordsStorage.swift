@@ -1,3 +1,3 @@
-public typealias XLFontRecordsStorage = XLGenericRecordStorage<XLFontRecord>
+public typealias XLFontRecordsStorage = XLGenericRecordsStorage<XLFontRecord>
 
 extension XLFontRecordsStorage {}

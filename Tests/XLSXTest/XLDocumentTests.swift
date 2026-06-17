@@ -253,7 +253,7 @@ struct XLDocumentTests {
         worksheet.cell(row: 1, column: 2).value = .number("43")
         worksheet.cell(row: 1, column: 2).format = format
 
-        #expect(document.package.styles.file.cellFormats.records.isEmpty)
+        #expect(document.package.styles.file.cellFormats.isEmpty)
 
         try document.save(to: url)
 

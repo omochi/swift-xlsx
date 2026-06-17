@@ -12,8 +12,8 @@ struct XLSharedStringsFileTests {
             </sst>
             """.utf8))
 
-        #expect(sharedStrings.records.records.count == 2)
-        #expect(sharedStrings.records.records == [
+        #expect(sharedStrings.records.count == 2)
+        #expect(Array(sharedStrings.records) == [
             .text("hello"),
             .text("world"),
         ])
@@ -29,7 +29,7 @@ struct XLSharedStringsFileTests {
             </sst>
             """.utf8))
 
-        let record = try #require(sharedStrings.records.records.first)
+        let record = try #require(sharedStrings.records.first)
         guard case let .opaque(xmlString) = record else {
             Issue.record("Expected opaque shared string record.")
             return

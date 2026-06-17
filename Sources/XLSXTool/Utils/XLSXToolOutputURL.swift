@@ -1,6 +1,6 @@
 import Foundation
 
-enum XLSXToolsOutputURL {
+enum XLSXToolOutputURL {
     static func extractDefault(for inputURL: URL) -> URL {
         let baseURL = inputURL.deletingPathExtension()
         if baseURL.path == inputURL.path {

@@ -13,8 +13,8 @@ let package = Package(
             targets: ["XLSX"]
         ),
         .executable(
-            name: "xlsx-tools",
-            targets: ["XLSXTools"]
+            name: "xlsx-tool",
+            targets: ["XLSXTool"]
         ),
     ],
     dependencies: [
@@ -33,7 +33,7 @@ let package = Package(
             ]
         ),
         .executableTarget(
-            name: "XLSXTools",
+            name: "XLSXTool",
             dependencies: [
                 "XLSX",
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),

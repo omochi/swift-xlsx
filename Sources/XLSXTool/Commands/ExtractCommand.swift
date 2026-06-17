@@ -18,7 +18,7 @@ public struct ExtractCommand: ParsableCommand {
 
     public func run() throws {
         let inputURL = URL(fileURLWithPath: input)
-        let outputURL = output.map(URL.init(fileURLWithPath:)) ?? XLSXToolsOutputURL.extractDefault(for: inputURL)
+        let outputURL = output.map(URL.init(fileURLWithPath:)) ?? XLSXToolOutputURL.extractDefault(for: inputURL)
         let data = try Data(contentsOf: inputURL)
         let package = try OPCPackage(data: data)
         try package.write(toDirectoryURL: outputURL)

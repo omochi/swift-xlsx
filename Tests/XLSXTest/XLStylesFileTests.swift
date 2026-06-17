@@ -118,7 +118,7 @@ struct XLStylesFileTests {
             </styleSheet>
             """.utf8))
 
-        #expect(styles.numberFormats.records == [
+        #expect(Array(styles.numberFormats) == [
             "yyyy-mm-dd",
             "#,##0.000",
         ])
@@ -177,7 +177,7 @@ struct XLStylesFileTests {
             </styleSheet>
             """.utf8))
 
-        #expect(styles.fonts.records == [
+        #expect(Array(styles.fonts) == [
             XLFontRecord(
                 bold: true,
                 italic: true,
@@ -295,8 +295,8 @@ struct XLStylesFileTests {
             </styleSheet>
             """.utf8))
 
-        #expect(styles.fills.records.count == 3)
-        #expect(styles.fills.records.prefix(2) == [
+        #expect(styles.fills.count == 3)
+        #expect(Array(styles.fills.prefix(2)) == [
             XLFill.pattern(.none),
             XLFill.pattern(XLFill.Pattern(
                 patternType: "solid",
@@ -304,7 +304,7 @@ struct XLStylesFileTests {
                 backgroundColor: .indexed(64)
             )),
         ])
-        if case let .gradient(xmlString) = styles.fills.records[2] {
+        if case let .gradient(xmlString) = styles.fills[2] {
             #expect(xmlString.contains(#"<gradientFill degree="45">"#))
             #expect(xmlString.contains(#"<stop position="0"><color rgb="FFFFFFFF"/></stop>"#))
             #expect(xmlString.contains(#"<stop position="1"><color rgb="FF000000"/></stop>"#))
@@ -399,7 +399,7 @@ struct XLStylesFileTests {
             </styleSheet>
             """.utf8))
 
-        #expect(styles.borders.records == [
+        #expect(Array(styles.borders) == [
             XLBorder(
                 left: XLBorder.Line(),
                 right: XLBorder.Line(),
@@ -488,7 +488,7 @@ struct XLStylesFileTests {
             </styleSheet>
             """.utf8))
 
-        #expect(styles.cellFormats.records == [
+        #expect(Array(styles.cellFormats) == [
             XLCellFormatRecord(
                 numberFormatID: 0,
                 fontID: 0,
@@ -523,16 +523,16 @@ struct XLStylesFileTests {
             </styleSheet>
             """.utf8))
 
-        #expect(styles.cellStyleFormats.records.count == 3)
-        #expect(styles.cellStyleFormats.records[0].numberFormat == .builtin(id: 0))
-        #expect(styles.cellStyleFormats.records[0].font == XLFont(bold: true))
-        #expect(styles.cellStyleFormats.records[0].fill == .pattern(XLFill.Pattern(patternType: "solid")))
-        #expect(styles.cellStyleFormats.records[0].border == XLBorder(left: XLBorder.Line(style: .thin)))
-        #expect(styles.cellStyleFormats.records[1].numberFormat == .builtin(id: 14))
-        #expect(styles.cellStyleFormats.records[1].font == nil)
-        #expect(styles.cellStyleFormats.records[1].fill == nil)
-        #expect(styles.cellStyleFormats.records[1].border == nil)
-        #expect(styles.cellStyleFormats.records[2].numberFormat == .format("yyyy-mm-dd"))
+        #expect(styles.cellStyleFormats.count == 3)
+        #expect(styles.cellStyleFormats[0].numberFormat == .builtin(id: 0))
+        #expect(styles.cellStyleFormats[0].font == XLFont(bold: true))
+        #expect(styles.cellStyleFormats[0].fill == .pattern(XLFill.Pattern(patternType: "solid")))
+        #expect(styles.cellStyleFormats[0].border == XLBorder(left: XLBorder.Line(style: .thin)))
+        #expect(styles.cellStyleFormats[1].numberFormat == .builtin(id: 14))
+        #expect(styles.cellStyleFormats[1].font == nil)
+        #expect(styles.cellStyleFormats[1].fill == nil)
+        #expect(styles.cellStyleFormats[1].border == nil)
+        #expect(styles.cellStyleFormats[2].numberFormat == .format("yyyy-mm-dd"))
     }
 
     @Test func patchesCellFormatsWithoutRemovingOtherStyleChildren() throws {
@@ -591,7 +591,7 @@ struct XLStylesFileTests {
 
         let xml = try String(decoding: styles.xmlDocument().data, as: UTF8.self)
 
-        #expect(styles.cellStyleFormats.records.count == 2)
+        #expect(styles.cellStyleFormats.count == 2)
         #expect(xml.contains(#"<numFmts count="1"><numFmt numFmtId="164" formatCode="yyyy-mm-dd"/></numFmts>"#))
         #expect(xml.contains(#"<opaqueStyle/>"#))
         #expect(xml.contains(#"<cellStyleXfs count="2">"#))

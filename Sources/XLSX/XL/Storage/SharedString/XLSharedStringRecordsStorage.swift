@@ -1,4 +1,4 @@
-public typealias XLSharedStringRecordsStorage = XLGenericRecordStorage<XLSharedStringRecord>
+public typealias XLSharedStringRecordsStorage = XLGenericRecordsStorage<XLSharedStringRecord>
 
 extension XLSharedStringRecordsStorage {
     @discardableResult

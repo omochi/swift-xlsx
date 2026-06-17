@@ -1,4 +1,4 @@
-public typealias XLNumberFormatsStorage = XLGenericRecordStorage<String>
+public typealias XLNumberFormatsStorage = XLGenericRecordsStorage<String>
 
 extension XLNumberFormatsStorage {
     public func id(for format: String) -> Int? {

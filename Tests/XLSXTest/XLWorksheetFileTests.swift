@@ -141,7 +141,7 @@ struct XLWorksheetFileTests {
         try document.save(to: url)
 
         #expect(worksheet.existingRow(1)?.existingCell(column: 1)?.value == .string("shared"))
-        #expect(document.package.sharedStrings.file.records.records == [])
+        #expect(document.package.sharedStrings.file.records.isEmpty)
 
         let package = try OPCPackage(data: Data(contentsOf: url))
         let worksheetXML = try String(

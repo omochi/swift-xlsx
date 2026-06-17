@@ -1,4 +1,4 @@
-public typealias XLCellFormatRecordsStorage = XLGenericRecordStorage<XLCellFormatRecord>
+public typealias XLCellFormatRecordsStorage = XLGenericRecordsStorage<XLCellFormatRecord>
 
 extension XLCellFormatRecordsStorage {
     @discardableResult

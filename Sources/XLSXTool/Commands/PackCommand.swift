@@ -18,7 +18,7 @@ public struct PackCommand: ParsableCommand {
 
     public func run() throws {
         let inputURL = URL(fileURLWithPath: input)
-        let outputURL = output.map(URL.init(fileURLWithPath:)) ?? XLSXToolsOutputURL.packDefault(for: inputURL)
+        let outputURL = output.map(URL.init(fileURLWithPath:)) ?? XLSXToolOutputURL.packDefault(for: inputURL)
         let package = try OPCPackage(directoryURL: inputURL)
         let data = try package.data()
         try data.write(to: outputURL, options: .atomic)

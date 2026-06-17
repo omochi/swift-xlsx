@@ -61,12 +61,12 @@ public final class XLStylesFile: XMLDocumentConvertible {
     }
 
     public var isEmpty: Bool {
-        numberFormats.records.isEmpty &&
-            fonts.records.isEmpty &&
-            fills.records.isEmpty &&
-            borders.records.isEmpty &&
-            cellStyleFormats.records.isEmpty &&
-            cellFormats.records.isEmpty
+        numberFormats.isEmpty &&
+            fonts.isEmpty &&
+            fills.isEmpty &&
+            borders.isEmpty &&
+            cellStyleFormats.isEmpty &&
+            cellFormats.isEmpty
     }
 
     public func resetToDefault() {
@@ -204,7 +204,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
     }
 
     private func writeNumberFormats(to stylesElement: XMLElement) {
-        let numberFormats = self.numberFormats.records
+        let numberFormats = self.numberFormats
         if numberFormats.isEmpty && stylesElement.elements(name: "numFmts").isEmpty {
             return
         }
@@ -230,7 +230,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
     }
 
     private func writeFonts(to stylesElement: XMLElement) throws {
-        let fonts = self.fonts.records
+        let fonts = self.fonts
         if fonts.isEmpty && stylesElement.elements(name: "fonts").isEmpty {
             return
         }
@@ -249,7 +249,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
     }
 
     private func writeFills(to stylesElement: XMLElement) throws {
-        let fills = self.fills.records
+        let fills = self.fills
         if fills.isEmpty && stylesElement.elements(name: "fills").isEmpty {
             return
         }
@@ -268,7 +268,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
     }
 
     private func writeBorders(to stylesElement: XMLElement) {
-        let borders = self.borders.records
+        let borders = self.borders
         if borders.isEmpty && stylesElement.elements(name: "borders").isEmpty {
             return
         }
@@ -287,7 +287,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
     }
 
     private func writeCellFormats(to stylesElement: XMLElement) {
-        let cellFormats = self.cellFormats.records
+        let cellFormats = self.cellFormats
         if cellFormats.isEmpty && stylesElement.elements(name: "cellXfs").isEmpty {
             return
         }
@@ -306,7 +306,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
     }
 
     private func writeCellStyleFormats(to stylesElement: XMLElement) throws {
-        let cellStyleFormats = self.cellStyleFormats.records
+        let cellStyleFormats = self.cellStyleFormats
         if cellStyleFormats.isEmpty && stylesElement.elements(name: "cellStyleXfs").isEmpty {
             return
         }

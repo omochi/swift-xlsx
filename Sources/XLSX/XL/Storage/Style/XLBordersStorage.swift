@@ -1,3 +1,3 @@
-public typealias XLBordersStorage = XLGenericRecordStorage<XLBorder>
+public typealias XLBordersStorage = XLGenericRecordsStorage<XLBorder>
 
 extension XLBordersStorage {}

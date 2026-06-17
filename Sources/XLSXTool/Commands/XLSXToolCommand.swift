@@ -1,9 +1,9 @@
 import ArgumentParser
 
 @main
-public struct XLSXToolsCommand: ParsableCommand {
+public struct XLSXToolCommand: ParsableCommand {
     public static let configuration = CommandConfiguration(
-        commandName: "xlsx-tools",
+        commandName: "xlsx-tool",
         abstract: "Utilities for unpacking and packing XLSX OPC packages.",
         subcommands: [
             ExtractCommand.self,
