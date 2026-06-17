@@ -15,10 +15,34 @@ public enum XLExampleDocuments {
     public static func styleDocument() throws -> XLDocument {
         let document = XLDocument()
         let worksheet = try document.workbook.worksheets.first ?? document.workbook.appendWorksheet(name: "Sheet1")
+        writeNumberFormatExamples(to: worksheet)
         writeFontExamples(to: worksheet)
         writeFillExamples(to: worksheet)
         writeBorderExamples(to: worksheet)
         return document
+    }
+
+    private static func writeNumberFormatExamples(to worksheet: XLWorksheet) {
+        let examples: [(id: Int, format: String, value: String)] = [
+            (49, "@", "12345"),
+            (14, "mm-dd-yy", "45825"),
+            (22, "m/d/yy h:mm", "45825.5"),
+            (10, "0.00%", "0.125"),
+            (3, "#,##0", "1234567"),
+            (46, "[h]:mm:ss", "27.5"),
+        ]
+
+        for (index, example) in examples.enumerated() {
+            let labelCell = worksheet.cell(row: index + 1, column: 1)
+            labelCell.value = .string("builtin \(example.id)")
+
+            let formatCell = worksheet.cell(row: index + 1, column: 2)
+            formatCell.value = .string(example.format)
+
+            let valueCell = worksheet.cell(row: index + 1, column: 3)
+            valueCell.value = .number(example.value)
+            valueCell.format = XLCellFormat(numberFormat: .builtin(id: example.id))
+        }
     }
 
     private static func writeFontExamples(to worksheet: XLWorksheet) {
@@ -31,14 +55,14 @@ public enum XLExampleDocuments {
         ]
 
         for (index, example) in examples.enumerated() {
-            let cell = worksheet.cell(row: index + 1, column: 1)
+            let cell = worksheet.cell(row: index + 1, column: 5)
             cell.value = .string(example.0)
             cell.format = XLCellFormat(font: example.1)
         }
     }
 
     private static func writeFillExamples(to worksheet: XLWorksheet) {
-        let cell = worksheet.cell(row: 2, column: 3)
+        let cell = worksheet.cell(row: 2, column: 7)
         cell.value = .string("red")
         cell.format = XLCellFormat(fill: .pattern(XLFill.Pattern(
             patternType: "solid",
@@ -61,7 +85,7 @@ public enum XLExampleDocuments {
         ]
 
         for (index, example) in examples.enumerated() {
-            let cell = worksheet.cell(row: (index + 1) * 2, column: 5)
+            let cell = worksheet.cell(row: (index + 1) * 2, column: 9)
             cell.value = .string(example.0)
             cell.format = XLCellFormat(border: example.1)
         }

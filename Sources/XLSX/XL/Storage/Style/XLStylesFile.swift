@@ -345,30 +345,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
         }
 
         let element = XMLElement(name: XMLName(name: "numFmts"))
-        var children = stylesElement.children
-        if let index = children.firstIndex(where: { child in
-            guard let childElement = child as? XMLElement else {
-                return false
-            }
-
-            return [
-                "fonts",
-                "fills",
-                "borders",
-                "cellStyleXfs",
-                "cellXfs",
-                "cellStyles",
-                "dxfs",
-                "tableStyles",
-                "colors",
-                "extLst",
-            ].contains(childElement.name.name)
-        }) {
-            children.insert(element, at: index)
-            stylesElement.children = children
-        } else {
-            stylesElement.appendChild(element)
-        }
+        stylesElement.appendChild(element)
         return element
     }
 

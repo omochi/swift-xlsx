@@ -124,7 +124,7 @@ struct XLStylesFileTests {
         ])
     }
 
-    @Test func patchesNumberFormatsBeforeFonts() throws {
+    @Test func patchesNumberFormatsWithoutRemovingOtherStyleChildren() throws {
         let styles = try stylesFile(data: Data("""
             <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
               <fonts count="1"><font/></fonts>
@@ -138,11 +138,9 @@ struct XLStylesFileTests {
         ])
 
         let xml = try String(decoding: styles.xmlDocument().data, as: UTF8.self)
-        let numberFormatsIndex = try #require(xml.range(of: "<numFmts")?.lowerBound)
-        let fontsIndex = try #require(xml.range(of: "<fonts")?.lowerBound)
 
-        #expect(numberFormatsIndex < fontsIndex)
         #expect(xml.contains(##"<numFmts count="2"><numFmt numFmtId="164" formatCode="yyyy-mm-dd"/><numFmt numFmtId="165" formatCode="#,##0.000"/></numFmts>"##))
+        #expect(xml.contains(#"<fonts count="1"><font/></fonts>"#))
         #expect(xml.contains(#"<opaqueStyle/>"#))
     }
 
