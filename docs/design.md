@@ -14,7 +14,7 @@ OPC package 内の XML file は、内容の性質に応じて扱いを分ける�
 
 Excel の workbook / worksheet / row / cell は、永続化するデータ構造と、利用者が操作する API を分けて扱う。
 
-ストレージレイヤーは、OPC package や XML file の内容を保持し、読み書きの責務を持つ。`XLWorksheetFile` は worksheet XML file に対応し、`columnByNumber` で列設定を、`rowByNumber` で存在する行を保持する。`XLColumnStorage` は列幅や列の既定セル書式を保持する。`XLRowStorage` は行の中のセルを `cellByColumn` で保持し、`XLCellStorage` はセルの値を保持する。
+ストレージレイヤーは、OPC package や XML file の内容を保持し、読み書きの責務を持つ。`XLWorksheetFile` は worksheet XML file に対応し、`columnByNumber` で列設定を、`rowByNumber` で存在する行を保持する。`XLColumnStorage` は列幅、列の既定セル書式、非表示やアウトラインなどの列属性を保持する。`XLRowStorage` は行の中のセルを `cellByColumn` で保持し、`XLCellStorage` はセルの値を保持する。
 
 `XLWorksheetFile`、`XLColumnStorage`、`XLRowStorage`、`XLCellStorage` は参照型にする。これは、`worksheet.column(2).width = ...` や `worksheet.row(3).cell(column: 2).value = ...` のように、途中で得た column / row / cell を編集した時に元の worksheet file へ変更が反映されるようにするためである。
 

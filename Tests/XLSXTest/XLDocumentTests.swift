@@ -787,6 +787,11 @@ struct XLDocumentTests {
         let column = worksheet.column(3)
         column.width = 20
         column.format = XLCellFormat(numberFormat: .builtin(id: 14))
+        column.hidden = true
+        column.bestFit = true
+        column.outlineLevel = 2
+        column.collapsed = true
+        column.phonetic = true
         worksheet.column(5).width = 8.5
 
         #expect(column.number == 3)
@@ -796,6 +801,11 @@ struct XLDocumentTests {
         #expect(worksheet.existingColumns.map(\.width) == [20, 8.5])
         #expect(worksheet.existingColumn(3)?.width == 20)
         #expect(worksheet.existingColumn(3)?.format == XLCellFormat(numberFormat: .builtin(id: 14)))
+        #expect(worksheet.existingColumn(3)?.hidden == true)
+        #expect(worksheet.existingColumn(3)?.bestFit == true)
+        #expect(worksheet.existingColumn(3)?.outlineLevel == 2)
+        #expect(worksheet.existingColumn(3)?.collapsed == true)
+        #expect(worksheet.existingColumn(3)?.phonetic == true)
     }
 
     @Test func rowExposesCellsThroughHandles() throws {

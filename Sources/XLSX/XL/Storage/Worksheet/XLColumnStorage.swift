@@ -8,10 +8,22 @@ public final class XLColumnStorage {
     ) {
         self.width = XMLUtils.doubleAttribute(name: "width", in: columnElement)
         self.format = Self.format(in: columnElement, styles: styles)
+        self.customWidth = XMLUtils.boolAttribute(name: "customWidth", in: columnElement, defaultValue: nil)
+        self.hidden = XMLUtils.boolAttribute(name: "hidden", in: columnElement, defaultValue: nil)
+        self.bestFit = XMLUtils.boolAttribute(name: "bestFit", in: columnElement, defaultValue: nil)
+        self.outlineLevel = XMLUtils.intAttribute(name: "outlineLevel", in: columnElement)
+        self.collapsed = XMLUtils.boolAttribute(name: "collapsed", in: columnElement, defaultValue: nil)
+        self.phonetic = XMLUtils.boolAttribute(name: "phonetic", in: columnElement, defaultValue: nil)
     }
 
     public var width: Double?
     public var format: XLCellFormat? = nil
+    public var customWidth: Bool? = nil
+    public var hidden: Bool? = nil
+    public var bestFit: Bool? = nil
+    public var outlineLevel: Int? = nil
+    public var collapsed: Bool? = nil
+    public var phonetic: Bool? = nil
 
     public func write(
         to columnElement: XMLElement,
@@ -30,7 +42,16 @@ public final class XLColumnStorage {
     }
 
     public func clone() -> XLColumnStorage {
-        XLColumnStorage(width: width, format: format)
+        XLColumnStorage(
+            width: width,
+            format: format,
+            customWidth: customWidth,
+            hidden: hidden,
+            bestFit: bestFit,
+            outlineLevel: outlineLevel,
+            collapsed: collapsed,
+            phonetic: phonetic
+        )
     }
 
     private static func formatIndex(in columnElement: XMLElement) -> Int? {

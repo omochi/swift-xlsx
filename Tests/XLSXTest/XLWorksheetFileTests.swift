@@ -88,6 +88,26 @@ struct XLWorksheetFileTests {
         #expect(worksheet.existingColumn(7)?.width == 12.5)
     }
 
+    @Test func readsColumnAttributesFromWorksheetXML() throws {
+        let worksheet = try worksheetFile(data: Data("""
+            <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
+              <cols>
+                <col min="2" max="2" width="20" customWidth="1" hidden="1" bestFit="1" outlineLevel="2" collapsed="1" phonetic="1"/>
+              </cols>
+              <sheetData/>
+            </worksheet>
+            """.utf8))
+        let column = try #require(worksheet.existingColumn(2))
+
+        #expect(column.width == 20)
+        #expect(column.customWidth == true)
+        #expect(column.hidden == true)
+        #expect(column.bestFit == true)
+        #expect(column.outlineLevel == 2)
+        #expect(column.collapsed == true)
+        #expect(column.phonetic == true)
+    }
+
     @Test func readsColumnFormatsFromWorksheetXML() throws {
         let worksheet = try XLWorksheetFile(
             xmlDocument: XMLDocument(data: Data("""
@@ -213,6 +233,42 @@ struct XLWorksheetFileTests {
         let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
 
         #expect(xml.contains(#"<cols><col min="2" max="4" width="8.5" customWidth="1"/><col min="5" max="5" width="12.0" customWidth="1"/></cols>"#))
+    }
+
+    @Test func writesColumnAttributesToWorksheetXML() throws {
+        let worksheet = XLWorksheetFile(
+            columnByNumber: [
+                2: XLColumnStorage(
+                    width: 20,
+                    customWidth: false,
+                    hidden: true,
+                    bestFit: true,
+                    outlineLevel: 2,
+                    collapsed: true,
+                    phonetic: true
+                ),
+            ],
+            rowByNumber: [:]
+        )
+
+        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+
+        #expect(xml.contains(#"<cols><col min="2" max="2" width="20.0" customWidth="0" hidden="1" bestFit="1" outlineLevel="2" collapsed="1" phonetic="1"/></cols>"#))
+    }
+
+    @Test func columnRangeUsesAllColumnAttributesForEquivalence() throws {
+        let worksheet = XLWorksheetFile(
+            columnByNumber: [
+                2: XLColumnStorage(width: 20, hidden: true),
+                3: XLColumnStorage(width: 20, hidden: true),
+                4: XLColumnStorage(width: 20, hidden: false),
+            ],
+            rowByNumber: [:]
+        )
+
+        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+
+        #expect(xml.contains(#"<cols><col min="2" max="3" width="20.0" customWidth="1" hidden="1"/><col min="4" max="4" width="20.0" customWidth="1" hidden="0"/></cols>"#))
     }
 
     @Test func removesColumnFormatWhenStandaloneWorksheetHasNoWritePlan() throws {
