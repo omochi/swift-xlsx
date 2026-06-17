@@ -141,35 +141,15 @@ public final class XLWorkbookFile: XMLDocumentConvertible {
     }
 
     private func writeWorkbook(to document: XMLDocument) throws {
-        let workbookElement = workbookElementForWriting(in: document)
+        let workbookElement = XMLUtils.ensureRootElement(name: "workbook", in: document)
         workbookElement.ensureNamespace(uri: .spreadsheet)
         workbookElement.ensureNamespaceURI(prefix: "r", uri: .officeRelationships)
 
-        let sheetsElement = sheetsElementForWriting(in: workbookElement)
+        let sheetsElement = XMLUtils.ensureChildElement(name: "sheets", in: workbookElement)
         for sheet in sheets {
             let element = sheetElementForWriting(sheetID: sheet.sheetID, in: sheetsElement)
             try sheet.write(to: element)
         }
-    }
-
-    private func workbookElementForWriting(in document: XMLDocument) -> XMLElement {
-        if let element = document.element(name: "workbook") {
-            return element
-        }
-
-        let element = XMLElement(name: XMLName(name: "workbook"))
-        document.appendChild(element)
-        return element
-    }
-
-    private func sheetsElementForWriting(in workbookElement: XMLElement) -> XMLElement {
-        if let element = workbookElement.elements(name: "sheets").first {
-            return element
-        }
-
-        let element = XMLElement(name: XMLName(name: "sheets"))
-        workbookElement.appendChild(element)
-        return element
     }
 
     private func sheetElementForWriting(sheetID: Int, in sheetsElement: XMLElement) -> XMLElement {

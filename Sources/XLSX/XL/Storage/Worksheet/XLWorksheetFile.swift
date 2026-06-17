@@ -79,7 +79,7 @@ public final class XLWorksheetFile {
         styles: XLStylesFile?
     ) throws -> XMLDocument {
         let document = original?.clone() ?? XMLDocument()
-        let worksheetElement = worksheetElementForWriting(in: document)
+        let worksheetElement = XMLUtils.ensureRootElement(name: "worksheet", in: document)
         worksheetElement.ensureNamespace(uri: .spreadsheet)
         try writeRows(
             to: worksheetElement,
@@ -150,7 +150,7 @@ public final class XLWorksheetFile {
             return
         }
 
-        let sheetDataElement = sheetDataElementForWriting(in: worksheetElement)
+        let sheetDataElement = XMLUtils.ensureChildElement(name: "sheetData", in: worksheetElement)
         let sheetDataChildren = rowElementsAndOtherChildren(in: sheetDataElement)
         var rowElementByNumber = sheetDataChildren.rowElementByNumber
         for (rowNumber, row) in existingRowsWithNumber {
@@ -169,16 +169,6 @@ public final class XLWorksheetFile {
 
         let rowElements = rowElementByNumber.sorted { $0.key < $1.key }.map { $0.value as XMLNode }
         sheetDataElement.children = rowElements + sheetDataChildren.otherChildren
-    }
-
-    private func sheetDataElementForWriting(in worksheetElement: XMLElement) -> XMLElement {
-        if let element = worksheetElement.elements(name: "sheetData").first {
-            return element
-        }
-
-        let element = XMLElement(name: XMLName(name: "sheetData"))
-        worksheetElement.appendChild(element)
-        return element
     }
 
     private func rowElementForWriting(
@@ -222,13 +212,4 @@ public final class XLWorksheetFile {
         return (rowElementByNumber, otherChildren)
     }
 
-    private func worksheetElementForWriting(in document: XMLDocument) -> XMLElement {
-        if let element = document.element(name: "worksheet") {
-            return element
-        }
-
-        let element = XMLElement(name: XMLName(name: "worksheet"))
-        document.appendChild(element)
-        return element
-    }
 }

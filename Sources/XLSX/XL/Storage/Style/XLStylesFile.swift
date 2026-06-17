@@ -102,7 +102,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
 
     public func xmlDocument() throws -> XMLDocument {
         let document = original?.clone() ?? XMLDocument()
-        let stylesElement = stylesElementForWriting(in: document)
+        let stylesElement = XMLUtils.ensureRootElement(name: "styleSheet", in: document)
         stylesElement.ensureNamespace(uri: .spreadsheet)
         writeNumberFormats(to: stylesElement)
         try writeFonts(to: stylesElement)
@@ -203,23 +203,13 @@ public final class XLStylesFile: XMLDocumentConvertible {
         }
     }
 
-    private func stylesElementForWriting(in document: XMLDocument) -> XMLElement {
-        if let element = document.element(name: "styleSheet") {
-            return element
-        }
-
-        let element = XMLElement(name: XMLName(name: "styleSheet"))
-        document.appendChild(element)
-        return element
-    }
-
     private func writeNumberFormats(to stylesElement: XMLElement) {
         let numberFormats = self.numberFormats.records
         if numberFormats.isEmpty && stylesElement.elements(name: "numFmts").isEmpty {
             return
         }
 
-        let numberFormatsElement = numberFormatsElementForWriting(in: stylesElement)
+        let numberFormatsElement = XMLUtils.ensureChildElement(name: "numFmts", in: stylesElement)
         numberFormatsElement.setAttribute(name: "count", value: String(numberFormats.count))
 
         numberFormatsElement.children = XMLUtils.patchChildren(
@@ -245,7 +235,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
             return
         }
 
-        let fontsElement = fontsElementForWriting(in: stylesElement)
+        let fontsElement = XMLUtils.ensureChildElement(name: "fonts", in: stylesElement)
         fontsElement.setAttribute(name: "count", value: String(fonts.count))
 
         fontsElement.children = try XMLUtils.patchChildren(
@@ -264,7 +254,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
             return
         }
 
-        let fillsElement = fillsElementForWriting(in: stylesElement)
+        let fillsElement = XMLUtils.ensureChildElement(name: "fills", in: stylesElement)
         fillsElement.setAttribute(name: "count", value: String(fills.count))
 
         fillsElement.children = try XMLUtils.patchChildren(
@@ -283,7 +273,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
             return
         }
 
-        let bordersElement = bordersElementForWriting(in: stylesElement)
+        let bordersElement = XMLUtils.ensureChildElement(name: "borders", in: stylesElement)
         bordersElement.setAttribute(name: "count", value: String(borders.count))
 
         bordersElement.children = XMLUtils.patchChildren(
@@ -302,7 +292,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
             return
         }
 
-        let cellXfsElement = cellXfsElementForWriting(in: stylesElement)
+        let cellXfsElement = XMLUtils.ensureChildElement(name: "cellXfs", in: stylesElement)
         cellXfsElement.setAttribute(name: "count", value: String(cellFormats.count))
 
         cellXfsElement.children = XMLUtils.patchChildren(
@@ -321,7 +311,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
             return
         }
 
-        let cellStyleXfsElement = cellStyleXfsElementForWriting(in: stylesElement)
+        let cellStyleXfsElement = XMLUtils.ensureChildElement(name: "cellStyleXfs", in: stylesElement)
         cellStyleXfsElement.setAttribute(name: "count", value: String(cellStyleFormats.count))
 
         cellStyleXfsElement.children = try XMLUtils.patchChildren(
@@ -339,63 +329,4 @@ public final class XLStylesFile: XMLDocumentConvertible {
         )
     }
 
-    private func numberFormatsElementForWriting(in stylesElement: XMLElement) -> XMLElement {
-        if let element = stylesElement.elements(name: "numFmts").first {
-            return element
-        }
-
-        let element = XMLElement(name: XMLName(name: "numFmts"))
-        stylesElement.appendChild(element)
-        return element
-    }
-
-    private func fontsElementForWriting(in stylesElement: XMLElement) -> XMLElement {
-        if let element = stylesElement.elements(name: "fonts").first {
-            return element
-        }
-
-        let element = XMLElement(name: XMLName(name: "fonts"))
-        stylesElement.appendChild(element)
-        return element
-    }
-
-    private func fillsElementForWriting(in stylesElement: XMLElement) -> XMLElement {
-        if let element = stylesElement.elements(name: "fills").first {
-            return element
-        }
-
-        let element = XMLElement(name: XMLName(name: "fills"))
-        stylesElement.appendChild(element)
-        return element
-    }
-
-    private func bordersElementForWriting(in stylesElement: XMLElement) -> XMLElement {
-        if let element = stylesElement.elements(name: "borders").first {
-            return element
-        }
-
-        let element = XMLElement(name: XMLName(name: "borders"))
-        stylesElement.appendChild(element)
-        return element
-    }
-
-    private func cellXfsElementForWriting(in stylesElement: XMLElement) -> XMLElement {
-        if let element = stylesElement.elements(name: "cellXfs").first {
-            return element
-        }
-
-        let element = XMLElement(name: XMLName(name: "cellXfs"))
-        stylesElement.appendChild(element)
-        return element
-    }
-
-    private func cellStyleXfsElementForWriting(in stylesElement: XMLElement) -> XMLElement {
-        if let element = stylesElement.elements(name: "cellStyleXfs").first {
-            return element
-        }
-
-        let element = XMLElement(name: XMLName(name: "cellStyleXfs"))
-        stylesElement.appendChild(element)
-        return element
-    }
 }

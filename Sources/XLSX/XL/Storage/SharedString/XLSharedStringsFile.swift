@@ -30,7 +30,7 @@ public final class XLSharedStringsFile: XMLDocumentConvertible {
 
     public func xmlDocument() throws -> XMLDocument {
         let document = original?.clone() ?? XMLDocument()
-        let sharedStringsElement = sharedStringsElementForWriting(in: document)
+        let sharedStringsElement = XMLUtils.ensureRootElement(name: "sst", in: document)
         sharedStringsElement.ensureNamespace(uri: .spreadsheet)
         sharedStringsElement.setAttribute(name: "count", value: String(records.records.count))
         sharedStringsElement.setAttribute(name: "uniqueCount", value: String(records.records.count))
@@ -91,16 +91,6 @@ public final class XLSharedStringsFile: XMLDocumentConvertible {
             }
         }
         return records
-    }
-
-    private func sharedStringsElementForWriting(in document: XMLDocument) -> XMLElement {
-        if let element = document.element(name: "sst") {
-            return element
-        }
-
-        let element = XMLElement(name: XMLName(name: "sst"))
-        document.appendChild(element)
-        return element
     }
 
     private func write(to sharedStringsElement: XMLElement) throws {
