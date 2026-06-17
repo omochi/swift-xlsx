@@ -59,24 +59,8 @@ public final class XLCellStorage {
         }
     }
 
-    func collectCellFormatStyleItems(styles: XLStylesFile) {
-        if let font = format?.font {
-            styles.fonts.register(font.record)
-        }
-        if let fill = format?.fill {
-            styles.fills.register(fill)
-        }
-        if let border = format?.border {
-            styles.borders.register(border)
-        }
-    }
-
-    func collectCellFormats(styles: XLStylesFile) throws {
-        guard let format else {
-            return
-        }
-
-        try styles.cellFormats.register(format, fonts: styles.fonts, fills: styles.fills, borders: styles.borders)
+    func collectStyle(stage: XLStyleCollectionStage, styles: XLStylesFile) throws {
+        try format?.collectStyle(stage: stage, styles: styles)
     }
 
     func clone() -> XLCellStorage {
@@ -102,7 +86,13 @@ public final class XLCellStorage {
             return nil
         }
 
-        return XLCellFormat(record: record, fonts: styles.fonts, fills: styles.fills, borders: styles.borders)
+        return XLCellFormat(
+            record: record,
+            fonts: styles.fonts,
+            fills: styles.fills,
+            borders: styles.borders,
+            cellStyleFormats: styles.cellStyleFormats
+        )
     }
 
     private func writeFormat(
@@ -116,7 +106,12 @@ public final class XLCellStorage {
             return
         }
 
-        let formatRecord = try format.record(fonts: styles.fonts, fills: styles.fills, borders: styles.borders)
+        let formatRecord = try format.record(
+            fonts: styles.fonts,
+            fills: styles.fills,
+            borders: styles.borders,
+            cellStyleFormats: styles.cellStyleFormats
+        )
         if let formatIndex = styles.cellFormats.index(for: formatRecord) {
             cellElement.setAttribute(name: "s", value: String(formatIndex))
         } else {

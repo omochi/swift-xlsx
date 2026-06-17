@@ -33,6 +33,14 @@ public final class XLWorksheetFile {
         rowByNumber.keys.sorted()
     }
 
+    public var existingRowsWithNumber: [(Int, XLRowStorage)] {
+        rowByNumber.sorted { $0.key < $1.key }
+    }
+
+    public var existingRows: [XLRowStorage] {
+        existingRowsWithNumber.map(\.1)
+    }
+
     public func row(_ number: Int) -> XLRowStorage {
         if let row = rowByNumber[number] {
             return row
@@ -82,20 +90,14 @@ public final class XLWorksheetFile {
     }
 
     func collectSharedStrings(sharedStrings: XLSharedStringsFile) {
-        for rowNumber in rowByNumber.keys.sorted() {
-            rowByNumber[rowNumber]?.collectSharedStrings(sharedStrings: sharedStrings)
+        for row in existingRows {
+            row.collectSharedStrings(sharedStrings: sharedStrings)
         }
     }
 
-    func collectCellFormatStyleItems(styles: XLStylesFile) {
-        for rowNumber in rowByNumber.keys.sorted() {
-            rowByNumber[rowNumber]?.collectCellFormatStyleItems(styles: styles)
-        }
-    }
-
-    func collectCellFormats(styles: XLStylesFile) throws {
-        for rowNumber in rowByNumber.keys.sorted() {
-            try rowByNumber[rowNumber]?.collectCellFormats(styles: styles)
+    func collectStyle(stage: XLStyleCollectionStage, styles: XLStylesFile) throws {
+        for row in existingRows {
+            try row.collectStyle(stage: stage, styles: styles)
         }
     }
 
@@ -151,11 +153,7 @@ public final class XLWorksheetFile {
         let sheetDataElement = sheetDataElementForWriting(in: worksheetElement)
         let sheetDataChildren = rowElementsAndOtherChildren(in: sheetDataElement)
         var rowElementByNumber = sheetDataChildren.rowElementByNumber
-        for rowNumber in rowByNumber.keys.sorted() {
-            guard let row = rowByNumber[rowNumber] else {
-                continue
-            }
-
+        for (rowNumber, row) in existingRowsWithNumber {
             let rowElement = rowElementForWriting(
                 rowNumber: rowNumber,
                 in: sheetDataElement,

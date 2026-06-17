@@ -221,6 +221,8 @@ struct XLWorksheetFileTests {
 
         #expect(worksheet.maxRowNumber == 10)
         #expect(worksheet.existingRowNumbers == [2, 10])
+        #expect(worksheet.existingRowsWithNumber.map(\.0) == [2, 10])
+        #expect(worksheet.existingRows.map(\.cellByColumn.isEmpty) == [true, true])
     }
 
     @Test func returnsExistingRowsWithoutCreatingMissingRows() throws {

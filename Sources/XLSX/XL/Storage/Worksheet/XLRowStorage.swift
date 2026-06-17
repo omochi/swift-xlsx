@@ -38,6 +38,14 @@ public final class XLRowStorage {
         cellByColumn.keys.sorted()
     }
 
+    public var existingCellsWithColumn: [(Int, XLCellStorage)] {
+        cellByColumn.sorted { $0.key < $1.key }
+    }
+
+    public var existingCells: [XLCellStorage] {
+        existingCellsWithColumn.map(\.1)
+    }
+
     public func cell(column: Int) -> XLCellStorage {
         if let cell = cellByColumn[column] {
             return cell
@@ -60,11 +68,7 @@ public final class XLRowStorage {
     ) throws {
         let rowChildren = cellElementsAndOtherChildren(in: rowElement, rowNumber: rowNumber)
         var cellElementByColumn = rowChildren.cellElementByColumn
-        for column in cellByColumn.keys.sorted() {
-            guard let cell = cellByColumn[column] else {
-                continue
-            }
-
+        for (column, cell) in existingCellsWithColumn {
             let address = XLCellAddress(row: rowNumber, column: column)
             let cellElement = cellElementForWriting(
                 address: address,
@@ -83,20 +87,14 @@ public final class XLRowStorage {
     }
 
     func collectSharedStrings(sharedStrings: XLSharedStringsFile) {
-        for column in cellByColumn.keys.sorted() {
-            cellByColumn[column]?.collectSharedStrings(sharedStrings: sharedStrings)
+        for cell in existingCells {
+            cell.collectSharedStrings(sharedStrings: sharedStrings)
         }
     }
 
-    func collectCellFormatStyleItems(styles: XLStylesFile) {
-        for column in cellByColumn.keys.sorted() {
-            cellByColumn[column]?.collectCellFormatStyleItems(styles: styles)
-        }
-    }
-
-    func collectCellFormats(styles: XLStylesFile) throws {
-        for column in cellByColumn.keys.sorted() {
-            try cellByColumn[column]?.collectCellFormats(styles: styles)
+    func collectStyle(stage: XLStyleCollectionStage, styles: XLStylesFile) throws {
+        for cell in existingCells {
+            try cell.collectStyle(stage: stage, styles: styles)
         }
     }
 

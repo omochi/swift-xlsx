@@ -13,6 +13,16 @@ public struct XLRow {
         storage.existingColumnNumbers
     }
 
+    public var existingCells: [XLCell] {
+        storage.existingCellsWithColumn.map { column, cellStorage in
+            XLCell(
+                row: number,
+                column: column,
+                storage: cellStorage
+            )
+        }
+    }
+
     public func cell(column: Int) -> XLCell {
         XLCell(
             row: number,

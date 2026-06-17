@@ -108,8 +108,7 @@ public final class XLDocumentPackage {
 
         styles.file.resetToDefault()
 
-        workbook.file.collectCellFormatStyleItems(styles: styles.file)
-        try workbook.file.collectCellFormats(styles: styles.file)
+        try workbook.file.collectStyle(styles: styles.file)
 
         workbookRels.file.ensureRelationship(
             type: XMLNamespaceURI.sharedStrings.string,

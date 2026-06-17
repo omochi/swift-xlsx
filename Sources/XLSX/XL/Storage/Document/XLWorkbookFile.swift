@@ -113,15 +113,15 @@ public final class XLWorkbookFile: XMLDocumentConvertible {
         }
     }
 
-    func collectCellFormatStyleItems(styles: XLStylesFile) {
-        for worksheet in worksheets {
-            worksheet.file.collectCellFormatStyleItems(styles: styles)
+    func collectStyle(styles: XLStylesFile) throws {
+        for stage in XLStyleCollectionStage.allCases {
+            try collectStyle(stage: stage, styles: styles)
         }
     }
 
-    func collectCellFormats(styles: XLStylesFile) throws {
+    func collectStyle(stage: XLStyleCollectionStage, styles: XLStylesFile) throws {
         for worksheet in worksheets {
-            try worksheet.file.collectCellFormats(styles: styles)
+            try worksheet.file.collectStyle(stage: stage, styles: styles)
         }
     }
 

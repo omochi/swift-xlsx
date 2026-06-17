@@ -7,6 +7,14 @@ public enum XLFill: Sendable & Hashable {
         public var foregroundColor: XLColor? = nil
         public var backgroundColor: XLColor? = nil
 
+        public static var none: Self {
+            Self(patternType: "none")
+        }
+
+        public static var gray125: Self {
+            Self(patternType: "gray125")
+        }
+
         init(element: XMLElement) {
             self.init(
                 patternType: element.attribute(name: "patternType"),

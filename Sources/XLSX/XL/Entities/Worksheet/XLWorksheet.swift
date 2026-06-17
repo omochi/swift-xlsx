@@ -23,6 +23,15 @@ public struct XLWorksheet {
         file.existingRowNumbers
     }
 
+    public var existingRows: [XLRow] {
+        file.existingRowsWithNumber.map { rowNumber, storage in
+            XLRow(
+                number: rowNumber,
+                storage: storage
+            )
+        }
+    }
+
     public func row(_ number: Int) -> XLRow {
         XLRow(
             number: number,

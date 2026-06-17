@@ -1,13 +1,13 @@
-public struct XLCellFormat: Sendable & Hashable {
+public struct XLCellFormat: Hashable {
     public init(
         numberFormatID: Int? = nil,
         font: XLFont? = nil,
         fill: XLFill? = nil,
         border: XLBorder? = nil,
-        formatID: Int? = nil,
+        styleFormat: XLCellStyleFormatRef? = nil,
         applyNumberFormat: Bool = false,
         applyFont: Bool? = nil,
-        applyFill: Bool = false,
+        applyFill: Bool? = false,
         applyBorder: Bool? = nil,
         applyAlignment: Bool = false,
         applyProtection: Bool = false
@@ -16,10 +16,10 @@ public struct XLCellFormat: Sendable & Hashable {
         self.font = font
         self.fill = fill
         self.border = border
-        self.formatID = formatID
+        self.styleFormat = styleFormat
         self.applyNumberFormat = applyNumberFormat
         self.applyFont = applyFont ?? (font != nil)
-        self.applyFill = applyFill || fill != nil
+        self.applyFill = applyFill ?? (fill != nil)
         self.applyBorder = applyBorder ?? (border != nil)
         self.applyAlignment = applyAlignment
         self.applyProtection = applyProtection
@@ -29,13 +29,14 @@ public struct XLCellFormat: Sendable & Hashable {
         record: XLCellFormatRecord,
         fonts: XLFontRecordsStorage,
         fills: XLFillsStorage,
-        borders: XLBordersStorage
+        borders: XLBordersStorage,
+        cellStyleFormats: XLCellStyleFormatRefsStorage
     ) {
         self.numberFormatID = record.numberFormatID
         self.font = Self.font(for: record.fontID, in: fonts)
         self.fill = Self.fill(for: record.fillID, in: fills)
         self.border = Self.border(for: record.borderID, in: borders)
-        self.formatID = record.formatID
+        self.styleFormat = record.styleFormatID.flatMap { cellStyleFormats.record(at: $0) }
         self.applyNumberFormat = record.applyNumberFormat
         self.applyFont = record.applyFont
         self.applyFill = record.applyFill
@@ -60,7 +61,7 @@ public struct XLCellFormat: Sendable & Hashable {
             applyBorder = border != nil
         }
     }
-    public var formatID: Int? = nil
+    public var styleFormat: XLCellStyleFormatRef? = nil
     public var applyNumberFormat = false
     public var applyFont = false
     public var applyFill = false
@@ -71,14 +72,15 @@ public struct XLCellFormat: Sendable & Hashable {
     func record(
         fonts: XLFontRecordsStorage,
         fills: XLFillsStorage,
-        borders: XLBordersStorage
+        borders: XLBordersStorage,
+        cellStyleFormats: XLCellStyleFormatRefsStorage
     ) throws -> XLCellFormatRecord {
         XLCellFormatRecord(
             numberFormatID: numberFormatID,
             fontID: try fontID(in: fonts),
             fillID: try fillID(in: fills),
             borderID: try borderID(in: borders),
-            formatID: formatID,
+            styleFormatID: styleFormatID(in: cellStyleFormats),
             applyNumberFormat: applyNumberFormat,
             applyFont: applyFont,
             applyFill: applyFill,
@@ -86,6 +88,29 @@ public struct XLCellFormat: Sendable & Hashable {
             applyAlignment: applyAlignment,
             applyProtection: applyProtection
         )
+    }
+
+    func collectStyle(stage: XLStyleCollectionStage, styles: XLStylesFile) throws {
+        switch stage {
+        case .fonts:
+            if let font {
+                styles.fonts.register(font.record)
+            }
+        case .fills:
+            if let fill {
+                styles.fills.register(fill)
+            }
+        case .borders:
+            if let border {
+                styles.borders.register(border)
+            }
+        case .cellStyleFormats:
+            break
+        case .cellFormats:
+            try styles.cellFormats.register(self, styles: styles)
+        }
+
+        styleFormat?.collectStyle(stage: stage, styles: styles)
     }
 
     private static func font(for fontID: Int?, in fonts: XLFontRecordsStorage) -> XLFont? {
@@ -152,5 +177,13 @@ public struct XLCellFormat: Sendable & Hashable {
         }
 
         return index
+    }
+
+    private func styleFormatID(in cellStyleFormats: XLCellStyleFormatRefsStorage) -> Int? {
+        guard let styleFormat else {
+            return nil
+        }
+
+        return cellStyleFormats.index(for: styleFormat)
     }
 }

@@ -115,7 +115,8 @@ struct XLDocumentTests {
             record: storedRecord,
             fonts: document.package.styles.file.fonts,
             fills: document.package.styles.file.fills,
-            borders: document.package.styles.file.borders
+            borders: document.package.styles.file.borders,
+            cellStyleFormats: document.package.styles.file.cellStyleFormats
         ))
     }
 
@@ -218,6 +219,12 @@ struct XLDocumentTests {
 
         let document = XLDocument()
         let worksheet = try #require(document.workbook.worksheets.first)
+        let styleFormat = XLCellStyleFormatRef(
+            numberFormatID: 0,
+            font: XLFont(),
+            fill: .pattern(.none),
+            border: XLBorder()
+        )
         let format = XLCellFormat(
             numberFormatID: 14,
             font: XLFont(bold: true, size: 12, name: "Arial"),
@@ -230,7 +237,7 @@ struct XLDocumentTests {
                 left: XLBorder.Line(style: .thin, color: .rgb("FFFF0000")),
                 right: XLBorder.Line(style: .medium)
             ),
-            formatID: 0,
+            styleFormat: styleFormat,
             applyNumberFormat: true
         )
         worksheet.cell(row: 1, column: 1).value = .number("42")
@@ -264,9 +271,10 @@ struct XLDocumentTests {
         #expect(stylesXML.contains(#"<borders count="2">"#))
         #expect(stylesXML.contains(#"<border/>"#))
         #expect(stylesXML.contains(#"<border><left style="thin"><color rgb="FFFF0000"/></left><right style="medium"/></border>"#))
+        #expect(stylesXML.contains(#"<cellStyleXfs count="2">"#))
         #expect(stylesXML.contains(#"<cellXfs count="2">"#))
         #expect(stylesXML.contains(#"<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>"#))
-        #expect(stylesXML.contains(#"<xf numFmtId="14" fontId="1" fillId="2" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1"/>"#))
+        #expect(stylesXML.contains(#"<xf numFmtId="14" fontId="1" fillId="2" borderId="1" xfId="1" applyNumberFormat="1" applyFont="1" applyBorder="1"/>"#))
     }
 
     @Test func rebuildsSharedStringsFromEditedCells() throws {
@@ -328,6 +336,7 @@ struct XLDocumentTests {
         #expect(stylesXML.contains(#"<fonts count="1"><font/></fonts>"#))
         #expect(stylesXML.contains(#"<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>"#))
         #expect(stylesXML.contains(#"<borders count="1"><border/></borders>"#))
+        #expect(stylesXML.contains(#"<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>"#))
         #expect(stylesXML.contains(#"<cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>"#))
         #expect(workbookRels.file.relationships.contains {
             $0.type == XMLNamespaceURI.styles.string &&
@@ -612,6 +621,8 @@ struct XLDocumentTests {
         #expect(row.number == 3)
         #expect(worksheet.maxRowNumber == 3)
         #expect(worksheet.existingRowNumbers == [3])
+        #expect(worksheet.existingRows.map(\.number) == [3])
+        #expect(worksheet.existingRows.map(\.existingColumnNumbers) == [[2]])
         #expect(worksheet.existingRow(3)?.storage.existingCell(column: 2)?.value == .string("value"))
     }
 
@@ -626,10 +637,13 @@ struct XLDocumentTests {
 
         let cell = row.cell(column: 2)
         cell.value = .string("value")
+        row.cell(column: 4).value = .string("right")
 
         #expect(cell.address == XLCellAddress(row: 3, column: 2))
-        #expect(row.maxColumnNumber == 2)
-        #expect(row.existingColumnNumbers == [2])
+        #expect(row.maxColumnNumber == 4)
+        #expect(row.existingColumnNumbers == [2, 4])
+        #expect(row.existingCells.map(\.column) == [2, 4])
+        #expect(row.existingCells.map(\.value) == [.string("value"), .string("right")])
         #expect(row.existingCell(column: 2)?.value == .string("value"))
     }
 

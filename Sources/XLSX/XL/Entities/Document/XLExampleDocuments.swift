@@ -17,6 +17,7 @@ public enum XLExampleDocuments {
         let worksheet = try document.workbook.worksheets.first ?? document.workbook.appendWorksheet(name: "Sheet1")
         writeFontExamples(to: worksheet)
         writeFillExamples(to: worksheet)
+        writeBorderExamples(to: worksheet)
         return document
     }
 
@@ -44,5 +45,25 @@ public enum XLExampleDocuments {
             foregroundColor: .rgb("FFFF0000"),
             backgroundColor: .indexed(64)
         )))
+    }
+
+    private static func writeBorderExamples(to worksheet: XLWorksheet) {
+        let line = XLBorder.Line(style: .thin)
+        let examples: [(String, XLBorder)] = [
+            ("start", XLBorder(start: line)),
+            ("end", XLBorder(end: line)),
+            ("left", XLBorder(left: line)),
+            ("right", XLBorder(right: line)),
+            ("top", XLBorder(top: line)),
+            ("bottom", XLBorder(bottom: line)),
+            ("diagonal up", XLBorder(diagonal: XLBorder.Diagonal(directions: .up, line: line))),
+            ("diagonal down", XLBorder(diagonal: XLBorder.Diagonal(directions: .down, line: line))),
+        ]
+
+        for (index, example) in examples.enumerated() {
+            let cell = worksheet.cell(row: (index + 1) * 2, column: 5)
+            cell.value = .string(example.0)
+            cell.format = XLCellFormat(border: example.1)
+        }
     }
 }
