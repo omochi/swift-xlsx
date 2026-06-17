@@ -1,7 +1,7 @@
-public struct XMLSerializer {
-    public init() {}
+struct XMLSerializer {
+    init() {}
 
-    public func serialize(document: XMLDocument) -> String {
+    func serialize(document: XMLDocument) -> String {
         var output = #"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>"#
         for child in document.children {
             output += serialize(node: child)
@@ -9,7 +9,7 @@ public struct XMLSerializer {
         return output
     }
 
-    public func serialize(element: XMLElement) -> String {
+    func serialize(element: XMLElement) -> String {
         var output = "<\(element.name.qualifiedName)"
         for declaration in element.namespaces.declarations {
             output += " \(namespaceDeclarationName(for: declaration.prefix))=\"\(escapeAttribute(declaration.uri.string))\""

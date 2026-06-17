@@ -1,16 +1,16 @@
 import SAXParser
 import XMLCore
 
-public struct XMLDocumentBuilder: Handler {
-    public init() {
+struct XMLDocumentBuilder: Handler {
+    init() {
         self.stack = [document]
     }
 
-    public var document = XMLDocument()
-    public var stack: [XMLNode] = []
+    var document = XMLDocument()
+    var stack: [XMLNode] = []
     private var pendingNamespaces = XMLNamespaceTable()
 
-    public mutating func start(mapping prefix: Span<XML.Byte>?, uri: Span<XML.Byte>) {
+    mutating func start(mapping prefix: Span<XML.Byte>?, uri: Span<XML.Byte>) {
         let namespacePrefix: String?
         if let prefix {
             namespacePrefix = Self.string(from: prefix)
@@ -24,7 +24,7 @@ public struct XMLDocumentBuilder: Handler {
         )
     }
 
-    public mutating func start(
+    mutating func start(
         element name: XML.QualifiedNameView,
         namespace uri: Span<XML.Byte>?,
         attributes: XML.ResolvedAttributes
@@ -49,15 +49,15 @@ public struct XMLDocumentBuilder: Handler {
         stack.append(element)
     }
 
-    public mutating func end(element name: XML.QualifiedNameView, namespace uri: Span<XML.Byte>?) {
+    mutating func end(element name: XML.QualifiedNameView, namespace uri: Span<XML.Byte>?) {
         _ = stack.popLast()
     }
 
-    public mutating func characters(_ data: Span<XML.Byte>) {
+    mutating func characters(_ data: Span<XML.Byte>) {
         stack.last?.appendChild(XMLText(Self.string(from: data)))
     }
 
-    public mutating func character(data: Span<XML.Byte>) {
+    mutating func character(data: Span<XML.Byte>) {
         stack.last?.appendChild(XMLText(Self.string(from: data)))
     }
 
