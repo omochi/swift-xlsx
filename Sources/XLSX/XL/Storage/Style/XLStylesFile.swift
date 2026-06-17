@@ -7,6 +7,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
         fills: XLFillsStorage = XLFillsStorage(),
         borders: XLBordersStorage = XLBordersStorage(),
         cellStyleFormats: XLCellStyleFormatRefsStorage = XLCellStyleFormatRefsStorage(),
+        cellStyles: [XLCellStyle] = [],
         cellFormats: XLCellFormatRecordsStorage = XLCellFormatRecordsStorage()
     ) {
         self.numberFormats = numberFormats
@@ -14,6 +15,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
         self.fills = fills
         self.borders = borders
         self.cellStyleFormats = cellStyleFormats
+        self.cellStyles = cellStyles
         self.cellFormats = cellFormats
         self.original = nil
     }
@@ -31,13 +33,18 @@ public final class XLStylesFile: XMLDocumentConvertible {
         self.fonts = fonts
         self.fills = fills
         self.borders = borders
-        self.cellStyleFormats = XLCellStyleFormatRefsStorage(records: Self.readCellStyleFormats(
+        let cellStyleFormats = XLCellStyleFormatRefsStorage(records: Self.readCellStyleFormats(
             in: stylesElement,
             numberFormats: numberFormats,
             fonts: fonts,
             fills: fills,
             borders: borders
         ))
+        self.cellStyleFormats = cellStyleFormats
+        self.cellStyles = Self.readCellStyles(
+            in: stylesElement,
+            cellStyleFormats: cellStyleFormats
+        )
         self.cellFormats = XLCellFormatRecordsStorage(records: Self.readCellFormats(in: stylesElement))
         self.original = xmlDocument
     }
@@ -47,6 +54,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
     public var fills: XLFillsStorage
     public var borders: XLBordersStorage
     public var cellStyleFormats: XLCellStyleFormatRefsStorage
+    public var cellStyles: [XLCellStyle]
     public var cellFormats: XLCellFormatRecordsStorage
     public var original: XMLDocument?
 
@@ -66,10 +74,11 @@ public final class XLStylesFile: XMLDocumentConvertible {
             fills.isEmpty &&
             borders.isEmpty &&
             cellStyleFormats.isEmpty &&
+            cellStyles.isEmpty &&
             cellFormats.isEmpty
     }
 
-    public func resetToDefault() {
+    public func resetCollectableStyleElements() {
         numberFormats = XLNumberFormatsStorage()
         fonts = XLFontRecordsStorage(records: [
             XLFontRecord()
@@ -81,14 +90,28 @@ public final class XLStylesFile: XMLDocumentConvertible {
         borders = XLBordersStorage(records: [
             XLBorder()
         ])
+        let defaultCellStyleFormat = XLCellStyleFormatRef(
+            numberFormat: .builtin(id: 0),
+            font: XLFont(),
+            fill: .pattern(.none),
+            border: XLBorder()
+        )
         cellStyleFormats = XLCellStyleFormatRefsStorage(records: [
-            XLCellStyleFormatRef(
-                numberFormat: .builtin(id: 0),
-                font: XLFont(),
-                fill: .pattern(.none),
-                border: XLBorder()
-            )
+            defaultCellStyleFormat
         ])
+        if let defaultCellStyleIndex = cellStyles.firstIndex(where: { $0.builtinID == 0 }) {
+            cellStyles[defaultCellStyleIndex].format = defaultCellStyleFormat
+        } else {
+            cellStyles.insert(
+                XLCellStyle(name: "Normal", format: defaultCellStyleFormat, builtinID: 0),
+                at: 0
+            )
+        }
+        for cellStyle in cellStyles {
+            if let format = cellStyle.format {
+                cellStyleFormats.register(format)
+            }
+        }
         cellFormats = XLCellFormatRecordsStorage(records: [
             XLCellFormatRecord(
                 numberFormatID: 0,
@@ -110,6 +133,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
         writeBorders(to: stylesElement)
         try writeCellStyleFormats(to: stylesElement)
         writeCellFormats(to: stylesElement)
+        writeCellStyles(to: stylesElement)
         return document
     }
 
@@ -120,6 +144,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
             fills: fills.clone(),
             borders: borders.clone(),
             cellStyleFormats: cellStyleFormats.clone(),
+            cellStyles: cellStyles,
             cellFormats: cellFormats.clone()
         )
         file.original = original
@@ -203,13 +228,26 @@ public final class XLStylesFile: XMLDocumentConvertible {
         }
     }
 
+    private static func readCellStyles(
+        in stylesElement: XMLElement,
+        cellStyleFormats: XLCellStyleFormatRefsStorage
+    ) -> [XLCellStyle] {
+        guard let cellStylesElement = stylesElement.elements(name: "cellStyles").first else {
+            return []
+        }
+
+        return cellStylesElement.elements(name: "cellStyle").map { element in
+            XLCellStyle(element: element, cellStyleFormats: cellStyleFormats)
+        }
+    }
+
     private func writeNumberFormats(to stylesElement: XMLElement) {
         let numberFormats = self.numberFormats
         if numberFormats.isEmpty && stylesElement.elements(name: "numFmts").isEmpty {
             return
         }
 
-        let numberFormatsElement = XMLUtils.ensureChildElement(name: "numFmts", in: stylesElement)
+        let numberFormatsElement = ensureStyleSheetChildElement(name: "numFmts", in: stylesElement)
         numberFormatsElement.setAttribute(name: "count", value: String(numberFormats.count))
 
         numberFormatsElement.children = XMLUtils.patchChildren(
@@ -235,7 +273,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
             return
         }
 
-        let fontsElement = XMLUtils.ensureChildElement(name: "fonts", in: stylesElement)
+        let fontsElement = ensureStyleSheetChildElement(name: "fonts", in: stylesElement)
         fontsElement.setAttribute(name: "count", value: String(fonts.count))
 
         fontsElement.children = try XMLUtils.patchChildren(
@@ -254,7 +292,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
             return
         }
 
-        let fillsElement = XMLUtils.ensureChildElement(name: "fills", in: stylesElement)
+        let fillsElement = ensureStyleSheetChildElement(name: "fills", in: stylesElement)
         fillsElement.setAttribute(name: "count", value: String(fills.count))
 
         fillsElement.children = try XMLUtils.patchChildren(
@@ -273,7 +311,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
             return
         }
 
-        let bordersElement = XMLUtils.ensureChildElement(name: "borders", in: stylesElement)
+        let bordersElement = ensureStyleSheetChildElement(name: "borders", in: stylesElement)
         bordersElement.setAttribute(name: "count", value: String(borders.count))
 
         bordersElement.children = XMLUtils.patchChildren(
@@ -292,7 +330,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
             return
         }
 
-        let cellXfsElement = XMLUtils.ensureChildElement(name: "cellXfs", in: stylesElement)
+        let cellXfsElement = ensureStyleSheetChildElement(name: "cellXfs", in: stylesElement)
         cellXfsElement.setAttribute(name: "count", value: String(cellFormats.count))
 
         cellXfsElement.children = XMLUtils.patchChildren(
@@ -311,7 +349,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
             return
         }
 
-        let cellStyleXfsElement = XMLUtils.ensureChildElement(name: "cellStyleXfs", in: stylesElement)
+        let cellStyleXfsElement = ensureStyleSheetChildElement(name: "cellStyleXfs", in: stylesElement)
         cellStyleXfsElement.setAttribute(name: "count", value: String(cellStyleFormats.count))
 
         cellStyleXfsElement.children = try XMLUtils.patchChildren(
@@ -328,5 +366,70 @@ public final class XLStylesFile: XMLDocumentConvertible {
             }
         )
     }
+
+    private func writeCellStyles(to stylesElement: XMLElement) {
+        if cellStyles.isEmpty && stylesElement.elements(name: "cellStyles").isEmpty {
+            return
+        }
+
+        let revisionNamespacePrefix = stylesElement.ensureNamespaceURI(prefix: "xr", uri: .spreadsheetRevision)
+        let cellStylesElement = ensureStyleSheetChildElement(name: "cellStyles", in: stylesElement)
+        cellStylesElement.setAttribute(name: "count", value: String(cellStyles.count))
+
+        cellStylesElement.children = XMLUtils.patchChildren(
+            parentElement: cellStylesElement,
+            replacingElementName: "cellStyle",
+            records: cellStyles,
+            makeElement: { cellStyle in
+                cellStyle.xmlElement(
+                    cellStyleFormats: cellStyleFormats,
+                    revisionNamespacePrefix: revisionNamespacePrefix
+                )
+            }
+        )
+    }
+
+    private func ensureStyleSheetChildElement(name: String, in stylesElement: XMLElement) -> XMLElement {
+        XMLUtils.ensureChildElement(
+            name: name,
+            in: stylesElement,
+            insertionIndex: { self.styleSheetChildInsertionIndex(name: name, in: stylesElement) }
+        )
+    }
+
+    private func styleSheetChildInsertionIndex(name: String, in stylesElement: XMLElement) -> Int? {
+        guard let order = Self.styleSheetChildOrderByName[name] else {
+            return nil
+        }
+
+        return stylesElement.children.firstIndex { child in
+            guard let childElement = child as? XMLElement,
+                  let childOrder = Self.styleSheetChildOrderByName[childElement.name.name]
+            else {
+                return false
+            }
+            return childOrder > order
+        }
+    }
+
+    private static let styleSheetChildOrderNames: [String] = [
+        "numFmts",
+        "fonts",
+        "fills",
+        "borders",
+        "cellStyleXfs",
+        "cellXfs",
+        "cellStyles",
+        "dxfs",
+        "tableStyles",
+        "colors",
+        "extLst",
+    ]
+
+    private static let styleSheetChildOrderByName: [String: Int] = Dictionary(
+        uniqueKeysWithValues: styleSheetChildOrderNames.enumerated().map { nameIndex, name in
+            (name, nameIndex)
+        }
+    )
 
 }

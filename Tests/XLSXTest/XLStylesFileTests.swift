@@ -535,6 +535,40 @@ struct XLStylesFileTests {
         #expect(styles.cellStyleFormats[2].numberFormat == .format("yyyy-mm-dd"))
     }
 
+    @Test func readsCellStylesFromCellStyles() throws {
+        let styles = try stylesFile(data: Data("""
+            <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:rev="http://schemas.microsoft.com/office/spreadsheetml/2014/revision">
+              <cellStyleXfs count="3">
+                <xf numFmtId="0"/>
+                <xf numFmtId="14"/>
+                <xf numFmtId="49"/>
+              </cellStyleXfs>
+              <cellStyles count="3">
+                <cellStyle name="スタイル 1" xfId="2" rev:uid="{0FC42694-F107-9C43-9C25-CD2D6A2DA94E}"/>
+                <cellStyle name="どちらでもない" xfId="1" builtinId="28" hidden="1" customBuiltin="1" iLevel="2"/>
+                <cellStyle name="標準" xfId="0" builtinId="0"/>
+              </cellStyles>
+            </styleSheet>
+            """.utf8))
+
+        #expect(styles.cellStyles == [
+            XLCellStyle(
+                name: "スタイル 1",
+                format: styles.cellStyleFormats[2],
+                uniqueIdentifier: "{0FC42694-F107-9C43-9C25-CD2D6A2DA94E}"
+            ),
+            XLCellStyle(
+                name: "どちらでもない",
+                format: styles.cellStyleFormats[1],
+                builtinID: 28,
+                customBuiltin: true,
+                hidden: true,
+                outlineLevel: 2
+            ),
+            XLCellStyle(name: "標準", format: styles.cellStyleFormats[0], builtinID: 0),
+        ])
+    }
+
     @Test func patchesCellFormatsWithoutRemovingOtherStyleChildren() throws {
         let styles = try stylesFile(data: Data("""
             <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
@@ -599,6 +633,95 @@ struct XLStylesFileTests {
         #expect(!xml.contains(#"xfId="#))
     }
 
+    @Test func patchesCellStylesWithoutRemovingOtherStyleChildren() throws {
+        let styles = try stylesFile(data: Data("""
+            <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:xr="http://schemas.microsoft.com/office/spreadsheetml/2014/revision">
+              <cellStyleXfs count="1">
+                <xf numFmtId="0"/>
+              </cellStyleXfs>
+              <cellStyles count="1">
+                <cellStyle name="標準" xfId="0" builtinId="0"/>
+              </cellStyles>
+              <dxfs count="1">
+                <dxf/>
+              </dxfs>
+              <tableStyles count="0">
+              </tableStyles>
+              <colors>
+                <indexedColors/>
+              </colors>
+              <extLst>
+                <ext uri="keep"/>
+              </extLst>
+              <opaqueStyle/>
+            </styleSheet>
+            """.utf8))
+        let customFormat = XLCellStyleFormatRef(numberFormat: .builtin(id: 49))
+        styles.cellStyleFormats.register(customFormat)
+
+        styles.cellStyles = [
+            XLCellStyle(
+                name: "スタイル 1",
+                format: customFormat,
+                uniqueIdentifier: "{0FC42694-F107-9C43-9C25-CD2D6A2DA94E}"
+            ),
+            XLCellStyle(name: "標準", format: styles.cellStyleFormats[0], builtinID: 0),
+        ]
+
+        let xml = try String(decoding: styles.xmlDocument().data, as: UTF8.self)
+
+        #expect(xml.contains(#"<opaqueStyle/>"#))
+        #expect(xml.contains(#"<cellStyles count="2">"#))
+        #expect(xml.contains(#"<cellStyle name="スタイル 1" xfId="1" xr:uid="{0FC42694-F107-9C43-9C25-CD2D6A2DA94E}"/>"#))
+        #expect(xml.contains(#"<cellStyle name="標準" xfId="0" builtinId="0"/>"#))
+    }
+
+    @Test func resetCollectableStyleElementsKeepsCellStyles() throws {
+        let styles = XLStylesFile()
+        let format = XLCellStyleFormatRef(numberFormat: .builtin(id: 49))
+        styles.cellStyles = [
+            XLCellStyle(
+                name: "スタイル 1",
+                format: format,
+                uniqueIdentifier: "{0FC42694-F107-9C43-9C25-CD2D6A2DA94E}"
+            )
+        ]
+
+        styles.resetCollectableStyleElements()
+
+        let xml = try String(decoding: styles.xmlDocument().data, as: UTF8.self)
+
+        #expect(styles.cellStyles.count == 2)
+        #expect(styles.cellStyles[0] == XLCellStyle(
+            name: "Normal",
+            format: styles.cellStyleFormats[0],
+            builtinID: 0
+        ))
+        #expect(xml.contains(#"<cellStyleXfs count="2">"#))
+        #expect(xml.contains(#"<xf numFmtId="49"/>"#))
+        #expect(xml.contains(#"<cellStyle name="Normal" xfId="0" builtinId="0"/>"#))
+        #expect(xml.contains(#"<cellStyle name="スタイル 1" xfId="1" xr:uid="{0FC42694-F107-9C43-9C25-CD2D6A2DA94E}"/>"#))
+    }
+
+    @Test func resetCollectableStyleElementsRebindsExistingDefaultCellStyle() throws {
+        let styles = XLStylesFile()
+        let oldFormat = XLCellStyleFormatRef(numberFormat: .builtin(id: 49))
+        styles.cellStyles = [
+            XLCellStyle(name: "標準", format: oldFormat, builtinID: 0)
+        ]
+
+        styles.resetCollectableStyleElements()
+
+        let xml = try String(decoding: styles.xmlDocument().data, as: UTF8.self)
+
+        #expect(styles.cellStyles == [
+            XLCellStyle(name: "標準", format: styles.cellStyleFormats[0], builtinID: 0)
+        ])
+        #expect(xml.contains(#"<cellStyleXfs count="1">"#))
+        #expect(!xml.contains(#"<xf numFmtId="49"/>"#))
+        #expect(xml.contains(#"<cellStyle name="標準" xfId="0" builtinId="0"/>"#))
+    }
+
     @Test func doesNotCreateCellXfsWhenOriginalHasNoneAndCellFormatsAreEmpty() throws {
         let styles = try stylesFile(data: Data("""
             <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
@@ -642,6 +765,19 @@ struct XLStylesFileTests {
         #expect(xml.contains(#"<opaqueStyle/>"#))
     }
 
+    @Test func doesNotCreateCellStylesWhenOriginalHasNoneAndCellStylesAreEmpty() throws {
+        let styles = try stylesFile(data: Data("""
+            <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+              <opaqueStyle/>
+            </styleSheet>
+            """.utf8))
+
+        let xml = try String(decoding: styles.xmlDocument().data, as: UTF8.self)
+
+        #expect(!xml.contains("<cellStyles"))
+        #expect(xml.contains(#"<opaqueStyle/>"#))
+    }
+
     @Test func preservesExistingCellStyleXfsTagWhenCellStyleFormatsBecomeEmpty() throws {
         let styles = try stylesFile(data: Data("""
             <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
@@ -657,6 +793,75 @@ struct XLStylesFileTests {
 
         #expect(xml.contains(#"<cellStyleXfs count="0">"#) || xml.contains(#"<cellStyleXfs count="0"/>"#))
         #expect(!xml.contains(#"<xf "#))
+    }
+
+    @Test func preservesExistingCellStylesTagWhenCellStylesBecomeEmpty() throws {
+        let styles = try stylesFile(data: Data("""
+            <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+              <cellStyles count="1">
+                <cellStyle name="標準" xfId="0" builtinId="0"/>
+              </cellStyles>
+            </styleSheet>
+            """.utf8))
+
+        styles.cellStyles = []
+
+        let xml = try String(decoding: styles.xmlDocument().data, as: UTF8.self)
+
+        #expect(xml.contains(#"<cellStyles count="0">"#) || xml.contains(#"<cellStyles count="0"/>"#))
+        #expect(!xml.contains(#"<cellStyle "#))
+    }
+
+    @Test func insertsMissingStyleSheetChildrenInStylesheetOrder() throws {
+        let cellStyleElement = XLSX.XMLElement(name: XMLName(name: "cellStyle"))
+        cellStyleElement.setAttribute(name: "name", value: "標準")
+        cellStyleElement.setAttribute(name: "xfId", value: "0")
+        cellStyleElement.setAttribute(name: "builtinId", value: "0")
+
+        let cellStylesElement = XLSX.XMLElement(
+            name: XMLName(name: "cellStyles"),
+            children: [cellStyleElement]
+        )
+        cellStylesElement.setAttribute(name: "count", value: "1")
+
+        let styleSheetElement = XLSX.XMLElement(
+            name: XMLName(name: "styleSheet"),
+            children: [
+                cellStylesElement,
+                XLSX.XMLElement(name: XMLName(name: "dxfs")),
+                XLSX.XMLElement(name: XMLName(name: "tableStyles")),
+                XLSX.XMLElement(name: XMLName(name: "colors")),
+                XLSX.XMLElement(name: XMLName(name: "extLst")),
+                XLSX.XMLElement(name: XMLName(name: "opaqueStyle")),
+            ]
+        )
+        styleSheetElement.ensureNamespace(uri: .spreadsheet)
+        let styles = try XLStylesFile(xmlDocument: XMLDocument(children: [styleSheetElement]))
+
+        styles.cellStyleFormats = XLCellStyleFormatRefsStorage(records: [
+            XLCellStyleFormatRef(numberFormat: .builtin(id: 0))
+        ])
+        styles.cellFormats = XLCellFormatRecordsStorage(records: [
+            XLCellFormatRecord(styleFormatID: 0)
+        ])
+
+        let xml = try String(decoding: styles.xmlDocument().data, as: UTF8.self)
+        let cellStyleXfsIndex = try #require(xml.range(of: "<cellStyleXfs")?.lowerBound)
+        let cellXfsIndex = try #require(xml.range(of: "<cellXfs")?.lowerBound)
+        let cellStylesIndex = try #require(xml.range(of: "<cellStyles")?.lowerBound)
+        let dxfsIndex = try #require(xml.range(of: "<dxfs")?.lowerBound)
+        let tableStylesIndex = try #require(xml.range(of: "<tableStyles")?.lowerBound)
+        let colorsIndex = try #require(xml.range(of: "<colors")?.lowerBound)
+        let extListIndex = try #require(xml.range(of: "<extLst")?.lowerBound)
+        let opaqueStyleIndex = try #require(xml.range(of: "<opaqueStyle")?.lowerBound)
+
+        #expect(cellStyleXfsIndex < cellXfsIndex)
+        #expect(cellXfsIndex < cellStylesIndex)
+        #expect(cellStylesIndex < dxfsIndex)
+        #expect(dxfsIndex < tableStylesIndex)
+        #expect(tableStylesIndex < colorsIndex)
+        #expect(colorsIndex < extListIndex)
+        #expect(extListIndex < opaqueStyleIndex)
     }
 
     private func stylesFile(data: Data) throws -> XLStylesFile {

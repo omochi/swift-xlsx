@@ -380,7 +380,13 @@ struct XLDocumentTests {
         #expect(stylesXML.contains(#"<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>"#))
         #expect(stylesXML.contains(#"<borders count="1"><border/></borders>"#))
         #expect(stylesXML.contains(#"<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>"#))
+        #expect(stylesXML.contains(#"<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>"#))
         #expect(stylesXML.contains(#"<cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>"#))
+        let cellStyleXfsIndex = try #require(stylesXML.range(of: "<cellStyleXfs")?.lowerBound)
+        let cellXfsIndex = try #require(stylesXML.range(of: "<cellXfs")?.lowerBound)
+        let cellStylesIndex = try #require(stylesXML.range(of: "<cellStyles")?.lowerBound)
+        #expect(cellStyleXfsIndex < cellXfsIndex)
+        #expect(cellXfsIndex < cellStylesIndex)
         #expect(workbookRels.file.relationships.contains {
             $0.type == XMLNamespaceURI.styles.string &&
             $0.target == "styles.xml"

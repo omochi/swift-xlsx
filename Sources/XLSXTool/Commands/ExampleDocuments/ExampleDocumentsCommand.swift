@@ -9,12 +9,13 @@ public struct ExampleDocumentsCommand: ParsableCommand {
     )
 
     @Argument(help: "The destination directory.")
-    public var output: String
+    public var output: String?
 
     public init() {}
 
     public func run() throws {
-        let outputURL = URL(fileURLWithPath: output)
+        let outputPath = output ?? FileManager.default.currentDirectoryPath
+        let outputURL = URL(fileURLWithPath: outputPath)
         try FileManager.default.createDirectory(at: outputURL, withIntermediateDirectories: true)
         try XLExampleDocuments.defaultDocument().save(to: outputURL.appendingPathComponent("default.xlsx"))
         try XLExampleDocuments.simpleDocument().save(to: outputURL.appendingPathComponent("simple.xlsx"))

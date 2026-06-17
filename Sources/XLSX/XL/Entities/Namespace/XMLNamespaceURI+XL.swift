@@ -1,5 +1,6 @@
 extension XMLNamespaceURI {
     public static let spreadsheet = XMLNamespaceURI("http://schemas.openxmlformats.org/spreadsheetml/2006/main")
+    public static let spreadsheetRevision = XMLNamespaceURI("http://schemas.microsoft.com/office/spreadsheetml/2014/revision")
     public static let officeRelationships = XMLNamespaceURI("http://schemas.openxmlformats.org/officeDocument/2006/relationships")
     public static let packageRelationships = XMLNamespaceURI("http://schemas.openxmlformats.org/package/2006/relationships")
 

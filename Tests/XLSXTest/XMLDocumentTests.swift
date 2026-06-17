@@ -191,6 +191,23 @@ struct XMLDocumentTests {
         #expect(child.parent == nil)
     }
 
+    @Test func insertsChildNode() {
+        let parent = XMLElement(name: XMLName(name: "parent"))
+        let first = XMLElement(name: XMLName(name: "first"))
+        let second = XMLElement(name: XMLName(name: "second"))
+        let inserted = XMLElement(name: XMLName(name: "inserted"))
+        parent.appendChild(first)
+        parent.appendChild(second)
+
+        parent.insertChild(inserted, at: 1)
+
+        #expect(parent.children.count == 3)
+        #expect(parent.children[0] === first)
+        #expect(parent.children[1] === inserted)
+        #expect(parent.children[2] === second)
+        #expect(inserted.parent === parent)
+    }
+
     @Test func replacingChildrenUpdatesParentLinks() {
         let oldParent = XMLElement(name: XMLName(name: "oldParent"))
         let newParent = XMLElement(name: XMLName(name: "newParent"))

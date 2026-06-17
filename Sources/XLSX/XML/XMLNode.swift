@@ -30,6 +30,11 @@ public class XMLNode {
         _children.append(child)
     }
 
+    public func insertChild(_ child: XMLNode, at index: Int) {
+        child._setParent(self)
+        _children.insert(child, at: index)
+    }
+
     @discardableResult
     public func removeChild(_ child: XMLNode) -> XMLNode? {
         guard let index = _children.firstIndex(where: { $0 === child }) else {

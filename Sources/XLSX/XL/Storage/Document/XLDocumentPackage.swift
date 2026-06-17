@@ -106,7 +106,7 @@ public final class XLDocumentPackage {
         sharedStrings.file.records = XLSharedStringRecordsStorage()
         workbook.file.collectSharedStrings(sharedStrings: sharedStrings.file)
 
-        styles.file.resetToDefault()
+        styles.file.resetCollectableStyleElements()
 
         try workbook.file.collectStyle(styles: styles.file)
 

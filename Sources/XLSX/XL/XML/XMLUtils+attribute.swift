@@ -43,6 +43,17 @@ extension XMLUtils {
         return boolValue(string: value) ?? false
     }
 
+    public static func boolAttribute(
+        name: String,
+        in element: XMLElement,
+        defaultValue: Bool?
+    ) -> Bool? {
+        guard let value = element.attribute(name: name) else {
+            return defaultValue
+        }
+        return boolValue(string: value)
+    }
+
     public static func setIntAttribute(name: String, value: Int?, in element: XMLElement) {
         guard let value else {
             element.removeAttribute(name: name)
