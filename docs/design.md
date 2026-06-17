@@ -14,19 +14,19 @@ OPC package 内の XML file は、内容の性質に応じて扱いを分ける�
 
 Excel の workbook / worksheet / row / cell は、永続化するデータ構造と、利用者が操作する API を分けて扱う。
 
-ストレージレイヤーは、OPC package や XML file の内容を保持し、読み書きの責務を持つ。`XLWorksheetFile` は worksheet XML file に対応し、`rowFromNumber` で存在する行を保持する。`XLRowStorage` は行の中のセルを `cellFromColumn` で保持し、`XLCellStorage` はセルの値を保持する。
+ストレージレイヤーは、OPC package や XML file の内容を保持し、読み書きの責務を持つ。`XLWorksheetFile` は worksheet XML file に対応し、`columnByNumber` で列設定を、`rowByNumber` で存在する行を保持する。`XLColumnStorage` は列幅などの列設定を保持する。`XLRowStorage` は行の中のセルを `cellByColumn` で保持し、`XLCellStorage` はセルの値を保持する。
 
-`XLWorksheetFile`、`XLRowStorage`、`XLCellStorage` は参照型にする。これは、`worksheet.row(3).cell(column: 2).value = ...` のように、途中で得た row や cell を編集した時に元の worksheet file へ変更が反映されるようにするためである。
+`XLWorksheetFile`、`XLColumnStorage`、`XLRowStorage`、`XLCellStorage` は参照型にする。これは、`worksheet.column(2).width = ...` や `worksheet.row(3).cell(column: 2).value = ...` のように、途中で得た column / row / cell を編集した時に元の worksheet file へ変更が反映されるようにするためである。
 
-ハンドルレイヤーは、利用者向けの軽い値型 API として提供する。`XLWorkbook`、`XLWorksheet`、`XLRow`、`XLCell` は、必要な識別情報と対応する storage への参照を持つ。ハンドル自体は値として渡せるが、変更対象の実体は storage にある。
+ハンドルレイヤーは、利用者向けの軽い値型 API として提供する。`XLWorkbook`、`XLWorksheet`、`XLColumn`、`XLRow`、`XLCell` は、必要な識別情報と対応する storage への参照を持つ。ハンドル自体は値として渡せるが、変更対象の実体は storage にある。
 
-`XLWorksheet` は `XLWorksheetFile` を包み、行へのアクセサを提供する。`XLRow` は `XLRowStorage` を包み、セルへのアクセサを提供する。`XLCell` は `XLCellAddress` と `XLCellStorage` を持つ。
+`XLWorksheet` は `XLWorksheetFile` を包み、列と行へのアクセサを提供する。`XLColumn` は列番号と `XLColumnStorage` を持つ。`XLRow` は `XLRowStorage` を包み、セルへのアクセサを提供する。`XLCell` は `XLCellAddress` と `XLCellStorage` を持つ。
 
-作成を伴うアクセサと、既存要素だけを見るアクセサは分ける。`row(_:)` と `cell(...)` は存在しない row / cell を作成して返す。`existingRow(_:)` と `existingCell(...)` は存在する場合だけ返し、存在しない要素を作成しない。
+作成を伴うアクセサと、既存要素だけを見るアクセサは分ける。`column(_:)`、`row(_:)`、`cell(...)` は存在しない column / row / cell を作成して返す。`existingColumn(_:)`、`existingRow(_:)`、`existingCell(...)` は存在する場合だけ返し、存在しない要素を作成しない。
 
 存在する番号一覧は、`existingRowNumbers` と `existingColumnNumbers` でソート済み配列として返す。最大番号だけが必要な場合のために、`maxRowNumber` と `maxColumnNumber` も用意する。どちらも要素が存在しない場合は `nil` を返す。
 
-worksheet XML へ書き戻す時は、storage の内容を既存 XML tree に差分反映する。行やセルの既存 XML element は一度だけ走査して逆引きテーブルを作り、更新または作成した後で番号順に並べ直す。row では行番号順、cell では列番号順に並べる。デコードできない要素や、ライブラリが所有しない child node は別に保持し、既知要素の後ろへ戻す。
+worksheet XML へ書き戻す時は、storage の内容を既存 XML tree に差分反映する。列は固定的に 1 列 1 `<col>` として書き、`min` と `max` は同じ列番号にする。行やセルの既存 XML element は一度だけ走査して逆引きテーブルを作り、更新または作成した後で番号順に並べ直す。column と cell では列番号順、row では行番号順に並べる。デコードできない要素や、ライブラリが所有しない child node は別に保持し、既知要素の後ろへ戻す。
 
 ## Namespace prefix
 

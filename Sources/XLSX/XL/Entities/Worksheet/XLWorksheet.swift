@@ -15,12 +15,29 @@ public struct XLWorksheet {
         }
     }
 
+    public var maxColumnNumber: Int? {
+        file.maxColumnNumber
+    }
+
     public var maxRowNumber: Int? {
         file.maxRowNumber
     }
 
+    public var existingColumnNumbers: [Int] {
+        file.existingColumnNumbers
+    }
+
     public var existingRowNumbers: [Int] {
         file.existingRowNumbers
+    }
+
+    public var existingColumns: [XLColumn] {
+        file.existingColumnsWithNumber.map { columnNumber, storage in
+            XLColumn(
+                number: columnNumber,
+                storage: storage
+            )
+        }
     }
 
     public var existingRows: [XLRow] {
@@ -32,10 +49,14 @@ public struct XLWorksheet {
         }
     }
 
-    public func row(_ number: Int) -> XLRow {
-        XLRow(
+    public func existingColumn(_ number: Int) -> XLColumn? {
+        guard let storage = file.existingColumn(number) else {
+            return nil
+        }
+
+        return XLColumn(
             number: number,
-            storage: file.row(number)
+            storage: storage
         )
     }
 
@@ -50,20 +71,34 @@ public struct XLWorksheet {
         )
     }
 
-    public func cell(row: Int, column: Int) -> XLCell {
-        self.row(row).cell(column: column)
+    public func column(_ number: Int) -> XLColumn {
+        XLColumn(
+            number: number,
+            storage: file.column(number)
+        )
+    }
+
+    public func row(_ number: Int) -> XLRow {
+        XLRow(
+            number: number,
+            storage: file.row(number)
+        )
     }
 
     public func existingCell(row: Int, column: Int) -> XLCell? {
         existingRow(row)?.existingCell(column: column)
     }
 
-    public func cell(address: XLCellAddress) -> XLCell {
-        cell(row: address.row, column: address.column)
+    public func cell(row: Int, column: Int) -> XLCell {
+        self.row(row).cell(column: column)
     }
 
     public func existingCell(address: XLCellAddress) -> XLCell? {
         existingCell(row: address.row, column: address.column)
+    }
+
+    public func cell(address: XLCellAddress) -> XLCell {
+        cell(row: address.row, column: address.column)
     }
 
     private var sheetIndex: Int {

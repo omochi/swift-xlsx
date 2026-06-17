@@ -70,6 +70,24 @@ struct XLWorksheetFileTests {
         #expect(worksheet.existingRow(10)?.existingCell(column: 3)?.value == .string("bottom"))
     }
 
+    @Test func readsColumnsFromWorksheetXML() throws {
+        let worksheet = try worksheetFile(data: Data("""
+            <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
+              <cols>
+                <col min="2" max="4" width="20" customWidth="1"/>
+                <col min="7" max="7" width="12.5" customWidth="1"/>
+              </cols>
+              <sheetData/>
+            </worksheet>
+            """.utf8))
+
+        #expect(worksheet.existingColumnNumbers == [2, 3, 4, 7])
+        #expect(worksheet.existingColumn(2)?.width == 20)
+        #expect(worksheet.existingColumn(3)?.width == 20)
+        #expect(worksheet.existingColumn(4)?.width == 20)
+        #expect(worksheet.existingColumn(7)?.width == 12.5)
+    }
+
     @Test func readsCellValueTypesFromWorksheetXML() throws {
         let worksheet = try worksheetFile(data: Data("""
             <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
@@ -138,6 +156,39 @@ struct XLWorksheetFileTests {
         let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
 
         #expect(xml.contains(#"<sheetData><row r="2"><c r="B2"><v>left</v></c><c r="D2"><v>right</v></c></row><row r="10"><c r="C10"><v>bottom</v></c></row></sheetData>"#))
+    }
+
+    @Test func writesColumnsToWorksheetXML() throws {
+        let worksheet = XLWorksheetFile(
+            columnByNumber: [
+                4: XLColumnStorage(width: 8.5),
+                2: XLColumnStorage(width: 20),
+            ],
+            rowByNumber: [:]
+        )
+
+        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+
+        #expect(xml.contains(#"<cols><col min="2" max="2" width="20.0" customWidth="1"/><col min="4" max="4" width="8.5" customWidth="1"/></cols>"#))
+    }
+
+    @Test func writesColumnsBeforeSheetData() throws {
+        let worksheet = try worksheetFile(data: Data("""
+            <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
+              <sheetData>
+                <row r="1"><c r="A1"><v>1</v></c></row>
+              </sheetData>
+            </worksheet>
+            """.utf8))
+
+        worksheet.column(2).width = 20
+
+        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+
+        let colsRange = try #require(xml.range(of: #"<cols>"#))
+        let sheetDataRange = try #require(xml.range(of: #"<sheetData>"#))
+
+        #expect(colsRange.lowerBound < sheetDataRange.lowerBound)
     }
 
     @Test func writesCellValueTypesToWorksheetXML() throws {
@@ -266,6 +317,46 @@ struct XLWorksheetFileTests {
         #expect(worksheet.existingRowNumbers == [2, 10])
         #expect(worksheet.existingRowsWithNumber.map(\.0) == [2, 10])
         #expect(worksheet.existingRows.map(\.cellByColumn.isEmpty) == [true, true])
+    }
+
+    @Test func exposesExistingColumnNumbersAndMaxColumnNumberFromWorksheet() {
+        let worksheet = XLWorksheetFile(
+            columnByNumber: [
+                4: XLColumnStorage(width: 8.5),
+                2: XLColumnStorage(width: 20),
+            ],
+            rowByNumber: [:]
+        )
+
+        #expect(worksheet.maxColumnNumber == 4)
+        #expect(worksheet.existingColumnNumbers == [2, 4])
+        #expect(worksheet.existingColumnsWithNumber.map(\.0) == [2, 4])
+        #expect(worksheet.existingColumns.map(\.width) == [20, 8.5])
+    }
+
+    @Test func returnsExistingColumnsWithoutCreatingMissingColumns() {
+        let worksheet = XLWorksheetFile(
+            columnByNumber: [
+                2: XLColumnStorage(width: 20),
+            ],
+            rowByNumber: [:]
+        )
+
+        #expect(worksheet.existingColumn(2)?.width == 20)
+        #expect(worksheet.existingColumn(3) == nil)
+        #expect(worksheet.existingColumnNumbers == [2])
+    }
+
+    @Test func createsMissingColumnsWhenAccessed() {
+        let worksheet = XLWorksheetFile()
+
+        #expect(worksheet.maxColumnNumber == nil)
+        #expect(worksheet.existingColumn(3) == nil)
+
+        #expect(worksheet.column(3).width == nil)
+        #expect(worksheet.existingColumn(3)?.width == nil)
+        #expect(worksheet.maxColumnNumber == 3)
+        #expect(worksheet.existingColumnNumbers == [3])
     }
 
     @Test func returnsExistingRowsWithoutCreatingMissingRows() throws {

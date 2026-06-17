@@ -1,11 +1,16 @@
 public final class XLWorksheetFile {
     public init() {
         self.original = nil
+        self.columnByNumber = [:]
         self.rowByNumber = [:]
     }
 
-    public init(rowByNumber: [Int: XLRowStorage]) {
+    public init(
+        columnByNumber: [Int: XLColumnStorage] = [:],
+        rowByNumber: [Int: XLRowStorage]
+    ) {
         self.original = nil
+        self.columnByNumber = columnByNumber
         self.rowByNumber = rowByNumber
     }
 
@@ -15,6 +20,7 @@ public final class XLWorksheetFile {
         styles: XLStylesFile
     ) throws {
         self.original = xmlDocument
+        self.columnByNumber = Self.columns(in: xmlDocument)
         self.rowByNumber = Self.rows(
             in: xmlDocument,
             sharedStrings: sharedStrings,
@@ -23,22 +29,57 @@ public final class XLWorksheetFile {
     }
 
     public var original: XMLDocument?
+    public var columnByNumber: [Int: XLColumnStorage]
     public var rowByNumber: [Int: XLRowStorage]
+
+    public var maxColumnNumber: Int? {
+        columnByNumber.keys.max()
+    }
 
     public var maxRowNumber: Int? {
         rowByNumber.keys.max()
+    }
+
+    public var existingColumnNumbers: [Int] {
+        columnByNumber.keys.sorted()
     }
 
     public var existingRowNumbers: [Int] {
         rowByNumber.keys.sorted()
     }
 
+    public var existingColumnsWithNumber: [(Int, XLColumnStorage)] {
+        columnByNumber.sorted { $0.key < $1.key }
+    }
+
     public var existingRowsWithNumber: [(Int, XLRowStorage)] {
         rowByNumber.sorted { $0.key < $1.key }
     }
 
+    public var existingColumns: [XLColumnStorage] {
+        existingColumnsWithNumber.map(\.1)
+    }
+
     public var existingRows: [XLRowStorage] {
         existingRowsWithNumber.map(\.1)
+    }
+
+    public func existingColumn(_ number: Int) -> XLColumnStorage? {
+        columnByNumber[number]
+    }
+
+    public func existingRow(_ number: Int) -> XLRowStorage? {
+        rowByNumber[number]
+    }
+
+    public func column(_ number: Int) -> XLColumnStorage {
+        if let column = columnByNumber[number] {
+            return column
+        }
+
+        let column = XLColumnStorage(width: nil)
+        columnByNumber[number] = column
+        return column
     }
 
     public func row(_ number: Int) -> XLRowStorage {
@@ -49,10 +90,6 @@ public final class XLWorksheetFile {
         let row = XLRowStorage(cellByColumn: [:])
         rowByNumber[number] = row
         return row
-    }
-
-    public func existingRow(_ number: Int) -> XLRowStorage? {
-        rowByNumber[number]
     }
 
     public func cell(row: Int, column: Int) -> XLCellStorage {
@@ -81,6 +118,7 @@ public final class XLWorksheetFile {
         let document = original?.clone() ?? XMLDocument()
         let worksheetElement = XMLUtils.ensureRootElement(name: "worksheet", in: document)
         worksheetElement.ensureNamespace(uri: .spreadsheet)
+        writeColumns(to: worksheetElement)
         try writeRows(
             to: worksheetElement,
             sharedStrings: sharedStrings,
@@ -103,12 +141,40 @@ public final class XLWorksheetFile {
 
     public func clone() -> XLWorksheetFile {
         let file = XLWorksheetFile(
+            columnByNumber: columnByNumber.mapValues { column in
+                column.clone()
+            },
             rowByNumber: rowByNumber.mapValues { row in
                 row.clone()
             }
         )
         file.original = original
         return file
+    }
+
+    private static func columns(in document: XMLDocument) -> [Int: XLColumnStorage] {
+        guard let worksheetElement = document.element(name: "worksheet") else {
+            return [:]
+        }
+
+        var columns: [Int: XLColumnStorage] = [:]
+        for colsElement in worksheetElement.elements(name: "cols") {
+            for columnElement in colsElement.elements(name: "col") {
+                guard let min = XMLUtils.intAttribute(name: "min", in: columnElement),
+                      let max = XMLUtils.intAttribute(name: "max", in: columnElement),
+                      min <= max
+                else {
+                    continue
+                }
+
+                let column = XLColumnStorage(columnElement: columnElement)
+                for columnNumber in min...max {
+                    columns[columnNumber] = column.clone()
+                }
+            }
+        }
+
+        return columns
     }
 
     private static func rows(
@@ -210,6 +276,31 @@ public final class XLWorksheetFile {
         }
 
         return (rowElementByNumber, otherChildren)
+    }
+
+    private func writeColumns(to worksheetElement: XMLElement) {
+        guard !columnByNumber.isEmpty else {
+            return
+        }
+
+        let colsElement = XMLUtils.ensureChildElement(
+            name: "cols",
+            in: worksheetElement,
+            insertionIndex: {
+                worksheetElement.children.firstIndex { child in
+                    guard let element = child as? XMLElement else {
+                        return false
+                    }
+                    return element.name.name == "sheetData"
+                }
+            }
+        )
+
+        colsElement.children = existingColumnsWithNumber.map { columnNumber, column in
+            let element = XMLElement(name: XMLName(name: "col"))
+            column.write(to: element, columnNumber: columnNumber)
+            return element
+        }
     }
 
 }

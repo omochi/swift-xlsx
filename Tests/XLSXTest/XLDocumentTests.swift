@@ -675,6 +675,26 @@ struct XLDocumentTests {
         #expect(worksheet.existingRow(3)?.storage.existingCell(column: 2)?.value == .string("value"))
     }
 
+    @Test func worksheetExposesColumnsThroughHandles() throws {
+        let document = XLDocument()
+        let worksheet = try #require(document.workbook.worksheets.first)
+
+        #expect(worksheet.maxColumnNumber == nil)
+        #expect(worksheet.existingColumn(3) == nil)
+        #expect(worksheet.existingColumnNumbers == [])
+
+        let column = worksheet.column(3)
+        column.width = 20
+        worksheet.column(5).width = 8.5
+
+        #expect(column.number == 3)
+        #expect(worksheet.maxColumnNumber == 5)
+        #expect(worksheet.existingColumnNumbers == [3, 5])
+        #expect(worksheet.existingColumns.map(\.number) == [3, 5])
+        #expect(worksheet.existingColumns.map(\.width) == [20, 8.5])
+        #expect(worksheet.existingColumn(3)?.width == 20)
+    }
+
     @Test func rowExposesCellsThroughHandles() throws {
         let document = XLDocument()
         let worksheet = try #require(document.workbook.worksheets.first)
