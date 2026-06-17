@@ -34,11 +34,11 @@ public final class XLGenericRecordStorage<Record: Hashable> {
         return records[index]
     }
 
-    func index(for record: Record) -> Int? {
+    public func index(for record: Record) -> Int? {
         indexByRecord[record]
     }
 
-    func clone() -> XLGenericRecordStorage<Record> {
+    public func clone() -> XLGenericRecordStorage<Record> {
         XLGenericRecordStorage(records: records)
     }
 }

@@ -2,7 +2,7 @@ import MemberwiseInit
 
 @MemberwiseInit(.public)
 public struct XLWorkbookFileSheet: Sendable & Hashable {
-    init?(element: XMLElement) {
+    public init?(element: XMLElement) {
         guard let name = element.attribute(name: "name"),
               let sheetIDText = element.attribute(name: "sheetId"),
               let sheetID = Int(sheetIDText),
@@ -23,7 +23,7 @@ public struct XLWorkbookFileSheet: Sendable & Hashable {
     public var sheetID: Int
     public var relationshipID: String
 
-    func write(to element: XMLElement) throws {
+    public func write(to element: XMLElement) throws {
         element.setAttribute(name: "name", value: name)
         element.setAttribute(name: "sheetId", value: String(sheetID))
         try element.setAttribute(

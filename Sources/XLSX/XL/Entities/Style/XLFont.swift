@@ -36,7 +36,7 @@ public struct XLFont: Sendable & Hashable {
     public var charsetXMLString: String? = nil
     public var schemeXMLString: String? = nil
 
-    var record: XLFontRecord {
+    public var record: XLFontRecord {
         XLFontRecord(
             bold: bold,
             italic: italic,

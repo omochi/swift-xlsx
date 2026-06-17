@@ -1,19 +1,23 @@
+import MemberwiseInit
 import Foundation
 
 public final class XLWorkbookFile: XMLDocumentConvertible {
-    struct AddedWorksheet {
-        var sheet: XLWorkbookFileSheet
-        var file: OPCPathWithFile<XLWorksheetFile>
+    @MemberwiseInit(.public)
+    public struct AddedWorksheet {
+        public var sheet: XLWorkbookFileSheet
+        public var file: OPCPathWithFile<XLWorksheetFile>
     }
 
-    struct PackageItems {
-        var files: [OPCPathWithFile<XLWorksheetFile>]
-        var contentTypeOverrides: [OPCFilePath: String]
+    @MemberwiseInit(.public)
+    public struct PackageItems {
+        public var files: [OPCPathWithFile<XLWorksheetFile>]
+        public var contentTypeOverrides: [OPCFilePath: String]
     }
 
-    struct RemovedWorksheet {
-        var sheet: XLWorkbookFileSheet
-        var file: OPCPathWithFile<XLWorksheetFile>?
+    @MemberwiseInit(.public)
+    public struct RemovedWorksheet {
+        public var sheet: XLWorkbookFileSheet
+        public var file: OPCPathWithFile<XLWorksheetFile>?
     }
 
     public init() {
@@ -45,7 +49,7 @@ public final class XLWorkbookFile: XMLDocumentConvertible {
     public var worksheetByID: [Int: OPCPathWithFile<XLWorksheetFile>]
     public var original: XMLDocument?
 
-    var worksheetsWithID: [(Int, OPCPathWithFile<XLWorksheetFile>)] {
+    public var worksheetsWithID: [(Int, OPCPathWithFile<XLWorksheetFile>)] {
         sheets.compactMap { sheet in
             guard let worksheet = worksheetByID[sheet.sheetID] else {
                 return nil
@@ -54,7 +58,7 @@ public final class XLWorkbookFile: XMLDocumentConvertible {
         }
     }
 
-    var worksheets: [OPCPathWithFile<XLWorksheetFile>] {
+    public var worksheets: [OPCPathWithFile<XLWorksheetFile>] {
         worksheetsWithID.map(\.1)
     }
 
@@ -71,7 +75,7 @@ public final class XLWorkbookFile: XMLDocumentConvertible {
         return document
     }
 
-    func appendWorksheet(
+    public func appendWorksheet(
         name: String,
         workbookPath: OPCFilePath,
         workbookRels: inout OPCRelsFile
@@ -97,7 +101,7 @@ public final class XLWorkbookFile: XMLDocumentConvertible {
         return AddedWorksheet(sheet: sheet, file: file)
     }
 
-    func removeWorksheet(sheetID: Int) -> RemovedWorksheet? {
+    public func removeWorksheet(sheetID: Int) -> RemovedWorksheet? {
         guard let index = sheets.firstIndex(where: { $0.sheetID == sheetID }) else {
             return nil
         }
@@ -107,25 +111,25 @@ public final class XLWorkbookFile: XMLDocumentConvertible {
         return RemovedWorksheet(sheet: sheet, file: file)
     }
 
-    func collectSharedStrings(sharedStrings: XLSharedStringsFile) {
+    public func collectSharedStrings(sharedStrings: XLSharedStringsFile) {
         for worksheet in worksheets {
             worksheet.file.collectSharedStrings(sharedStrings: sharedStrings)
         }
     }
 
-    func collectStyle(styles: XLStylesFile) throws {
+    public func collectStyle(styles: XLStylesFile) throws {
         for stage in XLStyleCollectionStage.allCases {
             try collectStyle(stage: stage, styles: styles)
         }
     }
 
-    func collectStyle(stage: XLStyleCollectionStage, styles: XLStylesFile) throws {
+    public func collectStyle(stage: XLStyleCollectionStage, styles: XLStylesFile) throws {
         for worksheet in worksheets {
             try worksheet.file.collectStyle(stage: stage, styles: styles)
         }
     }
 
-    func clone() -> XLWorkbookFile {
+    public func clone() -> XLWorkbookFile {
         let file = XLWorkbookFile(
             sheets: sheets,
             worksheetByID: worksheetByID.mapValues { worksheet in
@@ -180,7 +184,7 @@ public final class XLWorkbookFile: XMLDocumentConvertible {
         return element
     }
 
-    func packageItems(
+    public func packageItems(
         workbookPath: OPCFilePath,
         workbookRels: inout OPCRelsFile
     ) throws -> PackageItems {

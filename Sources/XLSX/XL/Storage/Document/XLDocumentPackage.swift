@@ -7,7 +7,7 @@ public final class XLDocumentPackage {
         try! self.init(opcPackage: OPCPackage())
     }
 
-    init(opcPackage: OPCPackage) throws {
+    public init(opcPackage: OPCPackage) throws {
         var consumedPaths: Set<OPCFilePath> = []
 
         let contentTypes = try Self.readFile(
@@ -150,7 +150,7 @@ public final class XLDocumentPackage {
         return package
     }
 
-    func clone() -> XLDocumentPackage {
+    public func clone() -> XLDocumentPackage {
         XLDocumentPackage(
             contentTypes: contentTypes,
             packageRels: packageRels,

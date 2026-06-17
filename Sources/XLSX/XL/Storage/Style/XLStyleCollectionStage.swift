@@ -1,4 +1,4 @@
-enum XLStyleCollectionStage: CaseIterable {
+public enum XLStyleCollectionStage: CaseIterable {
     case fonts
     case fills
     case borders

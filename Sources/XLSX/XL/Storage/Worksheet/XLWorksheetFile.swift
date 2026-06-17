@@ -89,19 +89,19 @@ public final class XLWorksheetFile {
         return document
     }
 
-    func collectSharedStrings(sharedStrings: XLSharedStringsFile) {
+    public func collectSharedStrings(sharedStrings: XLSharedStringsFile) {
         for row in existingRows {
             row.collectSharedStrings(sharedStrings: sharedStrings)
         }
     }
 
-    func collectStyle(stage: XLStyleCollectionStage, styles: XLStylesFile) throws {
+    public func collectStyle(stage: XLStyleCollectionStage, styles: XLStylesFile) throws {
         for row in existingRows {
             try row.collectStyle(stage: stage, styles: styles)
         }
     }
 
-    func clone() -> XLWorksheetFile {
+    public func clone() -> XLWorksheetFile {
         let file = XLWorksheetFile(
             rowByNumber: rowByNumber.mapValues { row in
                 row.clone()

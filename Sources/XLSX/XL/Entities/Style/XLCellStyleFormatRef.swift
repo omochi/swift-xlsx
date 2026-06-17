@@ -70,7 +70,7 @@ public struct XLCellStyleFormatRef: Hashable {
         }
     }
 
-    func record(
+    public func record(
         fonts: XLFontRecordsStorage,
         fills: XLFillsStorage,
         borders: XLBordersStorage
@@ -87,7 +87,7 @@ public struct XLCellStyleFormatRef: Hashable {
         ).record(fonts: fonts, fills: fills, borders: borders, cellStyleFormats: XLCellStyleFormatRefsStorage())
     }
 
-    func collectStyle(stage: XLStyleCollectionStage, styles: XLStylesFile) {
+    public func collectStyle(stage: XLStyleCollectionStage, styles: XLStylesFile) {
         switch stage {
         case .fonts:
             if let font {

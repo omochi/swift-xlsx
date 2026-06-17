@@ -26,7 +26,7 @@ public enum XLCellValue: Sendable & Hashable & CustomStringConvertible {
 }
 
 extension XLCellValue {
-    init?(
+    public init?(
         cellElement: XMLElement,
         sharedStrings: XLSharedStringsFile? = nil
     ) {
@@ -78,7 +78,7 @@ extension XLCellValue {
         }
     }
 
-    func write(
+    public func write(
         to cellElement: XMLElement,
         sharedStrings: XLSharedStringRecordsStorage? = nil
     ) throws {

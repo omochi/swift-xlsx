@@ -33,7 +33,7 @@ public struct XLFontRecord: Sendable & Hashable {
         self.schemeXMLString = schemeXMLString
     }
 
-    init(element: XMLElement) {
+    public init(element: XMLElement) {
         self.init()
 
         for child in element.children {
@@ -94,7 +94,7 @@ public struct XLFontRecord: Sendable & Hashable {
     public var charsetXMLString: String?
     public var schemeXMLString: String?
 
-    func xmlElement() throws -> XMLElement {
+    public func xmlElement() throws -> XMLElement {
         let element = XMLElement(name: XMLName(name: "font"))
         appendBoolFontProperty(name: "b", value: bold, to: element)
         appendBoolFontProperty(name: "i", value: italic, to: element)

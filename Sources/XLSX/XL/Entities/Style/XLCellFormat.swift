@@ -69,7 +69,7 @@ public struct XLCellFormat: Hashable {
     public var applyAlignment = false
     public var applyProtection = false
 
-    func record(
+    public func record(
         fonts: XLFontRecordsStorage,
         fills: XLFillsStorage,
         borders: XLBordersStorage,
@@ -90,7 +90,7 @@ public struct XLCellFormat: Hashable {
         )
     }
 
-    func collectStyle(stage: XLStyleCollectionStage, styles: XLStylesFile) throws {
+    public func collectStyle(stage: XLStyleCollectionStage, styles: XLStylesFile) throws {
         switch stage {
         case .fonts:
             if let font {

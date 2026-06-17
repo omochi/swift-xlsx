@@ -2,7 +2,7 @@ import MemberwiseInit
 
 @MemberwiseInit(.public)
 public final class XLRowStorage {
-    init(
+    public init(
         rowElement: XMLElement,
         rowNumber: Int,
         sharedStrings: XLSharedStringsFile,
@@ -60,7 +60,7 @@ public final class XLRowStorage {
         cellByColumn[column]
     }
 
-    func write(
+    public func write(
         to rowElement: XMLElement,
         rowNumber: Int,
         sharedStrings: XLSharedStringsFile? = nil,
@@ -86,19 +86,19 @@ public final class XLRowStorage {
         rowElement.children = cellElements + rowChildren.otherChildren
     }
 
-    func collectSharedStrings(sharedStrings: XLSharedStringsFile) {
+    public func collectSharedStrings(sharedStrings: XLSharedStringsFile) {
         for cell in existingCells {
             cell.collectSharedStrings(sharedStrings: sharedStrings)
         }
     }
 
-    func collectStyle(stage: XLStyleCollectionStage, styles: XLStylesFile) throws {
+    public func collectStyle(stage: XLStyleCollectionStage, styles: XLStylesFile) throws {
         for cell in existingCells {
             try cell.collectStyle(stage: stage, styles: styles)
         }
     }
 
-    func clone() -> XLRowStorage {
+    public func clone() -> XLRowStorage {
         XLRowStorage(
             cellByColumn: cellByColumn.mapValues { cell in
                 cell.clone()

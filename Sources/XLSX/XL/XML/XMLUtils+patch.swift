@@ -1,5 +1,5 @@
 extension XMLUtils {
-    static func patchChildren<Record>(
+    public static func patchChildren<Record>(
         parentElement: XMLElement,
         replacingElementName: String,
         records: [Record],

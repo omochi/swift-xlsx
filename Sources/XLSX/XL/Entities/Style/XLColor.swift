@@ -4,7 +4,7 @@ public enum XLColor: Sendable & Hashable {
     case theme(Int, tint: Double? = nil)
     case auto
 
-    init?(element: XMLElement) {
+    public init?(element: XMLElement) {
         if let rgb = element.attribute(name: "rgb") {
             self = .rgb(rgb)
             return
@@ -28,7 +28,7 @@ public enum XLColor: Sendable & Hashable {
         return nil
     }
 
-    func xmlElement(name: String) -> XMLElement {
+    public func xmlElement(name: String) -> XMLElement {
         let element = XMLElement(name: XMLName(name: name))
 
         switch self {

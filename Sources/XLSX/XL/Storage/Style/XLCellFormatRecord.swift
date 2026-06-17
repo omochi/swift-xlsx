@@ -25,7 +25,7 @@ public struct XLCellFormatRecord: Sendable & Hashable {
         self.applyProtection = applyProtection
     }
 
-    init(element: XMLElement) {
+    public init(element: XMLElement) {
         self.init(
             numberFormatID: XMLUtils.intAttribute(name: "numFmtId", in: element),
             fontID: XMLUtils.intAttribute(name: "fontId", in: element),
@@ -53,7 +53,7 @@ public struct XLCellFormatRecord: Sendable & Hashable {
     public var applyAlignment: Bool
     public var applyProtection: Bool
 
-    func xmlElement() -> XMLElement {
+    public func xmlElement() -> XMLElement {
         let element = XMLElement(name: XMLName(name: "xf"))
         XMLUtils.setIntAttribute(name: "numFmtId", value: numberFormatID, in: element)
         XMLUtils.setIntAttribute(name: "fontId", value: fontID, in: element)

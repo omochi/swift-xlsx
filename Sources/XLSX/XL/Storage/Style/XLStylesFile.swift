@@ -62,7 +62,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
             cellFormats.records.isEmpty
     }
 
-    func resetToDefault() {
+    public func resetToDefault() {
         fonts = XLFontRecordsStorage(records: [
             XLFontRecord()
         ])
@@ -104,7 +104,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
         return document
     }
 
-    func clone() -> XLStylesFile {
+    public func clone() -> XLStylesFile {
         let file = XLStylesFile(
             fonts: fonts.clone(),
             fills: fills.clone(),

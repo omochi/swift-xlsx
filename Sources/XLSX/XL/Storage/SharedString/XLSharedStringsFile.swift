@@ -38,18 +38,18 @@ public final class XLSharedStringsFile: XMLDocumentConvertible {
         return document
     }
 
-    func text(at index: Int) -> String? {
+    public func text(at index: Int) -> String? {
         guard case let .text(text) = records.record(at: index) else {
             return nil
         }
         return text
     }
 
-    func record(at index: Int) -> XLSharedStringRecord? {
+    public func record(at index: Int) -> XLSharedStringRecord? {
         records.record(at: index)
     }
 
-    func clone() -> XLSharedStringsFile {
+    public func clone() -> XLSharedStringsFile {
         let file = XLSharedStringsFile(records: records.records)
         file.original = original
         return file
@@ -125,7 +125,7 @@ public final class XLSharedStringsFile: XMLDocumentConvertible {
         }
     }
 
-    static func makeTextElement(for text: String) -> XMLElement {
+    public static func makeTextElement(for text: String) -> XMLElement {
         let itemElement = XMLElement(name: XMLName(name: "si"))
         let textElement = XMLElement(name: XMLName(name: "t"))
         if text != text.trimmingCharacters(in: .whitespacesAndNewlines) {

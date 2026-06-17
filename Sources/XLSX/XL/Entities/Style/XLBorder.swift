@@ -42,7 +42,7 @@ public struct XLBorder: Sendable & Hashable {
         case slantDashDot
     }
 
-    init(element: XMLElement) {
+    public init(element: XMLElement) {
         self.init(
             outline: Self.boolAttribute(name: "outline", in: element),
             start: Self.line(name: "start", in: element),
@@ -68,7 +68,7 @@ public struct XLBorder: Sendable & Hashable {
     public var vertical: Line? = nil
     public var horizontal: Line? = nil
 
-    func xmlElement() -> XMLElement {
+    public func xmlElement() -> XMLElement {
         let element = XMLElement(name: XMLName(name: "border"))
         XMLUtils.setBoolAttribute(name: "outline", value: outline, in: element)
         appendLine(name: "start", line: start, to: element)
@@ -146,14 +146,14 @@ public struct XLBorder: Sendable & Hashable {
 }
 
 extension XLBorder.Line {
-    init(element: XMLElement) {
+    public init(element: XMLElement) {
         self.init(
             style: element.attribute(name: "style").flatMap(XLBorder.LineStyle.init(rawValue:)),
             color: element.elements(name: "color").first.flatMap(XLColor.init(element:))
         )
     }
 
-    func xmlElement(name: String) -> XMLElement {
+    public func xmlElement(name: String) -> XMLElement {
         let element = XMLElement(name: XMLName(name: name))
         XMLUtils.setStringAttribute(name: "style", value: style?.rawValue, in: element)
 

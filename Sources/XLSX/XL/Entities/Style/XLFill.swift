@@ -15,7 +15,7 @@ public enum XLFill: Sendable & Hashable {
             Self(patternType: "gray125")
         }
 
-        init(element: XMLElement) {
+        public init(element: XMLElement) {
             self.init(
                 patternType: element.attribute(name: "patternType"),
                 foregroundColor: element.elements(name: "fgColor").first.flatMap(XLColor.init(element:)),
@@ -23,7 +23,7 @@ public enum XLFill: Sendable & Hashable {
             )
         }
 
-        func xmlElement() -> XMLElement {
+        public func xmlElement() -> XMLElement {
             let element = XMLElement(name: XMLName(name: "patternFill"))
             XMLUtils.setStringAttribute(name: "patternType", value: patternType, in: element)
 
@@ -41,7 +41,7 @@ public enum XLFill: Sendable & Hashable {
     case pattern(Pattern)
     case gradient(xmlString: String)
 
-    init(element: XMLElement) {
+    public init(element: XMLElement) {
         if let patternElement = element.elements(name: "patternFill").first {
             self = .pattern(Pattern(element: patternElement))
         } else if let gradientElement = element.elements(name: "gradientFill").first {
@@ -51,7 +51,7 @@ public enum XLFill: Sendable & Hashable {
         }
     }
 
-    func xmlElement() throws -> XMLElement {
+    public func xmlElement() throws -> XMLElement {
         let element = XMLElement(name: XMLName(name: "fill"))
 
         switch self {

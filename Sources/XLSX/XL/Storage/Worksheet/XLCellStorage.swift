@@ -9,7 +9,7 @@ public final class XLCellStorage {
         self.format = format
     }
 
-    init?(
+    public init?(
         cellElement: XMLElement,
         sharedStrings: XLSharedStringsFile,
         styles: XLStylesFile
@@ -31,7 +31,7 @@ public final class XLCellStorage {
     public var value: XLCellValue
     public var format: XLCellFormat?
 
-    func write(
+    public func write(
         to cellElement: XMLElement,
         sharedStrings: XLSharedStringsFile? = nil,
         styles: XLStylesFile? = nil
@@ -48,7 +48,7 @@ public final class XLCellStorage {
         try value.write(to: cellElement, sharedStrings: sharedStrings?.records)
     }
 
-    func collectSharedStrings(sharedStrings: XLSharedStringsFile) {
+    public func collectSharedStrings(sharedStrings: XLSharedStringsFile) {
         switch value {
         case let .string(text):
             sharedStrings.records.register(text)
@@ -59,11 +59,11 @@ public final class XLCellStorage {
         }
     }
 
-    func collectStyle(stage: XLStyleCollectionStage, styles: XLStylesFile) throws {
+    public func collectStyle(stage: XLStyleCollectionStage, styles: XLStylesFile) throws {
         try format?.collectStyle(stage: stage, styles: styles)
     }
 
-    func clone() -> XLCellStorage {
+    public func clone() -> XLCellStorage {
         XLCellStorage(value: value, format: format)
     }
 

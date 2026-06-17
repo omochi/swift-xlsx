@@ -1,1 +1,1 @@
-enum XMLUtils {}
+public enum XMLUtils {}
