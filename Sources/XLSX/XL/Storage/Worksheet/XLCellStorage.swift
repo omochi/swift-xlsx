@@ -88,6 +88,7 @@ public final class XLCellStorage {
 
         return XLCellFormat(
             record: record,
+            numberFormats: styles.numberFormats,
             fonts: styles.fonts,
             fills: styles.fills,
             borders: styles.borders,
@@ -107,6 +108,7 @@ public final class XLCellStorage {
         }
 
         let formatRecord = try format.record(
+            numberFormats: styles.numberFormats,
             fonts: styles.fonts,
             fills: styles.fills,
             borders: styles.borders,

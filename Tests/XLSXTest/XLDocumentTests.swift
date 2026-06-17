@@ -79,7 +79,7 @@ struct XLDocumentTests {
         try package.insertFile(
             data: Data("""
                 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-                  <sheetData><row r="1"><c r="A1" s="1"><v>42</v></c></row></sheetData>
+                  <sheetData><row r="1"><c r="A1" s="1"><v>42</v></c><c r="B1" s="2"><v>45825</v></c></row></sheetData>
                 </worksheet>
                 """.utf8),
             at: OPCFilePath(string: "/xl/worksheets/sheet1.xml")
@@ -87,12 +87,14 @@ struct XLDocumentTests {
         try package.insertFile(
             data: Data("""
                 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+                  <numFmts count="1"><numFmt numFmtId="164" formatCode="yyyy-mm-dd"/></numFmts>
                   <borders count="1">
                     <border><left style="thin"><color rgb="FFFF0000"/></left></border>
                   </borders>
-                  <cellXfs count="2">
+                  <cellXfs count="3">
                     <xf numFmtId="0"/>
                     <xf numFmtId="14" borderId="0" applyNumberFormat="1"/>
+                    <xf numFmtId="164" applyNumberFormat="1"/>
                   </cellXfs>
                 </styleSheet>
                 """.utf8),
@@ -102,21 +104,27 @@ struct XLDocumentTests {
         let document = try XLDocument(opcPackage: package)
         let worksheet = try #require(document.workbook.worksheets.first)
         let cell = try #require(worksheet.existingCell(row: 1, column: 1))
+        let customFormatCell = try #require(worksheet.existingCell(row: 1, column: 2))
         let storedRecord = try #require(document.package.styles.file.cellFormats.record(at: 1))
         let border = XLBorder(left: XLBorder.Line(style: .thin, color: .rgb("FFFF0000")))
 
         #expect(cell.format == XLCellFormat(
-            numberFormatID: 14,
+            numberFormat: .builtin(id: 14),
             border: border,
             applyNumberFormat: true,
             applyBorder: false
         ))
         #expect(cell.format == XLCellFormat(
             record: storedRecord,
+            numberFormats: document.package.styles.file.numberFormats,
             fonts: document.package.styles.file.fonts,
             fills: document.package.styles.file.fills,
             borders: document.package.styles.file.borders,
             cellStyleFormats: document.package.styles.file.cellStyleFormats
+        ))
+        #expect(customFormatCell.format == XLCellFormat(
+            numberFormat: .format("yyyy-mm-dd"),
+            applyNumberFormat: true
         ))
     }
 
@@ -220,13 +228,13 @@ struct XLDocumentTests {
         let document = XLDocument()
         let worksheet = try #require(document.workbook.worksheets.first)
         let styleFormat = XLCellStyleFormatRef(
-            numberFormatID: 0,
+            numberFormat: .builtin(id: 0),
             font: XLFont(),
             fill: .pattern(.none),
             border: XLBorder()
         )
         let format = XLCellFormat(
-            numberFormatID: 14,
+            numberFormat: .builtin(id: 14),
             font: XLFont(bold: true, size: 12, name: "Arial"),
             fill: .pattern(XLFill.Pattern(
                 patternType: "solid",
@@ -275,6 +283,41 @@ struct XLDocumentTests {
         #expect(stylesXML.contains(#"<cellXfs count="2">"#))
         #expect(stylesXML.contains(#"<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>"#))
         #expect(stylesXML.contains(#"<xf numFmtId="14" fontId="1" fillId="2" borderId="1" xfId="1" applyNumberFormat="1" applyFont="1" applyBorder="1"/>"#))
+    }
+
+    @Test func savesCustomNumberFormatsThroughDocumentStylePool() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("swift-xlsx-tests-\(UUID().uuidString)")
+            .appendingPathExtension("xlsx")
+        defer {
+            try? FileManager.default.removeItem(at: url)
+        }
+
+        let document = XLDocument()
+        let worksheet = try #require(document.workbook.worksheets.first)
+        let format = XLCellFormat(numberFormat: .format("yyyy-mm-dd"))
+        worksheet.cell(row: 1, column: 1).value = .number("45825")
+        worksheet.cell(row: 1, column: 1).format = format
+        worksheet.cell(row: 1, column: 2).value = .number("45826")
+        worksheet.cell(row: 1, column: 2).format = format
+
+        try document.save(to: url)
+
+        let package = try OPCPackage(data: Data(contentsOf: url))
+        let worksheetXML = try String(
+            decoding: #require(package.data(at: OPCFilePath(string: "/xl/worksheets/sheet1.xml"))),
+            as: UTF8.self
+        )
+        let stylesXML = try String(
+            decoding: #require(package.data(at: OPCFilePath(string: "/xl/styles.xml"))),
+            as: UTF8.self
+        )
+
+        #expect(worksheetXML.contains(#"<c r="A1" s="1"><v>45825</v></c>"#))
+        #expect(worksheetXML.contains(#"<c r="B1" s="1"><v>45826</v></c>"#))
+        #expect(stylesXML.contains(#"<numFmts count="1"><numFmt numFmtId="164" formatCode="yyyy-mm-dd"/></numFmts>"#))
+        #expect(stylesXML.contains(#"<cellXfs count="2">"#))
+        #expect(stylesXML.contains(#"<xf numFmtId="164" applyNumberFormat="1"/>"#))
     }
 
     @Test func rebuildsSharedStringsFromEditedCells() throws {

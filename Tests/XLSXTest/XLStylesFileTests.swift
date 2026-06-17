@@ -63,34 +63,34 @@ struct XLStylesFileTests {
     }
 
     @Test func cellStyleFormatRefSharesCellFormatStorage() {
-        let styleFormat = XLCellStyleFormatRef(numberFormatID: 14)
+        let styleFormat = XLCellStyleFormatRef(numberFormat: .builtin(id: 14))
         var copy = styleFormat
 
-        copy.numberFormatID = 99
+        copy.numberFormat = .builtin(id: 99)
         copy.font = XLFont(bold: true)
 
-        #expect(styleFormat.numberFormatID == 99)
+        #expect(styleFormat.numberFormat == .builtin(id: 99))
         #expect(styleFormat.font == XLFont(bold: true))
     }
 
     @Test func cellStyleFormatRefStoresOnlyParentFormatValues() {
         let styleFormat = XLCellStyleFormatRef(
-            numberFormatID: 14,
+            numberFormat: .builtin(id: 14),
             font: XLFont(bold: true),
             fill: .pattern(XLFill.Pattern(patternType: "solid")),
             border: XLBorder(left: XLBorder.Line(style: .thin))
         )
 
-        #expect(styleFormat.numberFormatID == 14)
+        #expect(styleFormat.numberFormat == .builtin(id: 14))
         #expect(styleFormat.font == XLFont(bold: true))
         #expect(styleFormat.fill == .pattern(XLFill.Pattern(patternType: "solid")))
         #expect(styleFormat.border == XLBorder(left: XLBorder.Line(style: .thin)))
     }
 
     @Test func cellStyleFormatRefHashableUsesIdentifier() {
-        let styleFormat = XLCellStyleFormatRef(numberFormatID: 14)
+        let styleFormat = XLCellStyleFormatRef(numberFormat: .builtin(id: 14))
         let copy = styleFormat
-        let other = XLCellStyleFormatRef(numberFormatID: 14)
+        let other = XLCellStyleFormatRef(numberFormat: .builtin(id: 14))
 
         #expect(styleFormat == copy)
         #expect(styleFormat != other)
@@ -106,6 +106,44 @@ struct XLStylesFileTests {
 
         #expect(original == XLCellFormatRecord(numberFormatID: 14, applyNumberFormat: true))
         #expect(copy == XLCellFormatRecord(numberFormatID: 99, applyNumberFormat: true, applyFont: true))
+    }
+
+    @Test func readsNumberFormatsFromNumFmts() throws {
+        let styles = try stylesFile(data: Data("""
+            <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+              <numFmts count="2">
+                <numFmt numFmtId="165" formatCode="#,##0.000"/>
+                <numFmt numFmtId="164" formatCode="yyyy-mm-dd"/>
+              </numFmts>
+            </styleSheet>
+            """.utf8))
+
+        #expect(styles.numberFormats.records == [
+            "yyyy-mm-dd",
+            "#,##0.000",
+        ])
+    }
+
+    @Test func patchesNumberFormatsBeforeFonts() throws {
+        let styles = try stylesFile(data: Data("""
+            <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+              <fonts count="1"><font/></fonts>
+              <opaqueStyle/>
+            </styleSheet>
+            """.utf8))
+
+        styles.numberFormats = XLNumberFormatsStorage(records: [
+            "yyyy-mm-dd",
+            "#,##0.000",
+        ])
+
+        let xml = try String(decoding: styles.xmlDocument().data, as: UTF8.self)
+        let numberFormatsIndex = try #require(xml.range(of: "<numFmts")?.lowerBound)
+        let fontsIndex = try #require(xml.range(of: "<fonts")?.lowerBound)
+
+        #expect(numberFormatsIndex < fontsIndex)
+        #expect(xml.contains(##"<numFmts count="2"><numFmt numFmtId="164" formatCode="yyyy-mm-dd"/><numFmt numFmtId="165" formatCode="#,##0.000"/></numFmts>"##))
+        #expect(xml.contains(#"<opaqueStyle/>"#))
     }
 
     @Test func readsFontsFromFontsElement() throws {
@@ -475,25 +513,28 @@ struct XLStylesFileTests {
     @Test func readsCellStyleFormatsFromCellStyleXfs() throws {
         let styles = try stylesFile(data: Data("""
             <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+              <numFmts count="1"><numFmt numFmtId="164" formatCode="yyyy-mm-dd"/></numFmts>
               <fonts count="1"><font><b/></font></fonts>
               <fills count="1"><fill><patternFill patternType="solid"/></fill></fills>
               <borders count="1"><border><left style="thin"/></border></borders>
-              <cellStyleXfs count="2">
+              <cellStyleXfs count="3">
                 <xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>
                 <xf numFmtId="14" applyNumberFormat="1" applyAlignment="1"/>
+                <xf numFmtId="164" applyNumberFormat="1"/>
               </cellStyleXfs>
             </styleSheet>
             """.utf8))
 
-        #expect(styles.cellStyleFormats.records.count == 2)
-        #expect(styles.cellStyleFormats.records[0].numberFormatID == 0)
+        #expect(styles.cellStyleFormats.records.count == 3)
+        #expect(styles.cellStyleFormats.records[0].numberFormat == .builtin(id: 0))
         #expect(styles.cellStyleFormats.records[0].font == XLFont(bold: true))
         #expect(styles.cellStyleFormats.records[0].fill == .pattern(XLFill.Pattern(patternType: "solid")))
         #expect(styles.cellStyleFormats.records[0].border == XLBorder(left: XLBorder.Line(style: .thin)))
-        #expect(styles.cellStyleFormats.records[1].numberFormatID == 14)
+        #expect(styles.cellStyleFormats.records[1].numberFormat == .builtin(id: 14))
         #expect(styles.cellStyleFormats.records[1].font == nil)
         #expect(styles.cellStyleFormats.records[1].fill == nil)
         #expect(styles.cellStyleFormats.records[1].border == nil)
+        #expect(styles.cellStyleFormats.records[2].numberFormat == .format("yyyy-mm-dd"))
     }
 
     @Test func patchesCellFormatsWithoutRemovingOtherStyleChildren() throws {
@@ -540,9 +581,9 @@ struct XLStylesFileTests {
               <opaqueStyle/>
             </styleSheet>
             """.utf8))
-        let styleFormat = XLCellStyleFormatRef(numberFormatID: 164)
+        let styleFormat = XLCellStyleFormatRef(numberFormat: .format("yyyy-mm-dd"))
         let styleFormatCopy = styleFormat
-        let otherStyleFormat = XLCellStyleFormatRef(numberFormatID: 164)
+        let otherStyleFormat = XLCellStyleFormatRef(numberFormat: .format("yyyy-mm-dd"))
 
         styles.cellStyleFormats = XLCellStyleFormatRefsStorage(records: [
             styleFormat,

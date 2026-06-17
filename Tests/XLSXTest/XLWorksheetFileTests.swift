@@ -114,7 +114,7 @@ struct XLWorksheetFileTests {
     }
 
     @Test func removesCellFormatWhenStandaloneWorksheetHasNoWritePlan() throws {
-        let format = XLCellFormat(numberFormatID: 14, applyNumberFormat: true)
+        let format = XLCellFormat(numberFormat: .builtin(id: 14), applyNumberFormat: true)
         let formattedCell = XLCellStorage(value: .number("42"), format: format)
         let worksheet = XLWorksheetFile(rowByNumber: [
             1: XLRowStorage(cellByColumn: [

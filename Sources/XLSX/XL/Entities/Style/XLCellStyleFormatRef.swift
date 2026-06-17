@@ -1,19 +1,19 @@
 public struct XLCellStyleFormatRef: Hashable {
     private struct Storage {
-        var numberFormatID: Int?
+        var numberFormat: XLNumberFormat?
         var font: XLFont?
         var fill: XLFill?
         var border: XLBorder?
     }
 
     public init(
-        numberFormatID: Int? = nil,
+        numberFormat: XLNumberFormat? = nil,
         font: XLFont? = nil,
         fill: XLFill? = nil,
         border: XLBorder? = nil
     ) {
         self.box = Box(Storage(
-            numberFormatID: numberFormatID,
+            numberFormat: numberFormat,
             font: font,
             fill: fill,
             border: border
@@ -34,12 +34,12 @@ public struct XLCellStyleFormatRef: Hashable {
         hasher.combine(identifier)
     }
 
-    public var numberFormatID: Int? {
+    public var numberFormat: XLNumberFormat? {
         get {
-            box.value.numberFormatID
+            box.value.numberFormat
         }
         set {
-            box.value.numberFormatID = newValue
+            box.value.numberFormat = newValue
         }
     }
 
@@ -71,24 +71,36 @@ public struct XLCellStyleFormatRef: Hashable {
     }
 
     public func record(
+        numberFormats: XLNumberFormatsStorage,
         fonts: XLFontRecordsStorage,
         fills: XLFillsStorage,
         borders: XLBordersStorage
     ) throws -> XLCellFormatRecord {
         try XLCellFormat(
-            numberFormatID: numberFormatID,
+            numberFormat: numberFormat,
             font: font,
             fill: fill,
             border: border,
             styleFormat: nil,
+            applyNumberFormat: false,
             applyFont: false,
             applyFill: false,
             applyBorder: false
-        ).record(fonts: fonts, fills: fills, borders: borders, cellStyleFormats: XLCellStyleFormatRefsStorage())
+        ).record(
+            numberFormats: numberFormats,
+            fonts: fonts,
+            fills: fills,
+            borders: borders,
+            cellStyleFormats: XLCellStyleFormatRefsStorage()
+        )
     }
 
     public func collectStyle(stage: XLStyleCollectionStage, styles: XLStylesFile) {
         switch stage {
+        case .numberFormats:
+            if case let .format(format)? = numberFormat {
+                styles.numberFormats.register(format)
+            }
         case .fonts:
             if let font {
                 styles.fonts.register(font.record)

@@ -9,6 +9,7 @@ public enum OPCError: Error & Equatable {
     case invalidRelationshipsFile
     case invalidSharedStringsFile
     case invalidStylesFile
+    case missingNumberFormatRecord
     case missingFontRecord
     case missingFillRecord
     case missingBorderRecord

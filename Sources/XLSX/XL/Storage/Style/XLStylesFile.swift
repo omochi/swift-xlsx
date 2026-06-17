@@ -2,12 +2,14 @@ import Foundation
 
 public final class XLStylesFile: XMLDocumentConvertible {
     public init(
+        numberFormats: XLNumberFormatsStorage = XLNumberFormatsStorage(),
         fonts: XLFontRecordsStorage = XLFontRecordsStorage(),
         fills: XLFillsStorage = XLFillsStorage(),
         borders: XLBordersStorage = XLBordersStorage(),
         cellStyleFormats: XLCellStyleFormatRefsStorage = XLCellStyleFormatRefsStorage(),
         cellFormats: XLCellFormatRecordsStorage = XLCellFormatRecordsStorage()
     ) {
+        self.numberFormats = numberFormats
         self.fonts = fonts
         self.fills = fills
         self.borders = borders
@@ -21,14 +23,17 @@ public final class XLStylesFile: XMLDocumentConvertible {
             throw OPCError.invalidStylesFile
         }
 
+        let numberFormats = XLNumberFormatsStorage(records: Self.readNumberFormats(in: stylesElement))
         let fonts = XLFontRecordsStorage(records: Self.readFonts(in: stylesElement))
         let fills = XLFillsStorage(records: Self.readFills(in: stylesElement))
         let borders = XLBordersStorage(records: Self.readBorders(in: stylesElement))
+        self.numberFormats = numberFormats
         self.fonts = fonts
         self.fills = fills
         self.borders = borders
         self.cellStyleFormats = XLCellStyleFormatRefsStorage(records: Self.readCellStyleFormats(
             in: stylesElement,
+            numberFormats: numberFormats,
             fonts: fonts,
             fills: fills,
             borders: borders
@@ -37,6 +42,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
         self.original = xmlDocument
     }
 
+    public var numberFormats: XLNumberFormatsStorage
     public var fonts: XLFontRecordsStorage
     public var fills: XLFillsStorage
     public var borders: XLBordersStorage
@@ -55,7 +61,8 @@ public final class XLStylesFile: XMLDocumentConvertible {
     }
 
     public var isEmpty: Bool {
-        fonts.records.isEmpty &&
+        numberFormats.records.isEmpty &&
+            fonts.records.isEmpty &&
             fills.records.isEmpty &&
             borders.records.isEmpty &&
             cellStyleFormats.records.isEmpty &&
@@ -63,6 +70,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
     }
 
     public func resetToDefault() {
+        numberFormats = XLNumberFormatsStorage()
         fonts = XLFontRecordsStorage(records: [
             XLFontRecord()
         ])
@@ -75,7 +83,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
         ])
         cellStyleFormats = XLCellStyleFormatRefsStorage(records: [
             XLCellStyleFormatRef(
-                numberFormatID: 0,
+                numberFormat: .builtin(id: 0),
                 font: XLFont(),
                 fill: .pattern(.none),
                 border: XLBorder()
@@ -96,6 +104,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
         let document = original?.clone() ?? XMLDocument()
         let stylesElement = stylesElementForWriting(in: document)
         stylesElement.ensureNamespace(uri: .spreadsheet)
+        writeNumberFormats(to: stylesElement)
         try writeFonts(to: stylesElement)
         try writeFills(to: stylesElement)
         writeBorders(to: stylesElement)
@@ -106,6 +115,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
 
     public func clone() -> XLStylesFile {
         let file = XLStylesFile(
+            numberFormats: numberFormats.clone(),
             fonts: fonts.clone(),
             fills: fills.clone(),
             borders: borders.clone(),
@@ -114,6 +124,26 @@ public final class XLStylesFile: XMLDocumentConvertible {
         )
         file.original = original
         return file
+    }
+
+    private static func readNumberFormats(in stylesElement: XMLElement) -> [String] {
+        guard let numberFormatsElement = stylesElement.elements(name: "numFmts").first else {
+            return []
+        }
+
+        return numberFormatsElement.elements(name: "numFmt")
+            .compactMap { element -> (id: Int, format: String)? in
+                guard let id = XMLUtils.intAttribute(name: "numFmtId", in: element),
+                      let format = element.attribute(name: "formatCode")
+                else {
+                    return nil
+                }
+
+                return (id, format)
+            }
+            .filter { $0.id >= XLNumberFormat.customFormatFirstID }
+            .sorted { $0.id < $1.id }
+            .map { $0.format }
     }
 
     private static func readFonts(in stylesElement: XMLElement) -> [XLFontRecord] {
@@ -146,6 +176,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
 
     private static func readCellStyleFormats(
         in stylesElement: XMLElement,
+        numberFormats: XLNumberFormatsStorage,
         fonts: XLFontRecordsStorage,
         fills: XLFillsStorage,
         borders: XLBordersStorage
@@ -157,13 +188,14 @@ public final class XLStylesFile: XMLDocumentConvertible {
         return cellStyleXfsElement.elements(name: "xf").map { element in
             let cellFormat = XLCellFormat(
                 record: XLCellFormatRecord(element: element),
+                numberFormats: numberFormats,
                 fonts: fonts,
                 fills: fills,
                 borders: borders,
                 cellStyleFormats: XLCellStyleFormatRefsStorage()
             )
             return XLCellStyleFormatRef(
-                numberFormatID: cellFormat.numberFormatID,
+                numberFormat: cellFormat.numberFormat,
                 font: cellFormat.font,
                 fill: cellFormat.fill,
                 border: cellFormat.border
@@ -179,6 +211,32 @@ public final class XLStylesFile: XMLDocumentConvertible {
         let element = XMLElement(name: XMLName(name: "styleSheet"))
         document.appendChild(element)
         return element
+    }
+
+    private func writeNumberFormats(to stylesElement: XMLElement) {
+        let numberFormats = self.numberFormats.records
+        if numberFormats.isEmpty && stylesElement.elements(name: "numFmts").isEmpty {
+            return
+        }
+
+        let numberFormatsElement = numberFormatsElementForWriting(in: stylesElement)
+        numberFormatsElement.setAttribute(name: "count", value: String(numberFormats.count))
+
+        numberFormatsElement.children = XMLUtils.patchChildren(
+            parentElement: numberFormatsElement,
+            replacingElementName: "numFmt",
+            records: Array(numberFormats.enumerated()),
+            makeElement: { item in
+                let (index, format) = item
+                let element = XMLElement(name: XMLName(name: "numFmt"))
+                element.setAttribute(
+                    name: "numFmtId",
+                    value: String(XLNumberFormat.customFormatFirstID + index)
+                )
+                element.setAttribute(name: "formatCode", value: format)
+                return element
+            }
+        )
     }
 
     private func writeFonts(to stylesElement: XMLElement) throws {
@@ -271,9 +329,47 @@ public final class XLStylesFile: XMLDocumentConvertible {
             replacingElementName: "xf",
             records: cellStyleFormats,
             makeElement: { cellStyleFormat in
-                try cellStyleFormat.record(fonts: fonts, fills: fills, borders: borders).xmlElement()
+                try cellStyleFormat.record(
+                    numberFormats: numberFormats,
+                    fonts: fonts,
+                    fills: fills,
+                    borders: borders
+                ).xmlElement()
             }
         )
+    }
+
+    private func numberFormatsElementForWriting(in stylesElement: XMLElement) -> XMLElement {
+        if let element = stylesElement.elements(name: "numFmts").first {
+            return element
+        }
+
+        let element = XMLElement(name: XMLName(name: "numFmts"))
+        var children = stylesElement.children
+        if let index = children.firstIndex(where: { child in
+            guard let childElement = child as? XMLElement else {
+                return false
+            }
+
+            return [
+                "fonts",
+                "fills",
+                "borders",
+                "cellStyleXfs",
+                "cellXfs",
+                "cellStyles",
+                "dxfs",
+                "tableStyles",
+                "colors",
+                "extLst",
+            ].contains(childElement.name.name)
+        }) {
+            children.insert(element, at: index)
+            stylesElement.children = children
+        } else {
+            stylesElement.appendChild(element)
+        }
+        return element
     }
 
     private func fontsElementForWriting(in stylesElement: XMLElement) -> XMLElement {
