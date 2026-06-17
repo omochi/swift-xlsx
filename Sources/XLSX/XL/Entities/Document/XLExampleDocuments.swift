@@ -23,13 +23,13 @@ public enum XLExampleDocuments {
     }
 
     private static func writeNumberFormatExamples(to worksheet: XLWorksheet) {
-        let examples: [(id: Int, format: String, value: String)] = [
-            (49, "@", "12345"),
-            (14, "mm-dd-yy", "45825"),
-            (22, "m/d/yy h:mm", "45825.5"),
-            (10, "0.00%", "0.125"),
-            (3, "#,##0", "1234567"),
-            (46, "[h]:mm:ss", "27.5"),
+        let examples: [(id: Int, format: String, value: Double)] = [
+            (49, "@", 12345),
+            (14, "mm-dd-yy", 45825),
+            (22, "m/d/yy h:mm", 45825.5),
+            (10, "0.00%", 0.125),
+            (3, "#,##0", 1234567),
+            (46, "[h]:mm:ss", 27.5),
         ]
 
         for (index, example) in examples.enumerated() {

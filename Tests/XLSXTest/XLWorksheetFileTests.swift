@@ -4,6 +4,49 @@ import XLSX
 
 @Suite
 struct XLWorksheetFileTests {
+    @Test func cellValueReadsAndWritesPrimitiveValueStrings() {
+        #expect(XLCellValue.booleanValue(string: "1") == true)
+        #expect(XLCellValue.booleanValue(string: "FALSE") == false)
+        #expect(XLCellValue.booleanString(value: true) == "1")
+        #expect(XLCellValue.booleanString(value: false) == "0")
+
+        #expect(XLCellValue.numberValue(string: "42") == 42)
+        #expect(XLCellValue.numberValue(string: "3.14") == 3.14)
+        #expect(XLCellValue.numberValue(string: "text") == nil)
+        #expect(XLCellValue.numberString(value: 42) == "42")
+        #expect(XLCellValue.numberString(value: 3.14) == "3.14")
+    }
+
+    @Test func cellValueConvertsExcelSerialNumbersAndDates() {
+        #expect(XLCellValue.dateValue(number: 1) == utcDate(year: 1900, month: 1, day: 1))
+        #expect(XLCellValue.dateValue(number: 59) == utcDate(year: 1900, month: 2, day: 28))
+        #expect(XLCellValue.dateValue(number: 61) == utcDate(year: 1900, month: 3, day: 1))
+        #expect(XLCellValue.dateValue(number: 61.5) == utcDate(year: 1900, month: 3, day: 1, hour: 12))
+
+        #expect(XLCellValue.numberValue(date: utcDate(year: 1900, month: 1, day: 1)) == 1)
+        #expect(XLCellValue.numberValue(date: utcDate(year: 1900, month: 2, day: 28)) == 59)
+        #expect(XLCellValue.numberValue(date: utcDate(year: 1900, month: 3, day: 1)) == 61)
+        #expect(XLCellValue.numberValue(date: utcDate(year: 1900, month: 3, day: 1, hour: 12)) == 61.5)
+    }
+
+    @Test func cellValueCaseAccessorsReturnAssociatedValues() {
+        #expect(XLCellValue.number(42).number == 42)
+        #expect(XLCellValue.date(utcDate(year: 1900, month: 3, day: 1)) == .number(61))
+        #expect(XLCellValue.number(61.5).date == utcDate(year: 1900, month: 3, day: 1, hour: 12))
+        #expect(XLCellValue.date(utcDate(year: 1900, month: 3, day: 1, hour: 12)).date == utcDate(year: 1900, month: 3, day: 1, hour: 12))
+        #expect(XLCellValue.boolean(true).boolean == true)
+        #expect(XLCellValue.string("text").string == "text")
+        #expect(XLCellValue.error("#N/A").error == "#N/A")
+        #expect(
+            XLCellValue.opaqueSharedString(xmlString: "<r><t>rich</t></r>").opaqueSharedString ==
+                "<r><t>rich</t></r>"
+        )
+
+        #expect(XLCellValue.number(42).string == nil)
+        #expect(XLCellValue.string("text").number == nil)
+        #expect(XLCellValue.string("text").date == nil)
+    }
+
     @Test func readsSparseRowsAndCellsFromWorksheetXML() throws {
         let worksheet = try worksheetFile(data: Data("""
             <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
@@ -50,8 +93,8 @@ struct XLWorksheetFileTests {
             </worksheet>
             """.utf8))
 
-        #expect(worksheet.existingRow(1)?.existingCell(column: 1)?.value == .number("42"))
-        #expect(worksheet.existingRow(1)?.existingCell(column: 2)?.value == .number("3.14"))
+        #expect(worksheet.existingRow(1)?.existingCell(column: 1)?.value == .number(42))
+        #expect(worksheet.existingRow(1)?.existingCell(column: 2)?.value == .number(3.14))
         #expect(worksheet.existingRow(1)?.existingCell(column: 3)?.value == .boolean(true))
         #expect(worksheet.existingRow(1)?.existingCell(column: 4)?.value == .error("#DIV/0!"))
         #expect(worksheet.existingRow(1)?.existingCell(column: 5)?.value == .string("2026-06-16T09:30:00Z"))
@@ -62,7 +105,7 @@ struct XLWorksheetFileTests {
         #expect(worksheet.existingRow(1)?.existingCell(column: 10)?.value == .boolean(true))
         #expect(worksheet.existingRow(1)?.existingCell(column: 11)?.value == .boolean(true))
         #expect(worksheet.existingRow(1)?.existingCell(column: 12)?.value == .boolean(false))
-        #expect(worksheet.existingRow(1)?.existingCell(column: 13)?.value == .number("45292.5"))
+        #expect(worksheet.existingRow(1)?.existingCell(column: 13)?.value == .number(45292.5))
     }
 
     @Test func ignoresStandaloneWorksheetCellFormatWithoutStyles() throws {
@@ -100,7 +143,7 @@ struct XLWorksheetFileTests {
     @Test func writesCellValueTypesToWorksheetXML() throws {
         let worksheet = XLWorksheetFile(rowByNumber: [
             1: XLRowStorage(cellByColumn: [
-                1: XLCellStorage(value: .number("42")),
+                1: XLCellStorage(value: .number(42)),
                 2: XLCellStorage(value: .boolean(false)),
                 3: XLCellStorage(value: .error("#N/A")),
             ]),
@@ -115,7 +158,7 @@ struct XLWorksheetFileTests {
 
     @Test func removesCellFormatWhenStandaloneWorksheetHasNoWritePlan() throws {
         let format = XLCellFormat(numberFormat: .builtin(id: 14), applyNumberFormat: true)
-        let formattedCell = XLCellStorage(value: .number("42"), format: format)
+        let formattedCell = XLCellStorage(value: .number(42), format: format)
         let worksheet = XLWorksheetFile(rowByNumber: [
             1: XLRowStorage(cellByColumn: [
                 1: formattedCell,
@@ -344,5 +387,22 @@ struct XLWorksheetFileTests {
             sharedStrings: XLSharedStringsFile(),
             styles: XLStylesFile()
         )
+    }
+
+    private func utcDate(
+        year: Int,
+        month: Int,
+        day: Int,
+        hour: Int = 0
+    ) -> Date {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        return calendar.date(from: DateComponents(
+            timeZone: calendar.timeZone,
+            year: year,
+            month: month,
+            day: day,
+            hour: hour
+        ))!
     }
 }

@@ -248,9 +248,9 @@ struct XLDocumentTests {
             styleFormat: styleFormat,
             applyNumberFormat: true
         )
-        worksheet.cell(row: 1, column: 1).value = .number("42")
+        worksheet.cell(row: 1, column: 1).value = .number(42)
         worksheet.cell(row: 1, column: 1).format = format
-        worksheet.cell(row: 1, column: 2).value = .number("43")
+        worksheet.cell(row: 1, column: 2).value = .number(43)
         worksheet.cell(row: 1, column: 2).format = format
 
         #expect(document.package.styles.file.cellFormats.isEmpty)
@@ -296,9 +296,9 @@ struct XLDocumentTests {
         let document = XLDocument()
         let worksheet = try #require(document.workbook.worksheets.first)
         let format = XLCellFormat(numberFormat: .format("yyyy-mm-dd"))
-        worksheet.cell(row: 1, column: 1).value = .number("45825")
+        worksheet.cell(row: 1, column: 1).value = .number(45825)
         worksheet.cell(row: 1, column: 1).format = format
-        worksheet.cell(row: 1, column: 2).value = .number("45826")
+        worksheet.cell(row: 1, column: 2).value = .number(45826)
         worksheet.cell(row: 1, column: 2).format = format
 
         try document.save(to: url)

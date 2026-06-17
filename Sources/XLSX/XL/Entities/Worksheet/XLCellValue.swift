@@ -1,5 +1,7 @@
+import Foundation
+
 public enum XLCellValue: Sendable & Hashable & CustomStringConvertible {
-    case number(String)
+    case number(Double)
     case boolean(Bool)
     case string(String)
     case error(String)
@@ -8,9 +10,9 @@ public enum XLCellValue: Sendable & Hashable & CustomStringConvertible {
     public var description: String {
         switch self {
         case let .number(value):
-            return value
+            return Self.numberString(value: value)
         case let .boolean(value):
-            return XMLUtils.boolString(value: value)
+            return Self.booleanString(value: value)
         case let .string(text):
             return text
         case let .error(value):
@@ -20,12 +22,64 @@ public enum XLCellValue: Sendable & Hashable & CustomStringConvertible {
         }
     }
 
-    public static func readBool(string: String) -> Bool? {
-        XMLUtils.boolValue(string: string)
+    public var number: Double? {
+        switch self {
+        case let .number(value):
+            return value
+        default:
+            return nil
+        }
     }
-}
 
-extension XLCellValue {
+    public var date: Date? {
+        switch self {
+        case let .number(value):
+            return Self.dateValue(number: value)
+        default:
+            return nil
+        }
+    }
+
+    public var boolean: Bool? {
+        switch self {
+        case let .boolean(value):
+            return value
+        default:
+            return nil
+        }
+    }
+
+    public var string: String? {
+        switch self {
+        case let .string(value):
+            return value
+        default:
+            return nil
+        }
+    }
+
+    public var error: String? {
+        switch self {
+        case let .error(value):
+            return value
+        default:
+            return nil
+        }
+    }
+
+    public var opaqueSharedString: String? {
+        switch self {
+        case let .opaqueSharedString(xmlString):
+            return xmlString
+        default:
+            return nil
+        }
+    }
+
+    public static func date(_ value: Date) -> XLCellValue {
+        .number(Self.numberValue(date: value))
+    }
+
     public init?(
         cellElement: XMLElement,
         sharedStrings: XLSharedStringsFile? = nil
@@ -45,13 +99,13 @@ extension XLCellValue {
 
         switch cellType {
         case nil, "n":
-            if Self.isNumber(valueText) {
-                self = .number(valueText)
+            if let value = Self.numberValue(string: valueText) {
+                self = .number(value)
             } else {
                 self = .string(valueText)
             }
         case "b":
-            self = .boolean(Self.readBool(string: valueText) ?? false)
+            self = .boolean(Self.booleanValue(string: valueText) ?? false)
         case "d":
             self = .string(valueText)
         case "e":
@@ -116,6 +170,41 @@ extension XLCellValue {
         }
     }
 
+    public static func booleanValue(string: String) -> Bool? {
+        XMLUtils.boolValue(string: string)
+    }
+
+    public static func booleanString(value: Bool) -> String {
+        XMLUtils.boolString(value: value)
+    }
+
+    public static func numberValue(string: String) -> Double? {
+        Double(string)
+    }
+
+    public static func numberString(value: Double) -> String {
+        if let integer = Int(exactly: value) {
+            return integer.description
+        }
+
+        return value.description
+    }
+
+    public static func dateValue(number: Double) -> Date {
+        let adjustedNumber = number >= 60 ? number - 1 : number
+        let timeInterval = (adjustedNumber - 1) * secondsPerDay
+        return Date(timeInterval: timeInterval, since: excelDateOrigin)
+    }
+
+    public static func numberValue(date: Date) -> Double {
+        var number = date.timeIntervalSince(excelDateOrigin) / secondsPerDay + 1
+        if date >= excelLeapBugStartDate {
+            number += 1
+        }
+        return number
+    }
+
+
     private func sharedStringIndex(
         for record: XLSharedStringRecord,
         in sharedStrings: XLSharedStringRecordsStorage
@@ -172,7 +261,26 @@ extension XLCellValue {
         return node.children.map { textContent(in: $0) }.joined()
     }
 
-    private static func isNumber(_ value: String) -> Bool {
-        Double(value) != nil
+    private static var excelDateOrigin: Date {
+        date(year: 1900, month: 1, day: 1)
+    }
+
+    private static var excelLeapBugStartDate: Date {
+        date(year: 1900, month: 3, day: 1)
+    }
+
+    private static var secondsPerDay: TimeInterval {
+        86_400
+    }
+
+    private static func date(year: Int, month: Int, day: Int) -> Date {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        return calendar.date(from: DateComponents(
+            timeZone: calendar.timeZone,
+            year: year,
+            month: month,
+            day: day
+        ))!
     }
 }

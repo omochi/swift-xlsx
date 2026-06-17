@@ -4,8 +4,26 @@ import MemberwiseInit
 public struct XLBorder: Sendable & Hashable {
     @MemberwiseInit(.public)
     public struct Line: Sendable & Hashable {
+        public init(element: XMLElement) {
+            self.init(
+                style: element.attribute(name: "style").flatMap(XLBorder.LineStyle.init(rawValue:)),
+                color: element.elements(name: "color").first.flatMap(XLColor.init(element:))
+            )
+        }
+
         public var style: LineStyle? = nil
         public var color: XLColor? = nil
+
+        public func xmlElement(name: String) -> XMLElement {
+            let element = XMLElement(name: XMLName(name: name))
+            XMLUtils.setStringAttribute(name: "style", value: style?.rawValue, in: element)
+
+            if let color {
+                element.appendChild(color.xmlElement(name: "color"))
+            }
+
+            return element
+        }
     }
 
     @MemberwiseInit(.public)
@@ -142,25 +160,5 @@ public struct XLBorder: Sendable & Hashable {
             in: element
         )
         element.appendChild(diagonal.line.xmlElement(name: "diagonal"))
-    }
-}
-
-extension XLBorder.Line {
-    public init(element: XMLElement) {
-        self.init(
-            style: element.attribute(name: "style").flatMap(XLBorder.LineStyle.init(rawValue:)),
-            color: element.elements(name: "color").first.flatMap(XLColor.init(element:))
-        )
-    }
-
-    public func xmlElement(name: String) -> XMLElement {
-        let element = XMLElement(name: XMLName(name: name))
-        XMLUtils.setStringAttribute(name: "style", value: style?.rawValue, in: element)
-
-        if let color {
-            element.appendChild(color.xmlElement(name: "color"))
-        }
-
-        return element
     }
 }
