@@ -6,12 +6,6 @@ extension XLCellFormatRecordsStorage {
         _ format: XLCellFormat,
         styles: XLStylesFile
     ) throws -> Int {
-        try register(format.record(
-            numberFormats: styles.numberFormats,
-            fonts: styles.fonts,
-            fills: styles.fills,
-            borders: styles.borders,
-            cellStyleFormats: styles.cellStyleFormats
-        ))
+        try register(format.record(styles: styles))
     }
 }

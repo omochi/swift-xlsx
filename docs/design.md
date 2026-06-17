@@ -14,7 +14,7 @@ OPC package 内の XML file は、内容の性質に応じて扱いを分ける�
 
 Excel の workbook / worksheet / row / cell は、永続化するデータ構造と、利用者が操作する API を分けて扱う。
 
-ストレージレイヤーは、OPC package や XML file の内容を保持し、読み書きの責務を持つ。`XLWorksheetFile` は worksheet XML file に対応し、`columnByNumber` で列設定を、`rowByNumber` で存在する行を保持する。`XLColumnStorage` は列幅などの列設定を保持する。`XLRowStorage` は行の中のセルを `cellByColumn` で保持し、`XLCellStorage` はセルの値を保持する。
+ストレージレイヤーは、OPC package や XML file の内容を保持し、読み書きの責務を持つ。`XLWorksheetFile` は worksheet XML file に対応し、`columnByNumber` で列設定を、`rowByNumber` で存在する行を保持する。`XLColumnStorage` は列幅や列の既定セル書式を保持する。`XLRowStorage` は行の中のセルを `cellByColumn` で保持し、`XLCellStorage` はセルの値を保持する。
 
 `XLWorksheetFile`、`XLColumnStorage`、`XLRowStorage`、`XLCellStorage` は参照型にする。これは、`worksheet.column(2).width = ...` や `worksheet.row(3).cell(column: 2).value = ...` のように、途中で得た column / row / cell を編集した時に元の worksheet file へ変更が反映されるようにするためである。
 
@@ -22,11 +22,13 @@ Excel の workbook / worksheet / row / cell は、永続化するデータ構造
 
 `XLWorksheet` は `XLWorksheetFile` を包み、列と行へのアクセサを提供する。`XLColumn` は列番号と `XLColumnStorage` を持つ。`XLRow` は `XLRowStorage` を包み、セルへのアクセサを提供する。`XLCell` は `XLCellAddress` と `XLCellStorage` を持つ。
 
+worksheet XML の `<col style="...">` は列の既定セル書式であり、API では `XLColumn.format: XLCellFormat?` として扱う。保存時は cell と同じく `XLStylesFile.cellFormats` へ登録し、その index を `style` 属性へ書く。
+
 作成を伴うアクセサと、既存要素だけを見るアクセサは分ける。`column(_:)`、`row(_:)`、`cell(...)` は存在しない column / row / cell を作成して返す。`existingColumn(_:)`、`existingRow(_:)`、`existingCell(...)` は存在する場合だけ返し、存在しない要素を作成しない。
 
 存在する番号一覧は、`existingRowNumbers` と `existingColumnNumbers` でソート済み配列として返す。最大番号だけが必要な場合のために、`maxRowNumber` と `maxColumnNumber` も用意する。どちらも要素が存在しない場合は `nil` を返す。
 
-worksheet XML へ書き戻す時は、storage の内容を既存 XML tree に差分反映する。列は固定的に 1 列 1 `<col>` として書き、`min` と `max` は同じ列番号にする。行やセルの既存 XML element は一度だけ走査して逆引きテーブルを作り、更新または作成した後で番号順に並べ直す。column と cell では列番号順、row では行番号順に並べる。デコードできない要素や、ライブラリが所有しない child node は別に保持し、既知要素の後ろへ戻す。
+worksheet XML へ書き戻す時は、storage の内容を既存 XML tree に差分反映する。列は保存時に `XLColumnWriteRecord` へ変換し、連続する列の書き出し内容が同じ場合は 1 つの `<col min="..." max="...">` にまとめる。行やセルの既存 XML element は一度だけ走査して逆引きテーブルを作り、更新または作成した後で番号順に並べ直す。column と cell では列番号順、row では行番号順に並べる。デコードできない要素や、ライブラリが所有しない child node は別に保持し、既知要素の後ろへ戻す。
 
 ## Namespace prefix
 

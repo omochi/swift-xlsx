@@ -76,8 +76,8 @@ public final class XMLElement: XMLNode {
     @discardableResult
     public func setAttribute(
         name: String,
-        value: String
-    ) -> XMLAttribute {
+        value: String?
+    ) -> XMLAttribute? {
         try! setAttribute(name: name, namespaceURI: nil, value: value)
     }
 
@@ -85,8 +85,13 @@ public final class XMLElement: XMLNode {
     public func setAttribute(
         name: String,
         namespaceURI: XMLNamespaceURI? = nil,
-        value: String
-    ) throws -> XMLAttribute {
+        value: String?
+    ) throws -> XMLAttribute? {
+        guard let value else {
+            removeAttribute(name: name, namespaceURI: namespaceURI)
+            return nil
+        }
+
         if let index = attributeIndex(name: name, namespaceURI: namespaceURI) {
             attributes[index].value = value
             return attributes[index]

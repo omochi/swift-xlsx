@@ -128,6 +128,75 @@ struct XLDocumentTests {
         ))
     }
 
+    @Test func opensColumnFormatsThroughDocumentStylePool() throws {
+        var package = OPCPackage()
+        try package.insertFile(
+            data: Data("""
+                <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+                  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+                  <Default Extension="xml" ContentType="application/xml"/>
+                  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+                  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+                  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+                </Types>
+                """.utf8),
+            at: OPCFilePath(string: "/[Content_Types].xml")
+        )
+        try package.insertFile(
+            data: Data("""
+                <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+                  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+                </Relationships>
+                """.utf8),
+            at: try OPCRelsFile.path(for: .packageRoot)
+        )
+        try package.insertFile(
+            data: Data("""
+                <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+                  <sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets>
+                </workbook>
+                """.utf8),
+            at: OPCFilePath(string: "/xl/workbook.xml")
+        )
+        try package.insertFile(
+            data: Data("""
+                <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+                  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+                  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+                </Relationships>
+                """.utf8),
+            at: OPCFilePath(string: "/xl/_rels/workbook.xml.rels")
+        )
+        try package.insertFile(
+            data: Data("""
+                <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+                  <cols><col min="2" max="2" style="1"/></cols>
+                  <sheetData/>
+                </worksheet>
+                """.utf8),
+            at: OPCFilePath(string: "/xl/worksheets/sheet1.xml")
+        )
+        try package.insertFile(
+            data: Data("""
+                <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+                  <cellXfs count="2">
+                    <xf numFmtId="0"/>
+                    <xf numFmtId="14" applyNumberFormat="1"/>
+                  </cellXfs>
+                </styleSheet>
+                """.utf8),
+            at: OPCFilePath(string: "/xl/styles.xml")
+        )
+
+        let document = try XLDocument(opcPackage: package)
+        let worksheet = try #require(document.workbook.worksheets.first)
+
+        #expect(worksheet.existingColumn(2)?.format == XLCellFormat(
+            numberFormat: .builtin(id: 14),
+            applyNumberFormat: true
+        ))
+    }
+
     @Test func removesUnusedCellFormatsWhenSaving() throws {
         var package = OPCPackage()
         try package.insertFile(
@@ -283,6 +352,38 @@ struct XLDocumentTests {
         #expect(stylesXML.contains(#"<cellXfs count="2">"#))
         #expect(stylesXML.contains(#"<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>"#))
         #expect(stylesXML.contains(#"<xf numFmtId="14" fontId="1" fillId="2" borderId="1" xfId="1" applyNumberFormat="1" applyFont="1" applyBorder="1"/>"#))
+    }
+
+    @Test func savesColumnFormatsThroughDocumentStylePool() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("swift-xlsx-tests-\(UUID().uuidString)")
+            .appendingPathExtension("xlsx")
+        defer {
+            try? FileManager.default.removeItem(at: url)
+        }
+
+        let document = XLDocument()
+        let worksheet = try #require(document.workbook.worksheets.first)
+        worksheet.column(2).format = XLCellFormat(numberFormat: .builtin(id: 14))
+        worksheet.column(3).format = XLCellFormat(numberFormat: .builtin(id: 14))
+
+        #expect(document.package.styles.file.cellFormats.isEmpty)
+
+        try document.save(to: url)
+
+        let package = try OPCPackage(data: Data(contentsOf: url))
+        let worksheetXML = try String(
+            decoding: #require(package.data(at: OPCFilePath(string: "/xl/worksheets/sheet1.xml"))),
+            as: UTF8.self
+        )
+        let stylesXML = try String(
+            decoding: #require(package.data(at: OPCFilePath(string: "/xl/styles.xml"))),
+            as: UTF8.self
+        )
+
+        #expect(worksheetXML.contains(#"<cols><col min="2" max="3" style="1"/></cols>"#))
+        #expect(stylesXML.contains(#"<cellXfs count="2">"#))
+        #expect(stylesXML.contains(#"<xf numFmtId="14" applyNumberFormat="1"/>"#))
     }
 
     @Test func savesCustomNumberFormatsThroughDocumentStylePool() throws {
@@ -685,6 +786,7 @@ struct XLDocumentTests {
 
         let column = worksheet.column(3)
         column.width = 20
+        column.format = XLCellFormat(numberFormat: .builtin(id: 14))
         worksheet.column(5).width = 8.5
 
         #expect(column.number == 3)
@@ -693,6 +795,7 @@ struct XLDocumentTests {
         #expect(worksheet.existingColumns.map(\.number) == [3, 5])
         #expect(worksheet.existingColumns.map(\.width) == [20, 8.5])
         #expect(worksheet.existingColumn(3)?.width == 20)
+        #expect(worksheet.existingColumn(3)?.format == XLCellFormat(numberFormat: .builtin(id: 14)))
     }
 
     @Test func rowExposesCellsThroughHandles() throws {

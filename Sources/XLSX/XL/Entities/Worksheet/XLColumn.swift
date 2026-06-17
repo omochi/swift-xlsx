@@ -13,4 +13,13 @@ public struct XLColumn {
             storage.width = newValue
         }
     }
+
+    public var format: XLCellFormat? {
+        get {
+            storage.format
+        }
+        nonmutating set {
+            storage.format = newValue
+        }
+    }
 }

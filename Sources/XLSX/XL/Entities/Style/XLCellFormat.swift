@@ -96,6 +96,16 @@ public struct XLCellFormat: Hashable {
         )
     }
 
+    public func record(styles: XLStylesFile) throws -> XLCellFormatRecord {
+        try record(
+            numberFormats: styles.numberFormats,
+            fonts: styles.fonts,
+            fills: styles.fills,
+            borders: styles.borders,
+            cellStyleFormats: styles.cellStyleFormats
+        )
+    }
+
     public func collectStyle(stage: XLStyleCollectionStage, styles: XLStylesFile) throws {
         switch stage {
         case .numberFormats:

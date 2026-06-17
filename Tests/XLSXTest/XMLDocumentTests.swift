@@ -261,6 +261,31 @@ struct XMLDocumentTests {
         #expect(child.attributes.first?.value == "rId1")
     }
 
+    @Test func setAttributeRemovesAttributeWhenValueIsNil() throws {
+        let parent = XMLElement(name: XMLName(name: "parent"))
+        parent.ensureNamespace(prefix: "rel", uri: .officeRelationships)
+        let child = XMLElement(name: XMLName(name: "child"))
+        parent.appendChild(child)
+
+        child.setAttribute(name: "plain", value: "value")
+        try child.setAttribute(
+            name: "id",
+            namespaceURI: .officeRelationships,
+            value: "rId1"
+        )
+
+        child.setAttribute(name: "plain", value: Optional<String>.none)
+        try child.setAttribute(
+            name: "id",
+            namespaceURI: .officeRelationships,
+            value: Optional<String>.none
+        )
+
+        #expect(child.attribute(name: "plain") == nil)
+        #expect(child.attribute(name: "id", namespaceURI: .officeRelationships) == nil)
+        #expect(child.attributes.isEmpty)
+    }
+
     @Test func xmlUtilsSetAttributeWritesBoolValuesAndRemovesNilValues() {
         let element = XMLElement(name: XMLName(name: "element"))
 

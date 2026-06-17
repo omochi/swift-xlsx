@@ -20,7 +20,7 @@ public final class XLWorksheetFile {
         styles: XLStylesFile
     ) throws {
         self.original = xmlDocument
-        self.columnByNumber = Self.columns(in: xmlDocument)
+        self.columnByNumber = Self.columns(in: xmlDocument, styles: styles)
         self.rowByNumber = Self.rows(
             in: xmlDocument,
             sharedStrings: sharedStrings,
@@ -28,9 +28,9 @@ public final class XLWorksheetFile {
         )
     }
 
-    public var original: XMLDocument?
     public var columnByNumber: [Int: XLColumnStorage]
     public var rowByNumber: [Int: XLRowStorage]
+    public var original: XMLDocument?
 
     public var maxColumnNumber: Int? {
         columnByNumber.keys.max()
@@ -118,7 +118,7 @@ public final class XLWorksheetFile {
         let document = original?.clone() ?? XMLDocument()
         let worksheetElement = XMLUtils.ensureRootElement(name: "worksheet", in: document)
         worksheetElement.ensureNamespace(uri: .spreadsheet)
-        writeColumns(to: worksheetElement)
+        try writeColumns(to: worksheetElement, styles: styles)
         try writeRows(
             to: worksheetElement,
             sharedStrings: sharedStrings,
@@ -134,6 +134,9 @@ public final class XLWorksheetFile {
     }
 
     public func collectStyle(stage: XLStyleCollectionStage, styles: XLStylesFile) throws {
+        for column in existingColumns {
+            try column.collectStyle(stage: stage, styles: styles)
+        }
         for row in existingRows {
             try row.collectStyle(stage: stage, styles: styles)
         }
@@ -152,7 +155,10 @@ public final class XLWorksheetFile {
         return file
     }
 
-    private static func columns(in document: XMLDocument) -> [Int: XLColumnStorage] {
+    private static func columns(
+        in document: XMLDocument,
+        styles: XLStylesFile
+    ) -> [Int: XLColumnStorage] {
         guard let worksheetElement = document.element(name: "worksheet") else {
             return [:]
         }
@@ -167,7 +173,7 @@ public final class XLWorksheetFile {
                     continue
                 }
 
-                let column = XLColumnStorage(columnElement: columnElement)
+                let column = XLColumnStorage(columnElement: columnElement, styles: styles)
                 for columnNumber in min...max {
                     columns[columnNumber] = column.clone()
                 }
@@ -278,7 +284,10 @@ public final class XLWorksheetFile {
         return (rowElementByNumber, otherChildren)
     }
 
-    private func writeColumns(to worksheetElement: XMLElement) {
+    private func writeColumns(
+        to worksheetElement: XMLElement,
+        styles: XLStylesFile? = nil
+    ) throws {
         guard !columnByNumber.isEmpty else {
             return
         }
@@ -296,11 +305,44 @@ public final class XLWorksheetFile {
             }
         )
 
-        colsElement.children = existingColumnsWithNumber.map { columnNumber, column in
+        colsElement.children = try columnWriteRanges(styles: styles).map { range in
             let element = XMLElement(name: XMLName(name: "col"))
-            column.write(to: element, columnNumber: columnNumber)
+            range.record.write(
+                to: element,
+                minColumnNumber: range.minColumnNumber,
+                maxColumnNumber: range.maxColumnNumber
+            )
             return element
         }
+    }
+
+    private func columnWriteRanges(
+        styles: XLStylesFile?
+    ) throws -> [(minColumnNumber: Int, maxColumnNumber: Int, record: XLColumnWriteRecord)] {
+        var ranges: [(minColumnNumber: Int, maxColumnNumber: Int, record: XLColumnWriteRecord)] = []
+
+        for (columnNumber, column) in existingColumnsWithNumber {
+            let record = try XLColumnWriteRecord(column: column, styles: styles)
+            guard let lastRange = ranges.last,
+                  lastRange.maxColumnNumber + 1 == columnNumber,
+                  lastRange.record == record
+            else {
+                ranges.append((
+                    minColumnNumber: columnNumber,
+                    maxColumnNumber: columnNumber,
+                    record: record
+                ))
+                continue
+            }
+
+            ranges[ranges.count - 1] = (
+                minColumnNumber: lastRange.minColumnNumber,
+                maxColumnNumber: columnNumber,
+                record: lastRange.record
+            )
+        }
+
+        return ranges
     }
 
 }

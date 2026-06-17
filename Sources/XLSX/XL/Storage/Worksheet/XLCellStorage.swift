@@ -107,18 +107,11 @@ public final class XLCellStorage {
             return
         }
 
-        let formatRecord = try format.record(
-            numberFormats: styles.numberFormats,
-            fonts: styles.fonts,
-            fills: styles.fills,
-            borders: styles.borders,
-            cellStyleFormats: styles.cellStyleFormats
+        let formatRecord = try format.record(styles: styles)
+        cellElement.setAttribute(
+            name: "s",
+            value: styles.cellFormats.index(for: formatRecord).map(String.init)
         )
-        if let formatIndex = styles.cellFormats.index(for: formatRecord) {
-            cellElement.setAttribute(name: "s", value: String(formatIndex))
-        } else {
-            removeAttribute(name: "s", in: cellElement)
-        }
     }
 
     private func removeAttribute(name: String, in cellElement: XMLElement) {

@@ -88,6 +88,33 @@ struct XLWorksheetFileTests {
         #expect(worksheet.existingColumn(7)?.width == 12.5)
     }
 
+    @Test func readsColumnFormatsFromWorksheetXML() throws {
+        let worksheet = try XLWorksheetFile(
+            xmlDocument: XMLDocument(data: Data("""
+                <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
+                  <cols>
+                    <col min="2" max="2" style="1"/>
+                  </cols>
+                  <sheetData/>
+                </worksheet>
+                """.utf8)),
+            sharedStrings: XLSharedStringsFile(),
+            styles: XLStylesFile(xmlDocument: XMLDocument(data: Data("""
+                <styleSheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
+                  <cellXfs count="2">
+                    <xf numFmtId="0"/>
+                    <xf numFmtId="14" applyNumberFormat="1"/>
+                  </cellXfs>
+                </styleSheet>
+                """.utf8)))
+        )
+
+        #expect(worksheet.existingColumn(2)?.format == XLCellFormat(
+            numberFormat: .builtin(id: 14),
+            applyNumberFormat: true
+        ))
+    }
+
     @Test func readsCellValueTypesFromWorksheetXML() throws {
         let worksheet = try worksheetFile(data: Data("""
             <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
@@ -170,6 +197,37 @@ struct XLWorksheetFileTests {
         let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
 
         #expect(xml.contains(#"<cols><col min="2" max="2" width="20.0" customWidth="1"/><col min="4" max="4" width="8.5" customWidth="1"/></cols>"#))
+    }
+
+    @Test func writesConsecutiveEquivalentColumnsAsRange() throws {
+        let worksheet = XLWorksheetFile(
+            columnByNumber: [
+                5: XLColumnStorage(width: 12),
+                4: XLColumnStorage(width: 8.5),
+                3: XLColumnStorage(width: 8.5),
+                2: XLColumnStorage(width: 8.5),
+            ],
+            rowByNumber: [:]
+        )
+
+        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+
+        #expect(xml.contains(#"<cols><col min="2" max="4" width="8.5" customWidth="1"/><col min="5" max="5" width="12.0" customWidth="1"/></cols>"#))
+    }
+
+    @Test func removesColumnFormatWhenStandaloneWorksheetHasNoWritePlan() throws {
+        let worksheet = try worksheetFile(data: Data("""
+            <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
+              <cols>
+                <col min="2" max="2" width="20" customWidth="1" style="1"/>
+              </cols>
+              <sheetData/>
+            </worksheet>
+            """.utf8))
+
+        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+
+        #expect(xml.contains(#"<col min="2" max="2" width="20.0" customWidth="1"/>"#))
     }
 
     @Test func writesColumnsBeforeSheetData() throws {
