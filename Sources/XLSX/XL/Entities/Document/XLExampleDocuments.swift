@@ -43,6 +43,15 @@ public enum XLExampleDocuments {
             valueCell.value = .number(example.value)
             valueCell.format = XLCellFormat(numberFormat: .builtin(id: example.id))
         }
+
+        let customFormat = #"yyyy"ねん" m"がつ" d"にち""#
+        let customRow = examples.count + 2
+        worksheet.cell(row: customRow, column: 1).value = .string("custom")
+        worksheet.cell(row: customRow, column: 2).value = .string(customFormat)
+
+        let valueCell = worksheet.cell(row: customRow, column: 3)
+        valueCell.value = .number(45825)
+        valueCell.format = XLCellFormat(numberFormat: .format(customFormat))
     }
 
     private static func writeFontExamples(to worksheet: XLWorksheet) {
