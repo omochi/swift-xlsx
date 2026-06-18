@@ -5,6 +5,44 @@ import XLSX
 
 @Suite
 struct XLStylesFileTests {
+    @Test func builtinNumberFormatSymbolsUseExpectedIDs() {
+        #expect(XLNumberFormat.general == .builtin(id: 0))
+        #expect(XLNumberFormat.integer == .builtin(id: 1))
+        #expect(XLNumberFormat.decimal2 == .builtin(id: 2))
+        #expect(XLNumberFormat.thousandsInteger == .builtin(id: 3))
+        #expect(XLNumberFormat.thousandsDecimal2 == .builtin(id: 4))
+        #expect(XLNumberFormat.percent == .builtin(id: 9))
+        #expect(XLNumberFormat.percentDecimal2 == .builtin(id: 10))
+        #expect(XLNumberFormat.date == .builtin(id: 14))
+        #expect(XLNumberFormat.time == .builtin(id: 20))
+        #expect(XLNumberFormat.timeWithSeconds == .builtin(id: 21))
+        #expect(XLNumberFormat.dateTime == .builtin(id: 22))
+        #expect(XLNumberFormat.elapsedTime == .builtin(id: 46))
+        #expect(XLNumberFormat.text == .builtin(id: 49))
+    }
+
+    @Test func fillPatternTypeRawValuesMatchXMLValues() {
+        #expect(XLFill.PatternType.none.rawValue == "none")
+        #expect(XLFill.PatternType.solid.rawValue == "solid")
+        #expect(XLFill.PatternType.mediumGray.rawValue == "mediumGray")
+        #expect(XLFill.PatternType.darkGray.rawValue == "darkGray")
+        #expect(XLFill.PatternType.lightGray.rawValue == "lightGray")
+        #expect(XLFill.PatternType.darkHorizontal.rawValue == "darkHorizontal")
+        #expect(XLFill.PatternType.darkVertical.rawValue == "darkVertical")
+        #expect(XLFill.PatternType.darkDown.rawValue == "darkDown")
+        #expect(XLFill.PatternType.darkUp.rawValue == "darkUp")
+        #expect(XLFill.PatternType.darkGrid.rawValue == "darkGrid")
+        #expect(XLFill.PatternType.darkTrellis.rawValue == "darkTrellis")
+        #expect(XLFill.PatternType.lightHorizontal.rawValue == "lightHorizontal")
+        #expect(XLFill.PatternType.lightVertical.rawValue == "lightVertical")
+        #expect(XLFill.PatternType.lightDown.rawValue == "lightDown")
+        #expect(XLFill.PatternType.lightUp.rawValue == "lightUp")
+        #expect(XLFill.PatternType.lightGrid.rawValue == "lightGrid")
+        #expect(XLFill.PatternType.lightTrellis.rawValue == "lightTrellis")
+        #expect(XLFill.PatternType.gray125.rawValue == "gray125")
+        #expect(XLFill.PatternType.gray0625.rawValue == "gray0625")
+    }
+
     @Test func fontCopiesValues() {
         let original = XLFont(bold: true, size: 11, name: "Calibri")
         var copy = original
@@ -54,13 +92,13 @@ struct XLStylesFileTests {
         let styleFormat = XLCellStyleFormatRef(
             numberFormat: .builtin(id: 14),
             font: XLFont(bold: true),
-            fill: .pattern(XLFill.Pattern(patternType: "solid")),
+            fill: .pattern(XLFill.Pattern(patternType: .solid)),
             border: XLBorder(left: XLBorder.Line(style: .thin))
         )
 
         #expect(styleFormat.numberFormat == .builtin(id: 14))
         #expect(styleFormat.font == XLFont(bold: true))
-        #expect(styleFormat.fill == .pattern(XLFill.Pattern(patternType: "solid")))
+        #expect(styleFormat.fill == .pattern(XLFill.Pattern(patternType: .solid)))
         #expect(styleFormat.border == XLBorder(left: XLBorder.Line(style: .thin)))
     }
 
@@ -283,7 +321,7 @@ struct XLStylesFileTests {
         #expect(Array(styleStorage.fills.prefix(2)) == [
             XLFill.pattern(.none),
             XLFill.pattern(XLFill.Pattern(
-                patternType: "solid",
+                patternType: .solid,
                 foregroundColor: .rgb("FFFFFF00"),
                 backgroundColor: .indexed(64)
             )),
@@ -299,13 +337,13 @@ struct XLStylesFileTests {
 
     @Test func fillPatternStoresTypedColors() {
         let fill = XLFill.pattern(XLFill.Pattern(
-            patternType: "solid",
+            patternType: .solid,
             foregroundColor: .rgb("FFFF0000"),
             backgroundColor: .indexed(64)
         ))
 
         #expect(fill == .pattern(XLFill.Pattern(
-            patternType: "solid",
+            patternType: .solid,
             foregroundColor: .rgb("FFFF0000"),
             backgroundColor: .indexed(64)
         )))
@@ -326,7 +364,7 @@ struct XLStylesFileTests {
 
         styleStorage.fills = OrderedSet<XLFill>([
             .pattern(XLFill.Pattern(
-                patternType: "solid",
+                patternType: .solid,
                 foregroundColor: .rgb("FFFFFF00"),
                 backgroundColor: .indexed(64)
             )),
@@ -518,7 +556,7 @@ struct XLStylesFileTests {
         #expect(styleStorage.cellStyleFormats.count == 3)
         #expect(styleStorage.cellStyleFormats[0].numberFormat == .builtin(id: 0))
         #expect(styleStorage.cellStyleFormats[0].font == XLFont(bold: true))
-        #expect(styleStorage.cellStyleFormats[0].fill == .pattern(XLFill.Pattern(patternType: "solid")))
+        #expect(styleStorage.cellStyleFormats[0].fill == .pattern(XLFill.Pattern(patternType: .solid)))
         #expect(styleStorage.cellStyleFormats[0].border == XLBorder(left: XLBorder.Line(style: .thin)))
         #expect(styleStorage.cellStyleFormats[1].numberFormat == .builtin(id: 14))
         #expect(styleStorage.cellStyleFormats[1].font == nil)

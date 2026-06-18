@@ -307,7 +307,7 @@ struct XLDocumentTests {
             numberFormat: .builtin(id: 14),
             font: XLFont(bold: true, size: 12, name: "Arial"),
             fill: .pattern(XLFill.Pattern(
-                patternType: "solid",
+                patternType: .solid,
                 foregroundColor: .rgb("FFFFFF00"),
                 backgroundColor: .indexed(64)
             )),

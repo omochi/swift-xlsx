@@ -31,6 +31,10 @@
 - `MemberwiseInit` を使うファイルでは、`import MemberwiseInit` を `import Foundation` より先に書く。
 - その他の import は、標準ライブラリ・システム module・外部依存の関係が読みやすくなる順に整理する。
 
+## SwiftPM 実行
+
+- `swift run` を実行するときは、SwiftPM 側の sandbox を無効にするため `--disable-sandbox` を付ける。
+
 ## XML 名前空間
 
 - XML namespace は prefix ではなく URI を正として扱う。

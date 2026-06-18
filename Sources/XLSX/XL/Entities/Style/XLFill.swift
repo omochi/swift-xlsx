@@ -1,23 +1,45 @@
 import MemberwiseInit
 
 public enum XLFill: Sendable & Hashable {
+    public enum PatternType: String, Sendable & Hashable {
+        case none
+        case solid
+        case mediumGray
+        case darkGray
+        case lightGray
+        case darkHorizontal
+        case darkVertical
+        case darkDown
+        case darkUp
+        case darkGrid
+        case darkTrellis
+        case lightHorizontal
+        case lightVertical
+        case lightDown
+        case lightUp
+        case lightGrid
+        case lightTrellis
+        case gray125
+        case gray0625
+    }
+
     @MemberwiseInit(.public)
     public struct Pattern: Sendable & Hashable {
-        public var patternType: String? = nil
+        public var patternType: PatternType? = nil
         public var foregroundColor: XLColor? = nil
         public var backgroundColor: XLColor? = nil
 
         public static var none: Self {
-            Self(patternType: "none")
+            Self(patternType: XLFill.PatternType.none)
         }
 
         public static var gray125: Self {
-            Self(patternType: "gray125")
+            Self(patternType: .gray125)
         }
 
         public init(element: XMLElement) {
             self.init(
-                patternType: element.attribute(name: "patternType"),
+                patternType: element.attribute(name: "patternType").flatMap(PatternType.init(rawValue:)),
                 foregroundColor: element.elements(name: "fgColor").first.flatMap(XLColor.init(element:)),
                 backgroundColor: element.elements(name: "bgColor").first.flatMap(XLColor.init(element:))
             )
@@ -25,7 +47,7 @@ public enum XLFill: Sendable & Hashable {
 
         public func xmlElement() -> XMLElement {
             let element = XMLElement(name: XMLName(name: "patternFill"))
-            XMLUtils.setStringAttribute(name: "patternType", value: patternType, in: element)
+            XMLUtils.setStringAttribute(name: "patternType", value: patternType?.rawValue, in: element)
 
             if let foregroundColor {
                 element.appendChild(foregroundColor.xmlElement(name: "fgColor"))

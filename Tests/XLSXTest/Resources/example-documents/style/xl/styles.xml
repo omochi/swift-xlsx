@@ -5,7 +5,7 @@
     <numFmts count="1">
         <numFmt numFmtId="164" formatCode="yyyy&quot;ねん&quot; m&quot;がつ&quot; d&quot;にち&quot;"/>
     </numFmts>
-    <fonts count="6">
+    <fonts count="7">
         <font/>
         <font>
             <b/>
@@ -22,6 +22,9 @@
         <font>
             <name val="Courier New"/>
         </font>
+        <font>
+            <color rgb="FFFF0000"/>
+        </font>
     </fonts>
     <fills count="3">
         <fill>
@@ -37,7 +40,7 @@
             </patternFill>
         </fill>
     </fills>
-    <borders count="9">
+    <borders count="10">
         <border/>
         <border>
             <start style="thin"/>
@@ -63,33 +66,48 @@
         <border diagonalDown="1">
             <diagonal style="thin"/>
         </border>
+        <border>
+            <left style="medium"/>
+            <right style="medium"/>
+            <top style="medium"/>
+            <bottom style="medium"/>
+        </border>
     </borders>
     <cellStyleXfs count="1">
         <xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>
     </cellStyleXfs>
-    <cellXfs count="22">
+    <cellXfs count="31">
         <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
-        <xf numFmtId="49" applyNumberFormat="1"/>
+        <xf numFmtId="0" applyNumberFormat="1"/>
         <xf fontId="1" applyFont="1"/>
-        <xf numFmtId="14" applyNumberFormat="1"/>
+        <xf numFmtId="1" applyNumberFormat="1"/>
         <xf fontId="2" applyFont="1"/>
         <xf fillId="2"/>
         <xf borderId="1" applyBorder="1"/>
-        <xf numFmtId="22" applyNumberFormat="1"/>
+        <xf numFmtId="2" applyNumberFormat="1"/>
         <xf fontId="3" applyFont="1"/>
-        <xf numFmtId="10" applyNumberFormat="1"/>
+        <xf numFmtId="3" applyNumberFormat="1"/>
         <xf fontId="4" applyFont="1"/>
         <xf borderId="2" applyBorder="1"/>
-        <xf numFmtId="3" applyNumberFormat="1"/>
+        <xf numFmtId="4" applyNumberFormat="1"/>
         <xf fontId="5" applyFont="1"/>
-        <xf numFmtId="46" applyNumberFormat="1"/>
+        <xf numFmtId="9" applyNumberFormat="1"/>
+        <xf fontId="6" applyFont="1"/>
         <xf borderId="3" applyBorder="1"/>
-        <xf numFmtId="164" applyNumberFormat="1"/>
+        <xf numFmtId="10" applyNumberFormat="1"/>
+        <xf numFmtId="14" applyNumberFormat="1"/>
         <xf borderId="4" applyBorder="1"/>
+        <xf numFmtId="20" applyNumberFormat="1"/>
+        <xf numFmtId="21" applyNumberFormat="1"/>
         <xf borderId="5" applyBorder="1"/>
+        <xf numFmtId="22" applyNumberFormat="1"/>
+        <xf numFmtId="46" applyNumberFormat="1"/>
         <xf borderId="6" applyBorder="1"/>
+        <xf numFmtId="49" applyNumberFormat="1"/>
         <xf borderId="7" applyBorder="1"/>
+        <xf numFmtId="164" applyNumberFormat="1"/>
         <xf borderId="8" applyBorder="1"/>
+        <xf borderId="9" applyBorder="1"/>
     </cellXfs>
     <cellStyles count="1">
         <cellStyle name="Normal" xfId="0" builtinId="0"/>

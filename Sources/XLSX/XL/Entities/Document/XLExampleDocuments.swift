@@ -86,6 +86,8 @@ public enum XLExampleDocuments {
     public static func styleDocument() throws -> XLDocument {
         let document = XLDocument()
         let worksheet = try document.workbook.worksheets.first ?? document.workbook.appendWorksheet(name: "Sheet1")
+        worksheet.column(2).width = 24
+        worksheet.column(3).width = 20
         writeNumberFormatExamples(to: worksheet)
         writeFontExamples(to: worksheet)
         writeFillExamples(to: worksheet)
@@ -94,25 +96,32 @@ public enum XLExampleDocuments {
     }
 
     private static func writeNumberFormatExamples(to worksheet: XLWorksheet) {
-        let examples: [(id: Int, format: String, value: Double)] = [
-            (49, "@", 12345),
-            (14, "mm-dd-yy", 45825),
-            (22, "m/d/yy h:mm", 45825.5),
-            (10, "0.00%", 0.125),
-            (3, "#,##0", 1234567),
-            (46, "[h]:mm:ss", 27.5),
+        let examples: [(id: Int, symbol: String, numberFormat: XLNumberFormat, value: Double)] = [
+            (0, "general", .general, 1234.5),
+            (1, "integer", .integer, 1234.5),
+            (2, "decimal2", .decimal2, 1234.5),
+            (3, "thousandsInteger", .thousandsInteger, 1234567),
+            (4, "thousandsDecimal2", .thousandsDecimal2, 1234567.8),
+            (9, "percent", .percent, 0.125),
+            (10, "percentDecimal2", .percentDecimal2, 0.125),
+            (14, "date", .date, 45825),
+            (20, "time", .time, 0.5),
+            (21, "timeWithSeconds", .timeWithSeconds, 0.5006944444444444),
+            (22, "dateTime", .dateTime, 45825.5),
+            (46, "elapsedTime", .elapsedTime, 27.5),
+            (49, "text", .text, 12345),
         ]
 
         for (index, example) in examples.enumerated() {
             let labelCell = worksheet.cell(row: index + 1, column: 1)
             labelCell.value = .string("builtin \(example.id)")
 
-            let formatCell = worksheet.cell(row: index + 1, column: 2)
-            formatCell.value = .string(example.format)
+            let symbolCell = worksheet.cell(row: index + 1, column: 2)
+            symbolCell.value = .string(example.symbol)
 
             let valueCell = worksheet.cell(row: index + 1, column: 3)
             valueCell.value = .number(example.value)
-            valueCell.format = XLCellFormat(numberFormat: .builtin(id: example.id))
+            valueCell.format = XLCellFormat(numberFormat: example.numberFormat)
         }
 
         let customFormat = #"yyyy"ねん" m"がつ" d"にち""#
@@ -132,6 +141,7 @@ public enum XLExampleDocuments {
             ("strike", XLFont(strike: true)),
             ("size", XLFont(size: 18)),
             ("name", XLFont(name: "Courier New")),
+            ("red", XLFont(color: .rgb("FFFF0000"))),
         ]
 
         for (index, example) in examples.enumerated() {
@@ -145,7 +155,7 @@ public enum XLExampleDocuments {
         let cell = worksheet.cell(row: 2, column: 7)
         cell.value = .string("red")
         cell.format = XLCellFormat(fill: .pattern(XLFill.Pattern(
-            patternType: "solid",
+            patternType: .solid,
             foregroundColor: .rgb("FFFF0000"),
             backgroundColor: .indexed(64)
         )))
@@ -153,6 +163,7 @@ public enum XLExampleDocuments {
 
     private static func writeBorderExamples(to worksheet: XLWorksheet) {
         let line = XLBorder.Line(style: .thin)
+        let mediumLine = XLBorder.Line(style: .medium)
         let examples: [(String, XLBorder)] = [
             ("start", XLBorder(start: line)),
             ("end", XLBorder(end: line)),
@@ -162,6 +173,7 @@ public enum XLExampleDocuments {
             ("bottom", XLBorder(bottom: line)),
             ("diagonal up", XLBorder(diagonal: XLBorder.Diagonal(directions: .up, line: line))),
             ("diagonal down", XLBorder(diagonal: XLBorder.Diagonal(directions: .down, line: line))),
+            ("medium", XLBorder(left: mediumLine, right: mediumLine, top: mediumLine, bottom: mediumLine)),
         ]
 
         for (index, example) in examples.enumerated() {
