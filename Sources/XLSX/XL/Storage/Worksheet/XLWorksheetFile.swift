@@ -305,32 +305,31 @@ public final class XLWorksheetFile {
             }
         )
 
-        colsElement.children = try columnWriteRanges(styles: styles).map { range in
+        colsElement.children = try columnWriteRanges().map { range in
             let element = XMLElement(name: XMLName(name: "col"))
-            range.record.write(
+            try range.fields.write(
                 to: element,
                 minColumnNumber: range.minColumnNumber,
-                maxColumnNumber: range.maxColumnNumber
+                maxColumnNumber: range.maxColumnNumber,
+                styles: styles
             )
             return element
         }
     }
 
-    private func columnWriteRanges(
-        styles: XLStylesFile?
-    ) throws -> [(minColumnNumber: Int, maxColumnNumber: Int, record: XLColumnWriteRecord)] {
-        var ranges: [(minColumnNumber: Int, maxColumnNumber: Int, record: XLColumnWriteRecord)] = []
+    private func columnWriteRanges() -> [(minColumnNumber: Int, maxColumnNumber: Int, fields: XLColumnStorage.Fields)] {
+        var ranges: [(minColumnNumber: Int, maxColumnNumber: Int, fields: XLColumnStorage.Fields)] = []
 
         for (columnNumber, column) in existingColumnsWithNumber {
-            let record = try XLColumnWriteRecord(column: column, styles: styles)
+            let fields = column.fields
             guard let lastRange = ranges.last,
                   lastRange.maxColumnNumber + 1 == columnNumber,
-                  lastRange.record == record
+                  lastRange.fields == fields
             else {
                 ranges.append((
                     minColumnNumber: columnNumber,
                     maxColumnNumber: columnNumber,
-                    record: record
+                    fields: fields
                 ))
                 continue
             }
@@ -338,7 +337,7 @@ public final class XLWorksheetFile {
             ranges[ranges.count - 1] = (
                 minColumnNumber: lastRange.minColumnNumber,
                 maxColumnNumber: columnNumber,
-                record: lastRange.record
+                fields: lastRange.fields
             )
         }
 

@@ -28,7 +28,7 @@ worksheet XML の `<col style="...">` は列の既定セル書式であり、API
 
 存在する番号一覧は、`existingRowNumbers` と `existingColumnNumbers` でソート済み配列として返す。最大番号だけが必要な場合のために、`maxRowNumber` と `maxColumnNumber` も用意する。どちらも要素が存在しない場合は `nil` を返す。
 
-worksheet XML へ書き戻す時は、storage の内容を既存 XML tree に差分反映する。列は保存時に `XLColumnWriteRecord` へ変換し、連続する列の書き出し内容が同じ場合は 1 つの `<col min="..." max="...">` にまとめる。行やセルの既存 XML element は一度だけ走査して逆引きテーブルを作り、更新または作成した後で番号順に並べ直す。column と cell では列番号順、row では行番号順に並べる。デコードできない要素や、ライブラリが所有しない child node は別に保持し、既知要素の後ろへ戻す。
+worksheet XML へ書き戻す時は、storage の内容を既存 XML tree に差分反映する。列は `XLColumnStorage.Fields` を書き出し単位として扱い、連続する列の書き出し内容が同じ場合は 1 つの `<col min="..." max="...">` にまとめる。行やセルの既存 XML element は一度だけ走査して逆引きテーブルを作り、更新または作成した後で番号順に並べ直す。column と cell では列番号順、row では行番号順に並べる。デコードできない要素や、ライブラリが所有しない child node は別に保持し、既知要素の後ろへ戻す。
 
 ## Namespace prefix
 
