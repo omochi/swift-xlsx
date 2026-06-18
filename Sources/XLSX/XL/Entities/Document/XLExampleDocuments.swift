@@ -36,6 +36,53 @@ public enum XLExampleDocuments {
         return document
     }
 
+    public static func columnDocument() throws -> XLDocument {
+        let document = XLDocument()
+        let worksheet = try document.workbook.worksheets.first ?? document.workbook.appendWorksheet(name: "Sheet1")
+        let examples: [(column: Int, width: Double)] = [
+            (1, 10),
+            (2, 20),
+            (3, 30),
+        ]
+
+        for example in examples {
+            worksheet.column(example.column).width = example.width
+            worksheet.cell(row: 1, column: example.column).value = .string("width=\(Int(example.width))")
+        }
+
+        return document
+    }
+
+    public static func formulaDocument() throws -> XLDocument {
+        let document = XLDocument()
+        let worksheet = try document.workbook.worksheets.first ?? document.workbook.appendWorksheet(name: "Sheet1")
+        worksheet.cell(row: 1, column: 2).value = .number(10)
+        worksheet.cell(row: 2, column: 2).value = .number(20)
+        worksheet.cell(row: 3, column: 2).value = .number(30)
+        worksheet.cell(row: 4, column: 1).value = .string("total→")
+
+        let totalCell = worksheet.cell(row: 4, column: 2)
+        totalCell.value = .number(60)
+        totalCell.formula = .regular("SUM(B1:B3)")
+
+        return document
+    }
+
+    public static func worksheetsDocument() throws -> XLDocument {
+        let document = XLDocument()
+        let worksheet1 = try document.workbook.worksheets.first ?? document.workbook.appendWorksheet(name: "シート1")
+        worksheet1.name = "シート1"
+        worksheet1.cell(row: 1, column: 1).value = .string("シート1")
+
+        let worksheet2 = try document.workbook.appendWorksheet(name: "シート2")
+        worksheet2.cell(row: 1, column: 1).value = .string("シート2")
+
+        let worksheet3 = try document.workbook.appendWorksheet(name: "シート3")
+        worksheet3.cell(row: 1, column: 1).value = .string("シート3")
+
+        return document
+    }
+
     public static func styleDocument() throws -> XLDocument {
         let document = XLDocument()
         let worksheet = try document.workbook.worksheets.first ?? document.workbook.appendWorksheet(name: "Sheet1")

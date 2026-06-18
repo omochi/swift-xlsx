@@ -25,6 +25,27 @@ struct ExampleDocumentsTests {
         )
     }
 
+    @Test func savesColumnDocumentFixture() throws {
+        try expectGeneratedDocument(
+            try XLExampleDocuments.columnDocument(),
+            matchesFixtureNamed: "column"
+        )
+    }
+
+    @Test func savesFormulaDocumentFixture() throws {
+        try expectGeneratedDocument(
+            try XLExampleDocuments.formulaDocument(),
+            matchesFixtureNamed: "formula"
+        )
+    }
+
+    @Test func savesWorksheetsDocumentFixture() throws {
+        try expectGeneratedDocument(
+            try XLExampleDocuments.worksheetsDocument(),
+            matchesFixtureNamed: "worksheets"
+        )
+    }
+
     @Test func savesStyleDocumentFixture() throws {
         try expectGeneratedDocument(
             try XLExampleDocuments.styleDocument(),

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="3" uniqueCount="3">
+    <si>
+        <t>width=10</t>
+    </si>
+    <si>
+        <t>width=20</t>
+    </si>
+    <si>
+        <t>width=30</t>
+    </si>
+</sst>
