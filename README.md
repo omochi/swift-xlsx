@@ -148,6 +148,12 @@ swift run xlsx-tool pack extracted --output output.xlsx
 
 ## Requirements
 
-The package is built with SwiftPM and currently targets Swift 6.3. It requires zlib to read and write `.xlsx` ZIP packages.
+The package is built with SwiftPM and currently targets Swift 6.3. It supports macOS and Linux, and requires zlib to read and write `.xlsx` ZIP packages.
 
-この package は SwiftPM で build され、現在は Swift 6.3 を対象にしています。`.xlsx` の ZIP package を読み書きするために zlib が必要です。
+この package は SwiftPM で build され、現在は Swift 6.3 を対象にしています。macOS と Linux を support し、`.xlsx` の ZIP package を読み書きするために zlib が必要です。
+
+## License
+
+MIT
+
+MIT ライセンスです。
