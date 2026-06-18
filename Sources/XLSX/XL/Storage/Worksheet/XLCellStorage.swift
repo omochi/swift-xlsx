@@ -58,7 +58,7 @@ public final class XLCellStorage {
 
         var didWriteFormula = false
         if let formula {
-            let record = self.formulaRecord(
+            let record = self.formulaRecordForWriting(
                 for: formula,
                 address: address,
                 sharedIndicesByDefinitionAddress: formulaSharedIndicesByDefinitionAddress
@@ -76,17 +76,6 @@ public final class XLCellStorage {
         )
     }
 
-    public func collectSharedStrings(sharedStringStorage: inout OrderedSet<XLSharedStringRecord>) {
-        if let formula,
-           formula.kind != .sharedReference,
-           case .string = value
-        {
-            return
-        }
-
-        collectValueSharedStrings(sharedStringStorage: &sharedStringStorage)
-    }
-
     public func collectSharedStrings(
         sharedStringStorage: inout OrderedSet<XLSharedStringRecord>,
         address: XLCellAddress,
@@ -94,11 +83,11 @@ public final class XLCellStorage {
     ) {
         if let formula,
            case .string = value,
-           willWriteFormula(
-               formula,
+           formulaRecordForWriting(
+               for: formula,
                address: address,
                sharedIndicesByDefinitionAddress: formulaSharedIndicesByDefinitionAddress
-           )
+           ) != nil
         {
             return
         }
@@ -202,7 +191,7 @@ public final class XLCellStorage {
         try value.write(to: cellElement, sharedStrings: sharedStringStorage)
     }
 
-    private func formulaRecord(
+    private func formulaRecordForWriting(
         for formula: XLFormula,
         address: XLCellAddress?,
         sharedIndicesByDefinitionAddress: [XLCellAddress: Int]?
@@ -234,21 +223,6 @@ public final class XLCellStorage {
                 return nil
             }
             return XLFormulaRecord(formulaElement: element)
-        }
-    }
-
-    private func willWriteFormula(
-        _ formula: XLFormula,
-        address: XLCellAddress,
-        sharedIndicesByDefinitionAddress: [XLCellAddress: Int]
-    ) -> Bool {
-        switch formula {
-        case .regular, .array, .dataTable:
-            return true
-        case .sharedDefinition:
-            return sharedIndicesByDefinitionAddress[address] != nil
-        case let .sharedReference(address):
-            return sharedIndicesByDefinitionAddress[address] != nil
         }
     }
 

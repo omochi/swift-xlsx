@@ -92,12 +92,6 @@ public final class XLRowStorage {
         rowElement.children = cellElements + rowChildren.otherChildren
     }
 
-    public func collectSharedStrings(sharedStringStorage: inout OrderedSet<XLSharedStringRecord>) {
-        for cell in existingCells {
-            cell.collectSharedStrings(sharedStringStorage: &sharedStringStorage)
-        }
-    }
-
     public func collectSharedStrings(
         sharedStringStorage: inout OrderedSet<XLSharedStringRecord>,
         formulaSharedIndicesByDefinitionAddress: [XLCellAddress: Int],
