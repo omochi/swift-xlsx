@@ -12,6 +12,30 @@ public enum XLExampleDocuments {
         return document
     }
 
+    public static func dataValidationDocument() throws -> XLDocument {
+        let document = XLDocument()
+        let worksheet = try document.workbook.worksheets.first ?? document.workbook.appendWorksheet(name: "Sheet1")
+        worksheet.cell(row: 1, column: 1).value = .string("Apple")
+        worksheet.cell(row: 2, column: 1).value = .string("Banana")
+        worksheet.cell(row: 3, column: 1).value = .string("Cherry")
+        worksheet.cell(row: 1, column: 2).value = .string("Apple")
+        worksheet.dataValidation = XLDataValidations(
+            validations: [
+                XLDataValidation(
+                    address: XLCellRangeAddressList([
+                        XLCellRangeAddress(
+                            start: XLCellAddress(row: 1, column: 2),
+                            end: XLCellAddress(row: 1, column: 2)
+                        ),
+                    ]),
+                    validationType: .list,
+                    formula1: "$A$1:$A$3"
+                ),
+            ]
+        )
+        return document
+    }
+
     public static func styleDocument() throws -> XLDocument {
         let document = XLDocument()
         let worksheet = try document.workbook.worksheets.first ?? document.workbook.appendWorksheet(name: "Sheet1")

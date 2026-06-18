@@ -136,7 +136,7 @@ struct XLWorksheetFileTests {
         #expect(validation.error == "Error text")
         #expect(validation.promptTitle == "Prompt title")
         #expect(validation.prompt == "Prompt text")
-        #expect(validation.sqref == XLCellRangeAddressList("B2:B10 D2"))
+        #expect(validation.address == XLCellRangeAddressList("B2:B10 D2"))
         #expect(validation.formula1 == "1")
         #expect(validation.formula2 == "10")
         #expect(validation.list == #""A,B""#)
@@ -374,7 +374,7 @@ struct XLWorksheetFileTests {
             dataValidations: XLDataValidations(
                 validations: [
                     XLDataValidation(
-                        sqref: XLCellRangeAddressList([
+                        address: XLCellRangeAddressList([
                             XLCellRangeAddress("B2:B10")!,
                             XLCellRangeAddress("D2")!,
                         ]),
@@ -422,7 +422,7 @@ struct XLWorksheetFileTests {
             """.utf8))
         worksheet.dataValidations.validations = [
             XLDataValidation(
-                sqref: XLCellRangeAddressList([XLCellRangeAddress("A1")!]),
+                address: XLCellRangeAddressList([XLCellRangeAddress("A1")!]),
                 validationType: .list,
                 formula1: #""A,B""#,
                 list: #""A,B""#

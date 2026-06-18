@@ -19,6 +19,7 @@ public struct ExampleDocumentsCommand: ParsableCommand {
         try FileManager.default.createDirectory(at: outputURL, withIntermediateDirectories: true)
         try XLExampleDocuments.defaultDocument().save(to: outputURL.appendingPathComponent("default.xlsx"))
         try XLExampleDocuments.simpleDocument().save(to: outputURL.appendingPathComponent("simple.xlsx"))
+        try XLExampleDocuments.dataValidationDocument().save(to: outputURL.appendingPathComponent("data-validation.xlsx"))
         try XLExampleDocuments.styleDocument().save(to: outputURL.appendingPathComponent("style.xlsx"))
     }
 }

@@ -18,6 +18,13 @@ struct ExampleDocumentsTests {
         )
     }
 
+    @Test func savesDataValidationDocumentFixture() throws {
+        try expectGeneratedDocument(
+            try XLExampleDocuments.dataValidationDocument(),
+            matchesFixtureNamed: "data-validation"
+        )
+    }
+
     @Test func savesStyleDocumentFixture() throws {
         try expectGeneratedDocument(
             try XLExampleDocuments.styleDocument(),

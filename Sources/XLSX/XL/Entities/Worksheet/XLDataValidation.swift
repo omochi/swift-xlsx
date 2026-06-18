@@ -45,7 +45,7 @@ public struct XLDataValidation: Sendable & Hashable {
     }
 
     public init(xmlElement: XMLElement) {
-        self.sqref = xmlElement.attribute(name: "sqref").flatMap(XLCellRangeAddressList.init)
+        self.address = xmlElement.attribute(name: "sqref").flatMap(XLCellRangeAddressList.init)
         self.validationType = xmlElement.attribute(name: "type").flatMap(ValidationType.init(rawValue:))
         self.validationOperator = xmlElement.attribute(name: "operator").flatMap(Operator.init(rawValue:))
         self.errorStyle = xmlElement.attribute(name: "errorStyle").flatMap(ErrorStyle.init(rawValue:))
@@ -63,7 +63,7 @@ public struct XLDataValidation: Sendable & Hashable {
         self.list = Self.text(in: Self.listElement(in: xmlElement))
     }
 
-    public var sqref: XLCellRangeAddressList? = nil
+    public var address: XLCellRangeAddressList? = nil
     public var validationType: ValidationType? = nil
     public var validationOperator: Operator? = nil
     public var errorStyle: ErrorStyle? = nil
@@ -83,7 +83,7 @@ public struct XLDataValidation: Sendable & Hashable {
     func write(to xmlElement: XMLElement, x12acPrefix: String) {
         xmlElement.attributes = []
         xmlElement.children = children(x12acPrefix: x12acPrefix)
-        xmlElement.setAttribute(name: "sqref", value: sqref?.description)
+        xmlElement.setAttribute(name: "sqref", value: address?.description)
         xmlElement.setAttribute(name: "type", value: validationType?.rawValue)
         xmlElement.setAttribute(name: "operator", value: validationOperator?.rawValue)
         xmlElement.setAttribute(name: "errorStyle", value: errorStyle?.rawValue)

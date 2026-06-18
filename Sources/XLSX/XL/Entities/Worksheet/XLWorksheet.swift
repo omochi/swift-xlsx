@@ -15,6 +15,15 @@ public struct XLWorksheet {
         }
     }
 
+    public var dataValidation: XLDataValidations {
+        get {
+            file.dataValidations
+        }
+        nonmutating set {
+            file.dataValidations = newValue
+        }
+    }
+
     public var maxColumnNumber: Int? {
         file.maxColumnNumber
     }

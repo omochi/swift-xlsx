@@ -746,6 +746,27 @@ struct XLDocumentTests {
         #expect(document.package.workbook.file.sheets[0].name == "Renamed")
     }
 
+    @Test func worksheetExposesDataValidationThroughFile() throws {
+        let document = XLDocument()
+        let worksheet = try #require(document.workbook.worksheets.first)
+
+        worksheet.dataValidation = XLDataValidations(
+            validations: [
+                XLDataValidation(
+                    address: XLCellRangeAddressList([
+                        XLCellRangeAddress("B2:B10")!,
+                    ]),
+                    validationType: .whole,
+                    formula1: "1",
+                    formula2: "10"
+                ),
+            ]
+        )
+
+        #expect(worksheet.file.dataValidations == worksheet.dataValidation)
+        #expect(worksheet.file.dataValidations.validations.first?.address?.description == "B2:B10")
+    }
+
     @Test func workbookWorksheetsShareWorksheetFileInstances() throws {
         let document = XLDocument()
         let worksheet = try #require(document.workbook.worksheets.first)
