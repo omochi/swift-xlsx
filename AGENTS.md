@@ -6,6 +6,9 @@
 
 ## ドキュメント
 
+- `README.md`
+  - 公開向けの説明を書く。
+  - ライブラリの対応状況は `Feature Status` セクションに書く。機能を追加・削除・変更したときは、必要に応じてこの表も更新する。
 - `docs/design.md`
   - 現在の設計方針や実装上の判断を書く。
   - XML/OPC の扱い、storage と handle の分担、namespace prefix の扱いなど、実装時に守る設計メモとして使う。

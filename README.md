@@ -8,6 +8,12 @@ The project is still early, but it already aims to be useful as a library: examp
 
 このプロジェクトはまだ初期段階ですが、ライブラリとして使える形を目指しています。サンプルは実際の Swift コードから生成され、可能な範囲で package part を保持し、XML/OPC 層もデバッグしやすい形で残しています。
 
+## Goals
+
+The implementation is guided by three priorities: an interface that is easy to use from application code, simple internal code that stays understandable, and efficient behavior for fast workbook reading and writing.
+
+実装では、application code から使いやすい interface、理解しやすいシンプルな内部コード、workbook の読み書きを高速に行うための効率的な動作を重視しています。
+
 ## Installation
 
 Add `swift-xlsx` to your package dependencies and depend on the `XLSX` product.
@@ -83,23 +89,25 @@ try document.save(to: URL(fileURLWithPath: "output.xlsx"))
 
 ## Feature Status
 
-The supported surface is intentionally small for now. The table below describes the current direction rather than a complete Excel compatibility claim.
+The table below lists concrete features rather than broad compatibility levels. `Supported` means the library has a public or internally exercised path for reading and/or writing that feature. `Not Supported` means the feature is not currently modeled as a library API.
 
-現在の対応範囲は意図的に小さくしています。下の表は Excel 全機能への互換性を主張するものではなく、今の実装の方向性を示すものです。
+下の表では、大まかな互換性レベルではなく具体的な機能を並べています。`Supported` は public API または内部で使われている読み書き経路がある機能、`Not Supported` は現時点で library API として model 化していない機能を表します。
 
-| Area | Status |
-| --- | --- |
-| Create and save workbooks | Supported |
-| Open existing workbooks | Supported |
-| Worksheets | Partial |
-| Cell strings and numbers | Partial |
-| Formulas | Partial |
-| Column widths | Partial |
-| Number formats | Partial |
-| Fonts, fills, and borders | Partial |
-| Data validation | Partial |
-| Shared strings | Supported |
-| Charts, images, pivot tables, macros | Not supported |
+| Area | Supported | Not Supported |
+| --- | --- | --- |
+| Workbooks | Create, open, save | Calculation engine, encryption, macros |
+| Worksheets | Add, remove, rename, read existing sheets | Chartsheets, dialog sheets |
+| Cells | Strings, numbers, booleans, dates, formulas, cached formula values | Rich text editing, comments, hyperlinks |
+| Rows | Sparse row and cell storage | Row heights, grouping, hidden rows |
+| Columns | Column widths, column styles | Grouping, hidden columns |
+| Number formats | Built-in formats, custom format strings | Full locale-aware format evaluation |
+| Fonts | Bold, italic, strike, size, name, color | Theme fonts, underline variants, vertical alignment |
+| Fills | Pattern fills, typed colors | Gradient fills, theme color resolution |
+| Borders | Side borders, diagonal borders, line styles | Theme color resolution, advanced border semantics |
+| Cell formats | Cell-level styles, style collection, named cell styles | Conditional formatting, full style inheritance |
+| Data validation | List validation, validation ranges | Full validation option coverage |
+| Package structure | OPC relationships, content types, shared strings, unknown file preservation | Digital signatures, typed APIs for custom XML extensions |
+| Media and objects | - | Images, drawings, charts, pivot tables, tables, slicers |
 
 ## Design Notes
 
