@@ -2,19 +2,18 @@
 
 ## 言語
 
-このリポジトリでは、ユーザー向けの説明、設計メモ、仕様書は日本語で書く。
+このリポジトリでは、ユーザー向けの説明、設計メモ、実装計画は日本語で書く。
 
 ## ドキュメント
 
-- `docs/spec.md`
-  - ライブラリの仕様を書く。
-  - 決まったことだけを書く。
-  - 未決定の案、将来のアイデア、調査メモはここに混ぜない。
+- `docs/design.md`
+  - 現在の設計方針や実装上の判断を書く。
+  - XML/OPC の扱い、storage と handle の分担、namespace prefix の扱いなど、実装時に守る設計メモとして使う。
 
-- `docs/design-notes.md`
-  - 検討中の設計案、未決定事項、将来的なアイデア、関連情報を書く。
-  - `docs/spec.md` に移す前の作業メモとして使う。
-  - 決定した内容は、必要に応じて `docs/spec.md` に移す。
+- `docs/plan.md`
+  - これから進める実装計画を書く。
+  - 未実装の段階分け、作業順、将来広げる範囲を書く。
+  - 実装済みになって計画として古くなった内容は、必要に応じて `docs/design.md` やコードへ反映して整理する。
 
 ## ソース構成
 
@@ -35,6 +34,14 @@
 
 - `MemberwiseInit` を使うファイルでは、`import MemberwiseInit` を `import Foundation` より先に書く。
 - その他の import は、標準ライブラリ・システム module・外部依存の関係が読みやすくなる順に整理する。
+
+## XML 名前空間
+
+- XML namespace は prefix ではなく URI を正として扱う。
+- namespace URI から prefix を解決する処理は、対象ノードが親ノードへ接続された後に行う。
+- `XMLElement.setAttribute(name:namespaceURI:value:)` や `namespacePrefix(for:)` は、対象要素から親方向へ namespace 宣言を探す。新しく作った detached element に対して、親へ `appendChild` / `insertChild` する前に呼ばない。
+- `XMLUtils.patchChildren` の `makeElement` で作る要素は、`children` setter に渡されるまで親に接続されていない。ここで namespace 付き属性を書く必要がある場合は、先に親側で prefix を確保し、その prefix を渡して `XMLName(prefix:name:)` を作るか、要素を親へ接続してから URI 解決を行う。
+- 既存 prefix は可能な限り保持する。希望する prefix が別 URI で使われている場合は既存定義を壊さず、`r2`, `r3` のように空いている prefix を使う。
 
 ## 対応プラットフォーム
 
