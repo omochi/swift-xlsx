@@ -119,7 +119,7 @@ struct XLWorksheetFileTests {
                 </worksheet>
                 """.utf8)),
             sharedStrings: XLSharedStringsFile(),
-            styles: XLStylesFile(xmlDocument: XMLDocument(data: Data("""
+            styleStorage: XLStyleStorage(xmlDocument: XMLDocument(data: Data("""
                 <styleSheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
                   <cellXfs count="2">
                     <xf numFmtId="0"/>
@@ -793,7 +793,7 @@ struct XLWorksheetFileTests {
         try XLWorksheetFile(
             xmlDocument: XMLDocument(data: data),
             sharedStrings: XLSharedStringsFile(),
-            styles: XLStylesFile()
+            styleStorage: XLStyleStorage()
         )
     }
 

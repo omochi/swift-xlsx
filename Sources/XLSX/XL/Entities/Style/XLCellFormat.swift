@@ -96,41 +96,41 @@ public struct XLCellFormat: Hashable {
         )
     }
 
-    public func record(styles: XLStylesFile) throws -> XLCellFormatRecord {
+    public func record(styleStorage: XLStyleStorage) throws -> XLCellFormatRecord {
         try record(
-            numberFormats: styles.numberFormats,
-            fonts: styles.fonts,
-            fills: styles.fills,
-            borders: styles.borders,
-            cellStyleFormats: styles.cellStyleFormats
+            numberFormats: styleStorage.numberFormats,
+            fonts: styleStorage.fonts,
+            fills: styleStorage.fills,
+            borders: styleStorage.borders,
+            cellStyleFormats: styleStorage.cellStyleFormats
         )
     }
 
-    public func collectStyle(stage: XLStyleCollectionStage, styles: XLStylesFile) throws {
+    public func collectStyle(stage: XLStyleCollectionStage, styleStorage: inout XLStyleStorage) throws {
         switch stage {
         case .numberFormats:
             if case let .format(format)? = numberFormat {
-                styles.numberFormats.register(format)
+                styleStorage.numberFormats.register(format)
             }
         case .fonts:
             if let font {
-                styles.fonts.register(font.record)
+                styleStorage.fonts.register(font.record)
             }
         case .fills:
             if let fill {
-                styles.fills.register(fill)
+                styleStorage.fills.register(fill)
             }
         case .borders:
             if let border {
-                styles.borders.register(border)
+                styleStorage.borders.register(border)
             }
         case .cellStyleFormats:
             break
         case .cellFormats:
-            try styles.cellFormats.register(self, styles: styles)
+            try styleStorage.cellFormats.register(self, styleStorage: styleStorage)
         }
 
-        styleFormat?.collectStyle(stage: stage, styles: styles)
+        styleFormat?.collectStyle(stage: stage, styleStorage: &styleStorage)
     }
 
     private static func numberFormat(

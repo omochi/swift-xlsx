@@ -1,61 +1,36 @@
 import Foundation
 
-public final class XLStylesFile: XMLDocumentConvertible {
+public final class XLStylesFile {
     public init(
-        numberFormats: XLNumberFormatsStorage = XLNumberFormatsStorage(),
-        fonts: XLFontRecordsStorage = XLFontRecordsStorage(),
-        fills: XLFillsStorage = XLFillsStorage(),
-        borders: XLBordersStorage = XLBordersStorage(),
-        cellStyleFormats: XLCellStyleFormatRefsStorage = XLCellStyleFormatRefsStorage(),
-        cellStyles: [XLCellStyle] = [],
-        cellFormats: XLCellFormatRecordsStorage = XLCellFormatRecordsStorage()
+        cellStyles: [XLCellStyle] = []
     ) {
-        self.numberFormats = numberFormats
-        self.fonts = fonts
-        self.fills = fills
-        self.borders = borders
-        self.cellStyleFormats = cellStyleFormats
         self.cellStyles = cellStyles
-        self.cellFormats = cellFormats
         self.original = nil
     }
 
-    public init(xmlDocument: XMLDocument) throws {
+    public convenience init(xmlDocument: XMLDocument) throws {
+        try self.init(
+            xmlDocument: xmlDocument,
+            styleStorage: XLStyleStorage(xmlDocument: xmlDocument)
+        )
+    }
+
+    public init(
+        xmlDocument: XMLDocument,
+        styleStorage: XLStyleStorage
+    ) throws {
         guard let stylesElement = xmlDocument.element(name: "styleSheet") else {
             throw OPCError.invalidStylesFile
         }
 
-        let numberFormats = XLNumberFormatsStorage(records: Self.readNumberFormats(in: stylesElement))
-        let fonts = XLFontRecordsStorage(records: Self.readFonts(in: stylesElement))
-        let fills = XLFillsStorage(records: Self.readFills(in: stylesElement))
-        let borders = XLBordersStorage(records: Self.readBorders(in: stylesElement))
-        self.numberFormats = numberFormats
-        self.fonts = fonts
-        self.fills = fills
-        self.borders = borders
-        let cellStyleFormats = XLCellStyleFormatRefsStorage(records: Self.readCellStyleFormats(
-            in: stylesElement,
-            numberFormats: numberFormats,
-            fonts: fonts,
-            fills: fills,
-            borders: borders
-        ))
-        self.cellStyleFormats = cellStyleFormats
         self.cellStyles = Self.readCellStyles(
             in: stylesElement,
-            cellStyleFormats: cellStyleFormats
+            styleStorage: styleStorage
         )
-        self.cellFormats = XLCellFormatRecordsStorage(records: Self.readCellFormats(in: stylesElement))
         self.original = xmlDocument
     }
 
-    public var numberFormats: XLNumberFormatsStorage
-    public var fonts: XLFontRecordsStorage
-    public var fills: XLFillsStorage
-    public var borders: XLBordersStorage
-    public var cellStyleFormats: XLCellStyleFormatRefsStorage
     public var cellStyles: [XLCellStyle]
-    public var cellFormats: XLCellFormatRecordsStorage
     public var original: XMLDocument?
 
     public static func path(
@@ -68,181 +43,43 @@ public final class XLStylesFile: XMLDocumentConvertible {
         return try OPCFilePath(string: "styles.xml").resolved(relativeTo: workbookPath)
     }
 
-    public var isEmpty: Bool {
-        numberFormats.isEmpty &&
-            fonts.isEmpty &&
-            fills.isEmpty &&
-            borders.isEmpty &&
-            cellStyleFormats.isEmpty &&
-            cellStyles.isEmpty &&
-            cellFormats.isEmpty
-    }
-
-    public func resetCollectableStyleElements() {
-        numberFormats = XLNumberFormatsStorage()
-        fonts = XLFontRecordsStorage(records: [
-            XLFontRecord()
-        ])
-        fills = XLFillsStorage(records: [
-            .pattern(.none),
-            .pattern(.gray125)
-        ])
-        borders = XLBordersStorage(records: [
-            XLBorder()
-        ])
-        let defaultCellStyleFormat = XLCellStyleFormatRef(
-            numberFormat: .builtin(id: 0),
-            font: XLFont(),
-            fill: .pattern(.none),
-            border: XLBorder()
-        )
-        cellStyleFormats = XLCellStyleFormatRefsStorage(records: [
-            defaultCellStyleFormat
-        ])
-        if let defaultCellStyleIndex = cellStyles.firstIndex(where: { $0.builtinID == 0 }) {
-            cellStyles[defaultCellStyleIndex].format = defaultCellStyleFormat
-        } else {
-            cellStyles.insert(
-                XLCellStyle(name: "Normal", format: defaultCellStyleFormat, builtinID: 0),
-                at: 0
-            )
-        }
-        for cellStyle in cellStyles {
-            if let format = cellStyle.format {
-                cellStyleFormats.register(format)
-            }
-        }
-        cellFormats = XLCellFormatRecordsStorage(records: [
-            XLCellFormatRecord(
-                numberFormatID: 0,
-                fontID: 0,
-                fillID: 0,
-                borderID: 0,
-                styleFormatID: 0
-            )
-        ])
-    }
-
-    public func xmlDocument() throws -> XMLDocument {
+    public func xmlDocument(styleStorage: XLStyleStorage) throws -> XMLDocument {
         let document = original?.clone() ?? XMLDocument()
         let stylesElement = XMLUtils.ensureRootElement(name: "styleSheet", in: document)
         stylesElement.ensureNamespace(uri: .spreadsheet)
-        writeNumberFormats(to: stylesElement)
-        try writeFonts(to: stylesElement)
-        try writeFills(to: stylesElement)
-        writeBorders(to: stylesElement)
-        try writeCellStyleFormats(to: stylesElement)
-        writeCellFormats(to: stylesElement)
-        writeCellStyles(to: stylesElement)
+        writeNumberFormats(to: stylesElement, styleStorage: styleStorage)
+        try writeFonts(to: stylesElement, styleStorage: styleStorage)
+        try writeFills(to: stylesElement, styleStorage: styleStorage)
+        writeBorders(to: stylesElement, styleStorage: styleStorage)
+        try writeCellStyleFormats(to: stylesElement, styleStorage: styleStorage)
+        writeCellFormats(to: stylesElement, styleStorage: styleStorage)
+        writeCellStyles(to: stylesElement, styleStorage: styleStorage)
         return document
     }
 
     public func clone() -> XLStylesFile {
         let file = XLStylesFile(
-            numberFormats: numberFormats.clone(),
-            fonts: fonts.clone(),
-            fills: fills.clone(),
-            borders: borders.clone(),
-            cellStyleFormats: cellStyleFormats.clone(),
-            cellStyles: cellStyles,
-            cellFormats: cellFormats.clone()
+            cellStyles: cellStyles
         )
         file.original = original
         return file
     }
 
-    private static func readNumberFormats(in stylesElement: XMLElement) -> [String] {
-        guard let numberFormatsElement = stylesElement.elements(name: "numFmts").first else {
-            return []
-        }
-
-        return numberFormatsElement.elements(name: "numFmt")
-            .compactMap { element -> (id: Int, format: String)? in
-                guard let id = XMLUtils.intAttribute(name: "numFmtId", in: element),
-                      let format = element.attribute(name: "formatCode")
-                else {
-                    return nil
-                }
-
-                return (id, format)
-            }
-            .filter { $0.id >= XLNumberFormat.customFormatFirstID }
-            .sorted { $0.id < $1.id }
-            .map { $0.format }
-    }
-
-    private static func readFonts(in stylesElement: XMLElement) -> [XLFontRecord] {
-        guard let fontsElement = stylesElement.elements(name: "fonts").first else {
-            return []
-        }
-        return fontsElement.elements(name: "font").map(XLFontRecord.init(element:))
-    }
-
-    private static func readFills(in stylesElement: XMLElement) -> [XLFill] {
-        guard let fillsElement = stylesElement.elements(name: "fills").first else {
-            return []
-        }
-        return fillsElement.elements(name: "fill").map(XLFill.init(element:))
-    }
-
-    private static func readBorders(in stylesElement: XMLElement) -> [XLBorder] {
-        guard let bordersElement = stylesElement.elements(name: "borders").first else {
-            return []
-        }
-        return bordersElement.elements(name: "border").map(XLBorder.init(element:))
-    }
-
-    private static func readCellFormats(in stylesElement: XMLElement) -> [XLCellFormatRecord] {
-        guard let cellXfsElement = stylesElement.elements(name: "cellXfs").first else {
-            return []
-        }
-        return cellXfsElement.elements(name: "xf").map(XLCellFormatRecord.init(element:))
-    }
-
-    private static func readCellStyleFormats(
-        in stylesElement: XMLElement,
-        numberFormats: XLNumberFormatsStorage,
-        fonts: XLFontRecordsStorage,
-        fills: XLFillsStorage,
-        borders: XLBordersStorage
-    ) -> [XLCellStyleFormatRef] {
-        guard let cellStyleXfsElement = stylesElement.elements(name: "cellStyleXfs").first else {
-            return []
-        }
-
-        return cellStyleXfsElement.elements(name: "xf").map { element in
-            let cellFormat = XLCellFormat(
-                record: XLCellFormatRecord(element: element),
-                numberFormats: numberFormats,
-                fonts: fonts,
-                fills: fills,
-                borders: borders,
-                cellStyleFormats: XLCellStyleFormatRefsStorage()
-            )
-            return XLCellStyleFormatRef(
-                numberFormat: cellFormat.numberFormat,
-                font: cellFormat.font,
-                fill: cellFormat.fill,
-                border: cellFormat.border
-            )
-        }
-    }
-
     private static func readCellStyles(
         in stylesElement: XMLElement,
-        cellStyleFormats: XLCellStyleFormatRefsStorage
+        styleStorage: XLStyleStorage
     ) -> [XLCellStyle] {
         guard let cellStylesElement = stylesElement.elements(name: "cellStyles").first else {
             return []
         }
 
         return cellStylesElement.elements(name: "cellStyle").map { element in
-            XLCellStyle(element: element, cellStyleFormats: cellStyleFormats)
+            XLCellStyle(element: element, cellStyleFormats: styleStorage.cellStyleFormats)
         }
     }
 
-    private func writeNumberFormats(to stylesElement: XMLElement) {
-        let numberFormats = self.numberFormats
+    private func writeNumberFormats(to stylesElement: XMLElement, styleStorage: XLStyleStorage) {
+        let numberFormats = styleStorage.numberFormats
         if numberFormats.isEmpty && stylesElement.elements(name: "numFmts").isEmpty {
             return
         }
@@ -267,8 +104,8 @@ public final class XLStylesFile: XMLDocumentConvertible {
         )
     }
 
-    private func writeFonts(to stylesElement: XMLElement) throws {
-        let fonts = self.fonts
+    private func writeFonts(to stylesElement: XMLElement, styleStorage: XLStyleStorage) throws {
+        let fonts = styleStorage.fonts
         if fonts.isEmpty && stylesElement.elements(name: "fonts").isEmpty {
             return
         }
@@ -286,8 +123,8 @@ public final class XLStylesFile: XMLDocumentConvertible {
         )
     }
 
-    private func writeFills(to stylesElement: XMLElement) throws {
-        let fills = self.fills
+    private func writeFills(to stylesElement: XMLElement, styleStorage: XLStyleStorage) throws {
+        let fills = styleStorage.fills
         if fills.isEmpty && stylesElement.elements(name: "fills").isEmpty {
             return
         }
@@ -305,8 +142,8 @@ public final class XLStylesFile: XMLDocumentConvertible {
         )
     }
 
-    private func writeBorders(to stylesElement: XMLElement) {
-        let borders = self.borders
+    private func writeBorders(to stylesElement: XMLElement, styleStorage: XLStyleStorage) {
+        let borders = styleStorage.borders
         if borders.isEmpty && stylesElement.elements(name: "borders").isEmpty {
             return
         }
@@ -324,8 +161,8 @@ public final class XLStylesFile: XMLDocumentConvertible {
         )
     }
 
-    private func writeCellFormats(to stylesElement: XMLElement) {
-        let cellFormats = self.cellFormats
+    private func writeCellFormats(to stylesElement: XMLElement, styleStorage: XLStyleStorage) {
+        let cellFormats = styleStorage.cellFormats
         if cellFormats.isEmpty && stylesElement.elements(name: "cellXfs").isEmpty {
             return
         }
@@ -343,8 +180,8 @@ public final class XLStylesFile: XMLDocumentConvertible {
         )
     }
 
-    private func writeCellStyleFormats(to stylesElement: XMLElement) throws {
-        let cellStyleFormats = self.cellStyleFormats
+    private func writeCellStyleFormats(to stylesElement: XMLElement, styleStorage: XLStyleStorage) throws {
+        let cellStyleFormats = styleStorage.cellStyleFormats
         if cellStyleFormats.isEmpty && stylesElement.elements(name: "cellStyleXfs").isEmpty {
             return
         }
@@ -358,16 +195,16 @@ public final class XLStylesFile: XMLDocumentConvertible {
             records: cellStyleFormats,
             makeElement: { cellStyleFormat in
                 try cellStyleFormat.record(
-                    numberFormats: numberFormats,
-                    fonts: fonts,
-                    fills: fills,
-                    borders: borders
+                    numberFormats: styleStorage.numberFormats,
+                    fonts: styleStorage.fonts,
+                    fills: styleStorage.fills,
+                    borders: styleStorage.borders
                 ).xmlElement()
             }
         )
     }
 
-    private func writeCellStyles(to stylesElement: XMLElement) {
+    private func writeCellStyles(to stylesElement: XMLElement, styleStorage: XLStyleStorage) {
         if cellStyles.isEmpty && stylesElement.elements(name: "cellStyles").isEmpty {
             return
         }
@@ -382,7 +219,7 @@ public final class XLStylesFile: XMLDocumentConvertible {
             records: cellStyles,
             makeElement: { cellStyle in
                 cellStyle.xmlElement(
-                    cellStyleFormats: cellStyleFormats,
+                    cellStyleFormats: styleStorage.cellStyleFormats,
                     revisionNamespacePrefix: revisionNamespacePrefix
                 )
             }

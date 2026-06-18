@@ -6,7 +6,7 @@ public final class XLRowStorage {
         rowElement: XMLElement,
         rowNumber: Int,
         sharedStrings: XLSharedStringsFile,
-        styles: XLStylesFile,
+        styleStorage: XLStyleStorage,
         sharedFormulaDefinitionAddressByIndex: [Int: XLCellAddress] = [:]
     ) {
         var cells: [Int: XLCellStorage] = [:]
@@ -17,7 +17,7 @@ public final class XLRowStorage {
                   let cell = XLCellStorage(
                     cellElement: cellElement,
                     sharedStrings: sharedStrings,
-                    styles: styles,
+                    styleStorage: styleStorage,
                     sharedFormulaDefinitionAddressByIndex: sharedFormulaDefinitionAddressByIndex
                   )
             else {
@@ -66,7 +66,7 @@ public final class XLRowStorage {
         to rowElement: XMLElement,
         rowNumber: Int,
         sharedStrings: XLSharedStringsFile? = nil,
-        styles: XLStylesFile? = nil,
+        styleStorage: XLStyleStorage? = nil,
         formulaSharedIndicesByDefinitionAddress: [XLCellAddress: Int]? = nil
     ) throws {
         let rowChildren = cellElementsAndOtherChildren(in: rowElement, rowNumber: rowNumber)
@@ -82,7 +82,7 @@ public final class XLRowStorage {
                 to: cellElement,
                 address: address,
                 sharedStrings: sharedStrings,
-                styles: styles,
+                styleStorage: styleStorage,
                 formulaSharedIndicesByDefinitionAddress: formulaSharedIndicesByDefinitionAddress
             )
         }
@@ -111,9 +111,9 @@ public final class XLRowStorage {
         }
     }
 
-    public func collectStyle(stage: XLStyleCollectionStage, styles: XLStylesFile) throws {
+    public func collectStyle(stage: XLStyleCollectionStage, styleStorage: inout XLStyleStorage) throws {
         for cell in existingCells {
-            try cell.collectStyle(stage: stage, styles: styles)
+            try cell.collectStyle(stage: stage, styleStorage: &styleStorage)
         }
     }
 

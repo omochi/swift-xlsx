@@ -84,8 +84,7 @@ struct XLDocumentTests {
                 """.utf8),
             at: OPCFilePath(string: "/xl/worksheets/sheet1.xml")
         )
-        try package.insertFile(
-            data: Data("""
+        let stylesData = Data("""
                 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
                   <numFmts count="1"><numFmt numFmtId="164" formatCode="yyyy-mm-dd"/></numFmts>
                   <borders count="1">
@@ -97,7 +96,9 @@ struct XLDocumentTests {
                     <xf numFmtId="164" applyNumberFormat="1"/>
                   </cellXfs>
                 </styleSheet>
-                """.utf8),
+                """.utf8)
+        try package.insertFile(
+            data: stylesData,
             at: OPCFilePath(string: "/xl/styles.xml")
         )
 
@@ -105,7 +106,8 @@ struct XLDocumentTests {
         let worksheet = try #require(document.workbook.worksheets.first)
         let cell = try #require(worksheet.existingCell(row: 1, column: 1))
         let customFormatCell = try #require(worksheet.existingCell(row: 1, column: 2))
-        let storedRecord = try #require(document.package.styles.file.cellFormats.record(at: 1))
+        let styleStorage = try XLStyleStorage(xmlDocument: XMLDocument(data: stylesData))
+        let storedRecord = try #require(styleStorage.cellFormats.record(at: 1))
         let border = XLBorder(left: XLBorder.Line(style: .thin, color: .rgb("FFFF0000")))
 
         #expect(cell.format == XLCellFormat(
@@ -116,11 +118,11 @@ struct XLDocumentTests {
         ))
         #expect(cell.format == XLCellFormat(
             record: storedRecord,
-            numberFormats: document.package.styles.file.numberFormats,
-            fonts: document.package.styles.file.fonts,
-            fills: document.package.styles.file.fills,
-            borders: document.package.styles.file.borders,
-            cellStyleFormats: document.package.styles.file.cellStyleFormats
+            numberFormats: styleStorage.numberFormats,
+            fonts: styleStorage.fonts,
+            fills: styleStorage.fills,
+            borders: styleStorage.borders,
+            cellStyleFormats: styleStorage.cellStyleFormats
         ))
         #expect(customFormatCell.format == XLCellFormat(
             numberFormat: .format("yyyy-mm-dd"),
@@ -264,9 +266,6 @@ struct XLDocumentTests {
         }
 
         let document = try XLDocument(opcPackage: package)
-        _ = document.package.styles.file.cellFormats.register(
-            XLCellFormatRecord(numberFormatID: 99, applyNumberFormat: true)
-        )
         try document.save(to: url)
 
         let savedPackage = try OPCPackage(data: Data(contentsOf: url))
@@ -322,8 +321,6 @@ struct XLDocumentTests {
         worksheet.cell(row: 1, column: 2).value = .number(43)
         worksheet.cell(row: 1, column: 2).format = format
 
-        #expect(document.package.styles.file.cellFormats.isEmpty)
-
         try document.save(to: url)
 
         let package = try OPCPackage(data: Data(contentsOf: url))
@@ -366,8 +363,6 @@ struct XLDocumentTests {
         let worksheet = try #require(document.workbook.worksheets.first)
         worksheet.column(2).format = XLCellFormat(numberFormat: .builtin(id: 14))
         worksheet.column(3).format = XLCellFormat(numberFormat: .builtin(id: 14))
-
-        #expect(document.package.styles.file.cellFormats.isEmpty)
 
         try document.save(to: url)
 

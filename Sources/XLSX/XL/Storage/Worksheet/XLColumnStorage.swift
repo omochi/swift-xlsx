@@ -6,10 +6,10 @@ public final class XLColumnStorage {
     public struct Fields: Hashable {
         init(
             columnElement: XMLElement,
-            styles: XLStylesFile
+            styleStorage: XLStyleStorage
         ) {
             self.width = XMLUtils.doubleAttribute(name: "width", in: columnElement)
-            self.format = Self.format(in: columnElement, styles: styles)
+            self.format = Self.format(in: columnElement, styleStorage: styleStorage)
             self.customWidth = XMLUtils.boolAttribute(name: "customWidth", in: columnElement, defaultValue: nil)
             self.hidden = XMLUtils.boolAttribute(name: "hidden", in: columnElement, defaultValue: nil)
             self.bestFit = XMLUtils.boolAttribute(name: "bestFit", in: columnElement, defaultValue: nil)
@@ -31,13 +31,13 @@ public final class XLColumnStorage {
             to columnElement: XMLElement,
             minColumnNumber: Int,
             maxColumnNumber: Int,
-            styles: XLStylesFile?
+            styleStorage: XLStyleStorage?
         ) throws {
             XMLUtils.setIntAttribute(name: "min", value: minColumnNumber, in: columnElement)
             XMLUtils.setIntAttribute(name: "max", value: maxColumnNumber, in: columnElement)
             XMLUtils.setDoubleAttribute(name: "width", value: width, in: columnElement)
             XMLUtils.setBoolAttribute(name: "customWidth", value: writeCustomWidth, in: columnElement)
-            columnElement.setAttribute(name: "style", value: try formatIndex(styles: styles).map(String.init))
+            columnElement.setAttribute(name: "style", value: try formatIndex(styleStorage: styleStorage).map(String.init))
             XMLUtils.setBoolAttribute(name: "hidden", value: hidden, in: columnElement)
             XMLUtils.setBoolAttribute(name: "bestFit", value: bestFit, in: columnElement)
             XMLUtils.setIntAttribute(name: "outlineLevel", value: outlineLevel, in: columnElement)
@@ -58,33 +58,33 @@ public final class XLColumnStorage {
 
         private static func format(
             in columnElement: XMLElement,
-            styles: XLStylesFile
+            styleStorage: XLStyleStorage
         ) -> XLCellFormat? {
             guard let formatIndex = formatIndex(in: columnElement) else {
                 return nil
             }
 
-            guard let record = styles.cellFormats.record(at: formatIndex) else {
+            guard let record = styleStorage.cellFormats.record(at: formatIndex) else {
                 return nil
             }
 
             return XLCellFormat(
                 record: record,
-                numberFormats: styles.numberFormats,
-                fonts: styles.fonts,
-                fills: styles.fills,
-                borders: styles.borders,
-                cellStyleFormats: styles.cellStyleFormats
+                numberFormats: styleStorage.numberFormats,
+                fonts: styleStorage.fonts,
+                fills: styleStorage.fills,
+                borders: styleStorage.borders,
+                cellStyleFormats: styleStorage.cellStyleFormats
             )
         }
 
-        private func formatIndex(styles: XLStylesFile?) throws -> Int? {
-            guard let format, let styles else {
+        private func formatIndex(styleStorage: XLStyleStorage?) throws -> Int? {
+            guard let format, let styleStorage else {
                 return nil
             }
 
-            let formatRecord = try format.record(styles: styles)
-            return styles.cellFormats.index(for: formatRecord)
+            let formatRecord = try format.record(styleStorage: styleStorage)
+            return styleStorage.cellFormats.index(for: formatRecord)
         }
     }
 
@@ -112,9 +112,9 @@ public final class XLColumnStorage {
 
     public init(
         columnElement: XMLElement,
-        styles: XLStylesFile
+        styleStorage: XLStyleStorage
     ) {
-        self.fields = Fields(columnElement: columnElement, styles: styles)
+        self.fields = Fields(columnElement: columnElement, styleStorage: styleStorage)
     }
 
     public var fields: Fields
@@ -162,18 +162,18 @@ public final class XLColumnStorage {
     public func write(
         to columnElement: XMLElement,
         columnNumber: Int,
-        styles: XLStylesFile? = nil
+        styleStorage: XLStyleStorage? = nil
     ) throws {
         try fields.write(
             to: columnElement,
             minColumnNumber: columnNumber,
             maxColumnNumber: columnNumber,
-            styles: styles
+            styleStorage: styleStorage
         )
     }
 
-    public func collectStyle(stage: XLStyleCollectionStage, styles: XLStylesFile) throws {
-        try format?.collectStyle(stage: stage, styles: styles)
+    public func collectStyle(stage: XLStyleCollectionStage, styleStorage: inout XLStyleStorage) throws {
+        try format?.collectStyle(stage: stage, styleStorage: &styleStorage)
     }
 
     public func clone() -> XLColumnStorage {

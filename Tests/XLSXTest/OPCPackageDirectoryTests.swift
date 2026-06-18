@@ -143,7 +143,7 @@ struct OPCPackageDirectoryTests {
         #expect(package.data(at: path) == Data([0xde, 0xad, 0xbe, 0xef]))
     }
 
-    @Test func insertsXMLDocumentConvertibleFileWithPath() throws {
+    @Test func insertsXMLFileWithPath() throws {
         let path = try OPCFilePath(string: "/xl/_rels/workbook.xml.rels")
         let pathWithFile = OPCPathWithFile(
             path: path,
@@ -157,7 +157,9 @@ struct OPCPackageDirectoryTests {
         )
         var package = OPCPackage()
 
-        try package.insertFile(pathWithFile: pathWithFile)
+        try package.insertXMLFile(pathWithFile: pathWithFile) { file in
+            file.xmlDocument()
+        }
 
         let data = try #require(package.data(at: path))
         let xml = String(decoding: data, as: UTF8.self)

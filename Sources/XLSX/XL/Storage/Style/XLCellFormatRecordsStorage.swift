@@ -4,8 +4,8 @@ extension XLCellFormatRecordsStorage {
     @discardableResult
     public func register(
         _ format: XLCellFormat,
-        styles: XLStylesFile
+        styleStorage: XLStyleStorage
     ) throws -> Int {
-        try register(format.record(styles: styles))
+        try register(format.record(styleStorage: styleStorage))
     }
 }

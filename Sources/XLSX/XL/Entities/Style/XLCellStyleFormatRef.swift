@@ -95,26 +95,26 @@ public struct XLCellStyleFormatRef: Hashable {
         )
     }
 
-    public func collectStyle(stage: XLStyleCollectionStage, styles: XLStylesFile) {
+    public func collectStyle(stage: XLStyleCollectionStage, styleStorage: inout XLStyleStorage) {
         switch stage {
         case .numberFormats:
             if case let .format(format)? = numberFormat {
-                styles.numberFormats.register(format)
+                styleStorage.numberFormats.register(format)
             }
         case .fonts:
             if let font {
-                styles.fonts.register(font.record)
+                styleStorage.fonts.register(font.record)
             }
         case .fills:
             if let fill {
-                styles.fills.register(fill)
+                styleStorage.fills.register(fill)
             }
         case .borders:
             if let border {
-                styles.borders.register(border)
+                styleStorage.borders.register(border)
             }
         case .cellStyleFormats:
-            styles.cellStyleFormats.register(self)
+            styleStorage.cellStyleFormats.register(self)
         case .cellFormats:
             break
         }

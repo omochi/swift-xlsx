@@ -2,7 +2,7 @@ import MemberwiseInit
 import Foundation
 
 @MemberwiseInit(.public)
-public struct OPCRelsFile: Sendable, XMLDocumentConvertible {
+public struct OPCRelsFile: Sendable {
     public init(xmlDocument: XMLDocument) throws {
         guard let root = xmlDocument.element(name: "Relationships") else {
             throw OPCError.invalidRelationshipsFile

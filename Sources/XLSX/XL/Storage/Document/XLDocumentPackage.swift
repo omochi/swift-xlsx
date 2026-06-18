@@ -50,11 +50,20 @@ public final class XLDocumentPackage {
             read: XLSharedStringsFile.init(xmlDocument:),
             consumedPaths: &consumedPaths
         )
+        let stylesPath = try XLStylesFile.path(workbookPath: workbook.path, workbookRels: workbookRels.file)
+        var styleStorage = XLStyleStorage()
         let styles = try Self.readFile(
             from: opcPackage,
-            at: try XLStylesFile.path(workbookPath: workbook.path, workbookRels: workbookRels.file),
+            at: stylesPath,
             default: XLStylesFile(),
-            read: XLStylesFile.init(xmlDocument:),
+            read: { xmlDocument in
+                let decodedStyleStorage = try XLStyleStorage(xmlDocument: xmlDocument)
+                styleStorage = decodedStyleStorage
+                return try XLStylesFile(
+                    xmlDocument: xmlDocument,
+                    styleStorage: decodedStyleStorage
+                )
+            },
             consumedPaths: &consumedPaths
         )
 
@@ -64,7 +73,7 @@ public final class XLDocumentPackage {
             workbookPath: workbook.path,
             workbookRels: workbookRels.file,
             sharedStrings: sharedStrings.file,
-            styles: styles.file,
+            styleStorage: styleStorage,
             consumedPaths: &consumedPaths
         )
 
@@ -106,9 +115,10 @@ public final class XLDocumentPackage {
         sharedStrings.file.records = XLSharedStringRecordsStorage()
         workbook.file.collectSharedStrings(sharedStrings: sharedStrings.file)
 
-        styles.file.resetCollectableStyleElements()
+        var styleStorage = XLStyleStorage()
+        styleStorage.resetCollectableStyleElements(cellStyles: &styles.file.cellStyles)
 
-        try workbook.file.collectStyle(styles: styles.file)
+        try workbook.file.collectStyle(styleStorage: &styleStorage)
 
         workbookRels.file.ensureRelationship(
             type: XMLNamespaceURI.sharedStrings.string,
@@ -123,20 +133,31 @@ public final class XLDocumentPackage {
         for opaqueFile in opaqueFiles {
             try package.insertFile(data: opaqueFile.file.data(), at: opaqueFile.path)
         }
-        try package.insertFile(pathWithFile: packageRels)
-        try package.insertFile(pathWithFile: workbook)
-        try package.insertFile(pathWithFile: workbookRels)
+        try package.insertXMLFile(pathWithFile: packageRels) { file in
+            file.xmlDocument()
+        }
+        try package.insertXMLFile(pathWithFile: workbook) { file in
+            try file.xmlDocument()
+        }
+        try package.insertXMLFile(pathWithFile: workbookRels) { file in
+            file.xmlDocument()
+        }
         for file in workbookItems.files {
             if !Self.containsOpaqueFile(at: file.path, in: opaqueFiles) {
-                let xml = try file.file.xmlDocument(
-                    sharedStrings: sharedStrings.file,
-                    styles: styles.file
-                )
-                try package.insertFile(xmlDocument: xml, at: file.path)
+                try package.insertXMLFile(pathWithFile: file) { file in
+                    try file.xmlDocument(
+                        sharedStrings: sharedStrings.file,
+                        styleStorage: styleStorage
+                    )
+                }
             }
         }
-        try package.insertFile(pathWithFile: sharedStrings)
-        try package.insertFile(pathWithFile: styles)
+        try package.insertXMLFile(pathWithFile: sharedStrings) { file in
+            try file.xmlDocument()
+        }
+        try package.insertXMLFile(pathWithFile: styles) { file in
+            try file.xmlDocument(styleStorage: styleStorage)
+        }
         Self.registerRequiredContentTypes(
             in: &contentTypes.file,
             workbookPath: workbook.path,
@@ -145,7 +166,9 @@ public final class XLDocumentPackage {
             stylesPath: styles.path,
             stylesContentType: OPCContentTypes.styles
         )
-        try package.insertFile(pathWithFile: contentTypes)
+        try package.insertXMLFile(pathWithFile: contentTypes) { file in
+            file.xmlDocument()
+        }
 
         return package
     }
@@ -201,7 +224,7 @@ public final class XLDocumentPackage {
         workbookPath: OPCFilePath,
         workbookRels: OPCRelsFile,
         sharedStrings: XLSharedStringsFile,
-        styles: XLStylesFile,
+        styleStorage: XLStyleStorage,
         consumedPaths: inout Set<OPCFilePath>
     ) throws -> [Int: OPCPathWithFile<XLWorksheetFile>] {
         var worksheets: [Int: OPCPathWithFile<XLWorksheetFile>] = [:]
@@ -216,7 +239,7 @@ public final class XLDocumentPackage {
                 from: package,
                 at: path,
                 sharedStrings: sharedStrings,
-                styles: styles,
+                styleStorage: styleStorage,
                 default: XLWorksheetFile(),
                 consumedPaths: &consumedPaths
             )
@@ -229,7 +252,7 @@ public final class XLDocumentPackage {
         from package: OPCPackage,
         at path: OPCFilePath,
         sharedStrings: XLSharedStringsFile,
-        styles: XLStylesFile,
+        styleStorage: XLStyleStorage,
         default defaultFile: @autoclosure () -> XLWorksheetFile,
         consumedPaths: inout Set<OPCFilePath>
     ) throws -> OPCPathWithFile<XLWorksheetFile> {
@@ -243,7 +266,7 @@ public final class XLDocumentPackage {
             file: XLWorksheetFile(
                 xmlDocument: XMLDocument(data: data),
                 sharedStrings: sharedStrings,
-                styles: styles
+                styleStorage: styleStorage
             )
         )
     }

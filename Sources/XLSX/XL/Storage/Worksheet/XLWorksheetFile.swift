@@ -17,16 +17,16 @@ public final class XLWorksheetFile {
     public init(
         xmlDocument: XMLDocument,
         sharedStrings: XLSharedStringsFile,
-        styles: XLStylesFile
+        styleStorage: XLStyleStorage
     ) throws {
         let rowByNumber = Self.rows(
             in: xmlDocument,
             sharedStrings: sharedStrings,
-            styles: styles
+            styleStorage: styleStorage
         )
 
         self.original = xmlDocument
-        self.columnByNumber = Self.columns(in: xmlDocument, styles: styles)
+        self.columnByNumber = Self.columns(in: xmlDocument, styleStorage: styleStorage)
         self.rowByNumber = rowByNumber
     }
 
@@ -107,28 +107,28 @@ public final class XLWorksheetFile {
     }
 
     public func xmlDocument() throws -> XMLDocument {
-        try xmlDocument(sharedStrings: nil, styles: nil)
+        try xmlDocument(sharedStrings: nil, styleStorage: nil)
     }
 
     func xmlDocument(
         sharedStrings: XLSharedStringsFile,
-        styles: XLStylesFile
+        styleStorage: XLStyleStorage
     ) throws -> XMLDocument {
-        try xmlDocument(sharedStrings: Optional(sharedStrings), styles: Optional(styles))
+        try xmlDocument(sharedStrings: Optional(sharedStrings), styleStorage: Optional(styleStorage))
     }
 
     private func xmlDocument(
         sharedStrings: XLSharedStringsFile?,
-        styles: XLStylesFile?
+        styleStorage: XLStyleStorage?
     ) throws -> XMLDocument {
         let document = original?.clone() ?? XMLDocument()
         let worksheetElement = XMLUtils.ensureRootElement(name: "worksheet", in: document)
         worksheetElement.ensureNamespace(uri: .spreadsheet)
-        try writeColumns(to: worksheetElement, styles: styles)
+        try writeColumns(to: worksheetElement, styleStorage: styleStorage)
         try writeRows(
             to: worksheetElement,
             sharedStrings: sharedStrings,
-            styles: styles
+            styleStorage: styleStorage
         )
         return document
     }
@@ -144,12 +144,12 @@ public final class XLWorksheetFile {
         }
     }
 
-    public func collectStyle(stage: XLStyleCollectionStage, styles: XLStylesFile) throws {
+    public func collectStyle(stage: XLStyleCollectionStage, styleStorage: inout XLStyleStorage) throws {
         for column in existingColumns {
-            try column.collectStyle(stage: stage, styles: styles)
+            try column.collectStyle(stage: stage, styleStorage: &styleStorage)
         }
         for row in existingRows {
-            try row.collectStyle(stage: stage, styles: styles)
+            try row.collectStyle(stage: stage, styleStorage: &styleStorage)
         }
     }
 
@@ -168,7 +168,7 @@ public final class XLWorksheetFile {
 
     private static func columns(
         in document: XMLDocument,
-        styles: XLStylesFile
+        styleStorage: XLStyleStorage
     ) -> [Int: XLColumnStorage] {
         guard let worksheetElement = document.element(name: "worksheet") else {
             return [:]
@@ -184,7 +184,7 @@ public final class XLWorksheetFile {
                     continue
                 }
 
-                let column = XLColumnStorage(columnElement: columnElement, styles: styles)
+                let column = XLColumnStorage(columnElement: columnElement, styleStorage: styleStorage)
                 for columnNumber in min...max {
                     columns[columnNumber] = column.clone()
                 }
@@ -197,7 +197,7 @@ public final class XLWorksheetFile {
     private static func rows(
         in document: XMLDocument,
         sharedStrings: XLSharedStringsFile,
-        styles: XLStylesFile
+        styleStorage: XLStyleStorage
     ) -> [Int: XLRowStorage] {
         guard let worksheetElement = document.element(name: "worksheet"),
               let sheetDataElement = worksheetElement.elements(name: "sheetData").first
@@ -220,7 +220,7 @@ public final class XLWorksheetFile {
                 rowElement: rowElement,
                 rowNumber: rowNumber,
                 sharedStrings: sharedStrings,
-                styles: styles,
+                styleStorage: styleStorage,
                 sharedFormulaDefinitionAddressByIndex: sharedFormulaDefinitionAddressByIndex
             )
         }
@@ -266,7 +266,7 @@ public final class XLWorksheetFile {
     private func writeRows(
         to worksheetElement: XMLElement,
         sharedStrings: XLSharedStringsFile? = nil,
-        styles: XLStylesFile? = nil
+        styleStorage: XLStyleStorage? = nil
     ) throws {
         guard !rowByNumber.isEmpty else {
             return
@@ -286,7 +286,7 @@ public final class XLWorksheetFile {
                 to: rowElement,
                 rowNumber: rowNumber,
                 sharedStrings: sharedStrings,
-                styles: styles,
+                styleStorage: styleStorage,
                 formulaSharedIndicesByDefinitionAddress: formulaSharedIndicesByDefinitionAddress
             )
         }
@@ -354,7 +354,7 @@ public final class XLWorksheetFile {
 
     private func writeColumns(
         to worksheetElement: XMLElement,
-        styles: XLStylesFile? = nil
+        styleStorage: XLStyleStorage? = nil
     ) throws {
         guard !columnByNumber.isEmpty else {
             return
@@ -379,7 +379,7 @@ public final class XLWorksheetFile {
                 to: element,
                 minColumnNumber: range.minColumnNumber,
                 maxColumnNumber: range.maxColumnNumber,
-                styles: styles
+                styleStorage: styleStorage
             )
             return element
         }

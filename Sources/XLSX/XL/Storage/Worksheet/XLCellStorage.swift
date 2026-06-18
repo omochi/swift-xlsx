@@ -14,7 +14,7 @@ public final class XLCellStorage {
     public init?(
         cellElement: XMLElement,
         sharedStrings: XLSharedStringsFile,
-        styles: XLStylesFile,
+        styleStorage: XLStyleStorage,
         sharedFormulaDefinitionAddressByIndex: [Int: XLCellAddress] = [:]
     ) {
         guard let value = XLCellValue(
@@ -27,7 +27,7 @@ public final class XLCellStorage {
         self.value = value
         self.format = Self.format(
             in: cellElement,
-            styles: styles
+            styleStorage: styleStorage
         )
         self.formula = Self.formula(
             in: cellElement,
@@ -43,10 +43,10 @@ public final class XLCellStorage {
         to cellElement: XMLElement,
         address: XLCellAddress? = nil,
         sharedStrings: XLSharedStringsFile? = nil,
-        styles: XLStylesFile? = nil,
+        styleStorage: XLStyleStorage? = nil,
         formulaSharedIndicesByDefinitionAddress: [XLCellAddress: Int]? = nil
     ) throws {
-        try writeFormat(to: cellElement, styles: styles)
+        try writeFormat(to: cellElement, styleStorage: styleStorage)
 
         cellElement.children = cellElement.children.filter { child in
             guard let element = child as? XMLElement else {
@@ -116,8 +116,8 @@ public final class XLCellStorage {
         }
     }
 
-    public func collectStyle(stage: XLStyleCollectionStage, styles: XLStylesFile) throws {
-        try format?.collectStyle(stage: stage, styles: styles)
+    public func collectStyle(stage: XLStyleCollectionStage, styleStorage: inout XLStyleStorage) throws {
+        try format?.collectStyle(stage: stage, styleStorage: &styleStorage)
     }
 
     public func clone() -> XLCellStorage {
@@ -133,23 +133,23 @@ public final class XLCellStorage {
 
     private static func format(
         in cellElement: XMLElement,
-        styles: XLStylesFile
+        styleStorage: XLStyleStorage
     ) -> XLCellFormat? {
         guard let formatIndex = formatIndex(in: cellElement) else {
             return nil
         }
 
-        guard let record = styles.cellFormats.record(at: formatIndex) else {
+        guard let record = styleStorage.cellFormats.record(at: formatIndex) else {
             return nil
         }
 
         return XLCellFormat(
             record: record,
-            numberFormats: styles.numberFormats,
-            fonts: styles.fonts,
-            fills: styles.fills,
-            borders: styles.borders,
-            cellStyleFormats: styles.cellStyleFormats
+            numberFormats: styleStorage.numberFormats,
+            fonts: styleStorage.fonts,
+            fills: styleStorage.fills,
+            borders: styleStorage.borders,
+            cellStyleFormats: styleStorage.cellStyleFormats
         )
     }
 
@@ -169,19 +169,19 @@ public final class XLCellStorage {
 
     private func writeFormat(
         to cellElement: XMLElement,
-        styles: XLStylesFile?
+        styleStorage: XLStyleStorage?
     ) throws {
         guard let format,
-              let styles
+              let styleStorage
         else {
             removeAttribute(name: "s", in: cellElement)
             return
         }
 
-        let formatRecord = try format.record(styles: styles)
+        let formatRecord = try format.record(styleStorage: styleStorage)
         cellElement.setAttribute(
             name: "s",
-            value: styles.cellFormats.index(for: formatRecord).map(String.init)
+            value: styleStorage.cellFormats.index(for: formatRecord).map(String.init)
         )
     }
 

@@ -1,6 +1,6 @@
 import Foundation
 
-public final class XLSharedStringsFile: XMLDocumentConvertible {
+public final class XLSharedStringsFile {
     public init(records: [XLSharedStringRecord] = []) {
         self.records = XLSharedStringRecordsStorage(records: records)
         self.original = nil

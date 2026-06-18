@@ -140,8 +140,14 @@ public struct OPCPackage: Sendable {
         try insertFile(data: xmlDocument.data, at: path)
     }
 
-    public mutating func insertFile<File>(pathWithFile: OPCPathWithFile<File>) throws where File: XMLDocumentConvertible {
-        try insertFile(xmlDocument: try pathWithFile.file.xmlDocument(), at: pathWithFile.path)
+    public mutating func insertXMLFile<File>(
+        pathWithFile: OPCPathWithFile<File>,
+        makeXMLDocument: (File) throws -> XMLDocument
+    ) throws {
+        try insertFile(
+            xmlDocument: try makeXMLDocument(pathWithFile.file),
+            at: pathWithFile.path
+        )
     }
 
     public mutating func insertFile(_ pathWithFile: OPCOpaquePathWithFile) throws {

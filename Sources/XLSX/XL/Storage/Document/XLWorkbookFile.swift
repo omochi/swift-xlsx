@@ -1,7 +1,7 @@
 import MemberwiseInit
 import Foundation
 
-public final class XLWorkbookFile: XMLDocumentConvertible {
+public final class XLWorkbookFile {
     @MemberwiseInit(.public)
     public struct AddedWorksheet {
         public var sheet: XLWorkbookFileSheet
@@ -117,15 +117,15 @@ public final class XLWorkbookFile: XMLDocumentConvertible {
         }
     }
 
-    public func collectStyle(styles: XLStylesFile) throws {
+    public func collectStyle(styleStorage: inout XLStyleStorage) throws {
         for stage in XLStyleCollectionStage.allCases {
-            try collectStyle(stage: stage, styles: styles)
+            try collectStyle(stage: stage, styleStorage: &styleStorage)
         }
     }
 
-    public func collectStyle(stage: XLStyleCollectionStage, styles: XLStylesFile) throws {
+    public func collectStyle(stage: XLStyleCollectionStage, styleStorage: inout XLStyleStorage) throws {
         for worksheet in worksheets {
-            try worksheet.file.collectStyle(stage: stage, styles: styles)
+            try worksheet.file.collectStyle(stage: stage, styleStorage: &styleStorage)
         }
     }
 
