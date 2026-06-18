@@ -14,7 +14,8 @@ public final class XLCellStorage {
     public init?(
         cellElement: XMLElement,
         sharedStrings: XLSharedStringsFile,
-        styles: XLStylesFile
+        styles: XLStylesFile,
+        sharedFormulaDefinitionAddressByIndex: [Int: XLCellAddress] = [:]
     ) {
         guard let value = XLCellValue(
             cellElement: cellElement,
@@ -28,7 +29,10 @@ public final class XLCellStorage {
             in: cellElement,
             styles: styles
         )
-        self.formula = Self.formula(in: cellElement)
+        self.formula = Self.formula(
+            in: cellElement,
+            sharedFormulaDefinitionAddressByIndex: sharedFormulaDefinitionAddressByIndex
+        )
     }
 
     public var value: XLCellValue
@@ -37,8 +41,10 @@ public final class XLCellStorage {
 
     public func write(
         to cellElement: XMLElement,
+        address: XLCellAddress? = nil,
         sharedStrings: XLSharedStringsFile? = nil,
-        styles: XLStylesFile? = nil
+        styles: XLStylesFile? = nil,
+        formulaSharedIndicesByDefinitionAddress: [XLCellAddress: Int]? = nil
     ) throws {
         try writeFormat(to: cellElement, styles: styles)
 
@@ -49,20 +55,57 @@ public final class XLCellStorage {
             return element.name.name != "f" && element.name.name != "v" && element.name.name != "is"
         }
 
+        var didWriteFormula = false
         if let formula {
-            cellElement.appendChild(formula.record.xmlElement())
+            let record = self.formulaRecord(
+                for: formula,
+                address: address,
+                sharedIndicesByDefinitionAddress: formulaSharedIndicesByDefinitionAddress
+            )
+            if let record {
+                cellElement.appendChild(record.xmlElement())
+                didWriteFormula = true
+            }
         }
 
-        try writeValue(to: cellElement, sharedStrings: sharedStrings)
+        try writeValue(
+            to: cellElement,
+            sharedStrings: sharedStrings,
+            hasFormula: didWriteFormula
+        )
     }
 
     public func collectSharedStrings(sharedStrings: XLSharedStringsFile) {
-        if formula != nil,
+        if let formula,
+           formula.kind != .sharedReference,
            case .string = value
         {
             return
         }
 
+        collectValueSharedStrings(sharedStrings: sharedStrings)
+    }
+
+    public func collectSharedStrings(
+        sharedStrings: XLSharedStringsFile,
+        address: XLCellAddress,
+        formulaSharedIndicesByDefinitionAddress: [XLCellAddress: Int]
+    ) {
+        if let formula,
+           case .string = value,
+           willWriteFormula(
+               formula,
+               address: address,
+               sharedIndicesByDefinitionAddress: formulaSharedIndicesByDefinitionAddress
+           )
+        {
+            return
+        }
+
+        collectValueSharedStrings(sharedStrings: sharedStrings)
+    }
+
+    private func collectValueSharedStrings(sharedStrings: XLSharedStringsFile) {
         switch value {
         case let .string(text):
             sharedStrings.records.register(text)
@@ -110,12 +153,18 @@ public final class XLCellStorage {
         )
     }
 
-    private static func formula(in cellElement: XMLElement) -> XLFormula? {
+    private static func formula(
+        in cellElement: XMLElement,
+        sharedFormulaDefinitionAddressByIndex: [Int: XLCellAddress]
+    ) -> XLFormula? {
         guard let formulaElement = cellElement.elements(name: "f").first else {
             return nil
         }
 
-        return XLFormula(record: XLFormulaRecord(formulaElement: formulaElement))
+        return XLFormula(
+            record: XLFormulaRecord(formulaElement: formulaElement),
+            sharedFormulaDefinitionAddressByIndex: sharedFormulaDefinitionAddressByIndex
+        )
     }
 
     private func writeFormat(
@@ -138,9 +187,10 @@ public final class XLCellStorage {
 
     private func writeValue(
         to cellElement: XMLElement,
-        sharedStrings: XLSharedStringsFile?
+        sharedStrings: XLSharedStringsFile?,
+        hasFormula: Bool
     ) throws {
-        if formula != nil,
+        if hasFormula,
            case let .string(text) = value
         {
             cellElement.setAttribute(name: "t", value: "str")
@@ -149,6 +199,56 @@ public final class XLCellStorage {
         }
 
         try value.write(to: cellElement, sharedStrings: sharedStrings?.records)
+    }
+
+    private func formulaRecord(
+        for formula: XLFormula,
+        address: XLCellAddress?,
+        sharedIndicesByDefinitionAddress: [XLCellAddress: Int]?
+    ) -> XLFormulaRecord? {
+        switch formula {
+        case let .regular(formula):
+            return XLFormulaRecord(formula: formula)
+        case let .sharedDefinition(definition):
+            return XLFormulaRecord(
+                formula: definition.formula,
+                kind: .shared,
+                sharedIndex: address.flatMap { sharedIndicesByDefinitionAddress?[$0] },
+                reference: definition.reference
+            )
+        case let .sharedReference(address):
+            guard let sharedIndex = sharedIndicesByDefinitionAddress?[address] else {
+                return nil
+            }
+
+            return XLFormulaRecord(
+                formula: nil,
+                kind: .shared,
+                sharedIndex: sharedIndex
+            )
+        case let .array(xmlString), let .dataTable(xmlString):
+            guard let element = try? XMLElement(xmlString: xmlString),
+                  element.name.name == "f"
+            else {
+                return nil
+            }
+            return XLFormulaRecord(formulaElement: element)
+        }
+    }
+
+    private func willWriteFormula(
+        _ formula: XLFormula,
+        address: XLCellAddress,
+        sharedIndicesByDefinitionAddress: [XLCellAddress: Int]
+    ) -> Bool {
+        switch formula {
+        case .regular, .array, .dataTable:
+            return true
+        case .sharedDefinition:
+            return sharedIndicesByDefinitionAddress[address] != nil
+        case let .sharedReference(address):
+            return sharedIndicesByDefinitionAddress[address] != nil
+        }
     }
 
     private func appendValueElement(to cellElement: XMLElement, text: String) {

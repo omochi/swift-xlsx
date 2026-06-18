@@ -165,7 +165,11 @@ struct XLWorksheetFileTests {
         #expect(worksheet.existingRow(1)?.existingCell(column: 5)?.value == .string("2026-06-16T09:30:00Z"))
         #expect(worksheet.existingRow(1)?.existingCell(column: 6)?.value == .string("inline"))
         #expect(worksheet.existingRow(1)?.existingCell(column: 7)?.value == .string("cached"))
-        #expect(worksheet.existingRow(1)?.existingCell(column: 7)?.formula?.formula == #"TEXT(1,"0")"#)
+        if case let .regular(formula) = worksheet.formula(at: XLCellAddress(row: 1, column: 7)) {
+            #expect(formula == #"TEXT(1,"0")"#)
+        } else {
+            Issue.record("Expected regular formula.")
+        }
         #expect(worksheet.existingRow(1)?.existingCell(column: 8) == nil)
         #expect(worksheet.existingRow(1)?.existingCell(column: 9)?.value == .boolean(false))
         #expect(worksheet.existingRow(1)?.existingCell(column: 10)?.value == .boolean(true))
@@ -327,11 +331,11 @@ struct XLWorksheetFileTests {
             1: XLRowStorage(cellByColumn: [
                 1: XLCellStorage(
                     value: .number(42),
-                    formula: XLFormula(formula: "SUM(B1:C1)")
+                    formula: .regular("SUM(B1:C1)")
                 ),
                 2: XLCellStorage(
                     value: .string("cached"),
-                    formula: XLFormula(formula: #"TEXT(1,"0")"#)
+                    formula: .regular(#"TEXT(1,"0")"#)
                 ),
             ]),
         ])
@@ -340,6 +344,125 @@ struct XLWorksheetFileTests {
 
         #expect(xml.contains(#"<c r="A1"><f t="normal">SUM(B1:C1)</f><v>42</v></c>"#))
         #expect(xml.contains(#"<c r="B1" t="str"><f t="normal">TEXT(1,"0")</f><v>cached</v></c>"#))
+    }
+
+    @Test func readsSharedFormulaReferencesAsDefinitionAddresses() throws {
+        let worksheet = try worksheetFile(data: Data("""
+            <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
+              <sheetData>
+                <row r="1">
+                  <c r="A1"><f t="shared" si="4" ref="A1:A2">B1+C1</f><v>3</v></c>
+                </row>
+                <row r="2">
+                  <c r="A2"><f t="shared" si="4"/><v>7</v></c>
+                </row>
+              </sheetData>
+            </worksheet>
+            """.utf8))
+
+        if case let .sharedDefinition(definition) = worksheet.formula(at: XLCellAddress(row: 1, column: 1)) {
+            #expect(definition.formula == "B1+C1")
+            #expect(definition.reference == XLCellRangeAddress("A1:A2"))
+        } else {
+            Issue.record("Expected shared formula definition.")
+        }
+
+        if case let .sharedReference(address) = worksheet.formula(at: XLCellAddress(row: 2, column: 1)) {
+            #expect(address == XLCellAddress(row: 1, column: 1))
+        } else {
+            Issue.record("Expected shared formula reference.")
+        }
+    }
+
+    @Test func writesSharedFormulaReferencesWithGeneratedSharedIndex() throws {
+        let worksheet = XLWorksheetFile(rowByNumber: [
+            1: XLRowStorage(cellByColumn: [
+                1: XLCellStorage(
+                    value: .number(3),
+                    formula: .sharedDefinition(XLSharedFormulaDefinition(
+                        formula: "B1+C1",
+                        reference: XLCellRangeAddress("A1:A2")
+                    ))
+                ),
+            ]),
+            2: XLRowStorage(cellByColumn: [
+                1: XLCellStorage(
+                    value: .number(7),
+                    formula: .sharedReference(address: XLCellAddress(row: 1, column: 1))
+                ),
+            ]),
+        ])
+
+        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+
+        #expect(xml.contains(#"<c r="A1"><f t="shared" si="0" ref="A1:A2">B1+C1</f><v>3</v></c>"#))
+        #expect(xml.contains(#"<c r="A2"><f t="shared" si="0"/><v>7</v></c>"#))
+    }
+
+    @Test func writesDanglingSharedFormulaReferencesAsCellsWithoutFormula() throws {
+        let worksheet = XLWorksheetFile(rowByNumber: [
+            1: XLRowStorage(cellByColumn: [
+                1: XLCellStorage(
+                    value: .number(7),
+                    formula: .sharedReference(address: XLCellAddress(row: 3, column: 1))
+                ),
+            ]),
+        ])
+
+        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+
+        #expect(xml.contains(#"<c r="A1"><v>7</v></c>"#))
+        #expect(!xml.contains(#"<f"#))
+    }
+
+    @Test func keepsDanglingSharedFormulaReferencesInModelWithoutWritingFormula() throws {
+        let document = XLDocument()
+        let worksheet = try #require(document.workbook.worksheets.first)
+        let definitionCell = worksheet.cell(row: 1, column: 1)
+        let referenceCell = worksheet.cell(row: 2, column: 1)
+        definitionCell.value = .number(3)
+        referenceCell.value = .number(7)
+
+        definitionCell.formula = .sharedDefinition(XLSharedFormulaDefinition(
+            formula: "B1+C1",
+            reference: XLCellRangeAddress("A1:A2")
+        ))
+        referenceCell.formula = .sharedReference(address: definitionCell.address)
+
+        if case let .sharedReference(address) = referenceCell.formula {
+            #expect(address == definitionCell.address)
+        } else {
+            Issue.record("Expected shared formula reference.")
+        }
+
+        definitionCell.formula = .regular("B1+C1")
+
+        if case let .sharedReference(address) = referenceCell.formula {
+            #expect(address == definitionCell.address)
+        } else {
+            Issue.record("Expected dangling shared formula reference to remain in the model.")
+        }
+
+        let xml = try String(decoding: worksheet.file.xmlDocument().data, as: UTF8.self)
+        #expect(xml.contains(#"<c r="A1"><f t="normal">B1+C1</f><v>3</v></c>"#))
+        #expect(xml.contains(#"<c r="A2"><v>7</v></c>"#))
+    }
+
+    @Test func dropsInvalidOpaqueFormulaXMLWhenSettingFormula() throws {
+        let document = XLDocument()
+        let worksheet = try #require(document.workbook.worksheets.first)
+        let cell = worksheet.cell(row: 1, column: 1)
+        cell.value = .number(7)
+
+        cell.formula = .array(xmlString: "<notFormula/>")
+        var xml = try String(decoding: worksheet.file.xmlDocument().data, as: UTF8.self)
+        #expect(xml.contains(#"<c r="A1"><v>7</v></c>"#))
+        #expect(!xml.contains(#"<f"#))
+
+        cell.formula = .dataTable(xmlString: "<f")
+        xml = try String(decoding: worksheet.file.xmlDocument().data, as: UTF8.self)
+        #expect(xml.contains(#"<c r="A1"><v>7</v></c>"#))
+        #expect(!xml.contains(#"<f"#))
     }
 
     @Test func removesCellFormatWhenStandaloneWorksheetHasNoWritePlan() throws {
@@ -398,7 +521,7 @@ struct XLWorksheetFileTests {
         let worksheet = try #require(document.workbook.worksheets.first)
         let cell = worksheet.cell(row: 1, column: 1)
         cell.value = .string("cached")
-        cell.formula = XLFormula(formula: #"TEXT(1,"0")"#)
+        cell.formula = .regular(#"TEXT(1,"0")"#)
         try document.save(to: url)
 
         let package = try OPCPackage(data: Data(contentsOf: url))
@@ -413,6 +536,36 @@ struct XLWorksheetFileTests {
 
         #expect(worksheetXML.contains(#"<c r="A1" t="str"><f t="normal">TEXT(1,"0")</f><v>cached</v></c>"#))
         #expect(!sharedStringsXML.contains(#"<t>cached</t>"#))
+    }
+
+    @Test func writesDanglingSharedFormulaStringCachedValuesAsRegularSharedStrings() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("swift-xlsx-tests-\(UUID().uuidString)")
+            .appendingPathExtension("xlsx")
+        defer {
+            try? FileManager.default.removeItem(at: url)
+        }
+
+        let document = XLDocument()
+        let worksheet = try #require(document.workbook.worksheets.first)
+        let cell = worksheet.cell(row: 1, column: 1)
+        cell.value = .string("cached")
+        cell.formula = .sharedReference(address: XLCellAddress(row: 3, column: 1))
+        try document.save(to: url)
+
+        let package = try OPCPackage(data: Data(contentsOf: url))
+        let worksheetXML = try String(
+            decoding: #require(package.data(at: OPCFilePath(string: "/xl/worksheets/sheet1.xml"))),
+            as: UTF8.self
+        )
+        let sharedStringsXML = try String(
+            decoding: #require(package.data(at: OPCFilePath(string: "/xl/sharedStrings.xml"))),
+            as: UTF8.self
+        )
+
+        #expect(worksheetXML.contains(#"<c r="A1" t="s"><v>0</v></c>"#))
+        #expect(!worksheetXML.contains(#"<f"#))
+        #expect(sharedStringsXML.contains(#"<t>cached</t>"#))
     }
 
     @Test func writesRowsSortedBeforeOtherSheetDataChildren() throws {

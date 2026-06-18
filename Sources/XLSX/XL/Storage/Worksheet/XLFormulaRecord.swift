@@ -2,16 +2,23 @@ import MemberwiseInit
 
 @MemberwiseInit(.public)
 public struct XLFormulaRecord: Sendable {
+    public enum Kind: String, Sendable & Hashable {
+        case normal
+        case shared
+        case array
+        case dataTable
+    }
+
     public init(formulaElement: XMLElement) {
         self.formula = Self.formula(in: formulaElement)
-        self.kind = formulaElement.attribute(name: "t").flatMap(XLFormula.Kind.init(rawValue:)) ?? .normal
+        self.kind = formulaElement.attribute(name: "t").flatMap(Kind.init(rawValue:)) ?? .normal
         self.sharedIndex = XMLUtils.intAttribute(name: "si", in: formulaElement)
         self.reference = formulaElement.attribute(name: "ref").flatMap(XLCellRangeAddress.init)
         self.opaqueAttributes = formulaElement.attributes.filter { !Self.isKnownAttribute($0) }
     }
 
     public var formula: String?
-    public var kind: XLFormula.Kind = .normal
+    public var kind: Kind = .normal
     public var sharedIndex: Int? = nil
     public var reference: XLCellRangeAddress? = nil
     public var opaqueAttributes: [XMLAttribute] = []

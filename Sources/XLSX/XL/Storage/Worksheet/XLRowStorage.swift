@@ -6,7 +6,8 @@ public final class XLRowStorage {
         rowElement: XMLElement,
         rowNumber: Int,
         sharedStrings: XLSharedStringsFile,
-        styles: XLStylesFile
+        styles: XLStylesFile,
+        sharedFormulaDefinitionAddressByIndex: [Int: XLCellAddress] = [:]
     ) {
         var cells: [Int: XLCellStorage] = [:]
         for cellElement in rowElement.elements(name: "c") {
@@ -16,7 +17,8 @@ public final class XLRowStorage {
                   let cell = XLCellStorage(
                     cellElement: cellElement,
                     sharedStrings: sharedStrings,
-                    styles: styles
+                    styles: styles,
+                    sharedFormulaDefinitionAddressByIndex: sharedFormulaDefinitionAddressByIndex
                   )
             else {
                 continue
@@ -64,7 +66,8 @@ public final class XLRowStorage {
         to rowElement: XMLElement,
         rowNumber: Int,
         sharedStrings: XLSharedStringsFile? = nil,
-        styles: XLStylesFile? = nil
+        styles: XLStylesFile? = nil,
+        formulaSharedIndicesByDefinitionAddress: [XLCellAddress: Int]? = nil
     ) throws {
         let rowChildren = cellElementsAndOtherChildren(in: rowElement, rowNumber: rowNumber)
         var cellElementByColumn = rowChildren.cellElementByColumn
@@ -77,8 +80,10 @@ public final class XLRowStorage {
             )
             try cell.write(
                 to: cellElement,
+                address: address,
                 sharedStrings: sharedStrings,
-                styles: styles
+                styles: styles,
+                formulaSharedIndicesByDefinitionAddress: formulaSharedIndicesByDefinitionAddress
             )
         }
 
@@ -89,6 +94,20 @@ public final class XLRowStorage {
     public func collectSharedStrings(sharedStrings: XLSharedStringsFile) {
         for cell in existingCells {
             cell.collectSharedStrings(sharedStrings: sharedStrings)
+        }
+    }
+
+    public func collectSharedStrings(
+        sharedStrings: XLSharedStringsFile,
+        formulaSharedIndicesByDefinitionAddress: [XLCellAddress: Int],
+        rowNumber: Int
+    ) {
+        for (column, cell) in existingCellsWithColumn {
+            cell.collectSharedStrings(
+                sharedStrings: sharedStrings,
+                address: XLCellAddress(row: rowNumber, column: column),
+                formulaSharedIndicesByDefinitionAddress: formulaSharedIndicesByDefinitionAddress
+            )
         }
     }
 

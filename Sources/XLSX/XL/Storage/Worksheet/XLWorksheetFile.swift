@@ -19,13 +19,15 @@ public final class XLWorksheetFile {
         sharedStrings: XLSharedStringsFile,
         styles: XLStylesFile
     ) throws {
-        self.original = xmlDocument
-        self.columnByNumber = Self.columns(in: xmlDocument, styles: styles)
-        self.rowByNumber = Self.rows(
+        let rowByNumber = Self.rows(
             in: xmlDocument,
             sharedStrings: sharedStrings,
             styles: styles
         )
+
+        self.original = xmlDocument
+        self.columnByNumber = Self.columns(in: xmlDocument, styles: styles)
+        self.rowByNumber = rowByNumber
     }
 
     public var columnByNumber: [Int: XLColumnStorage]
@@ -100,6 +102,10 @@ public final class XLWorksheetFile {
         cell(row: address.row, column: address.column)
     }
 
+    public func formula(at address: XLCellAddress) -> XLFormula? {
+        existingRow(address.row)?.existingCell(column: address.column)?.formula
+    }
+
     public func xmlDocument() throws -> XMLDocument {
         try xmlDocument(sharedStrings: nil, styles: nil)
     }
@@ -128,8 +134,13 @@ public final class XLWorksheetFile {
     }
 
     public func collectSharedStrings(sharedStrings: XLSharedStringsFile) {
-        for row in existingRows {
-            row.collectSharedStrings(sharedStrings: sharedStrings)
+        let formulaSharedIndicesByDefinitionAddress = sharedFormulaIndicesByDefinitionAddress()
+        for (rowNumber, row) in existingRowsWithNumber {
+            row.collectSharedStrings(
+                sharedStrings: sharedStrings,
+                formulaSharedIndicesByDefinitionAddress: formulaSharedIndicesByDefinitionAddress,
+                rowNumber: rowNumber
+            )
         }
     }
 
@@ -195,6 +206,9 @@ public final class XLWorksheetFile {
         }
 
         var rows: [Int: XLRowStorage] = [:]
+        let sharedFormulaDefinitionAddressByIndex = Self.sharedFormulaDefinitionAddressByIndex(
+            in: sheetDataElement
+        )
         for rowElement in sheetDataElement.elements(name: "row") {
             guard let rowNumberText = rowElement.attribute(name: "r"),
                   let rowNumber = Int(rowNumberText)
@@ -206,11 +220,47 @@ public final class XLWorksheetFile {
                 rowElement: rowElement,
                 rowNumber: rowNumber,
                 sharedStrings: sharedStrings,
-                styles: styles
+                styles: styles,
+                sharedFormulaDefinitionAddressByIndex: sharedFormulaDefinitionAddressByIndex
             )
         }
 
         return rows
+    }
+
+    private static func sharedFormulaDefinitionAddressByIndex(
+        in sheetDataElement: XMLElement
+    ) -> [Int: XLCellAddress] {
+        var addressByIndex: [Int: XLCellAddress] = [:]
+        for rowElement in sheetDataElement.elements(name: "row") {
+            guard let rowNumberText = rowElement.attribute(name: "r"),
+                  let rowNumber = Int(rowNumberText)
+            else {
+                continue
+            }
+
+            for cellElement in rowElement.elements(name: "c") {
+                guard let addressText = cellElement.attribute(name: "r"),
+                      let address = XLCellAddress(addressText),
+                      address.row == rowNumber,
+                      let formulaElement = cellElement.elements(name: "f").first
+                else {
+                    continue
+                }
+
+                let formulaRecord = XLFormulaRecord(formulaElement: formulaElement)
+                guard formulaRecord.kind == .shared,
+                      formulaRecord.formula != nil,
+                      let sharedIndex = formulaRecord.sharedIndex
+                else {
+                    continue
+                }
+
+                addressByIndex[sharedIndex] = address
+            }
+        }
+
+        return addressByIndex
     }
 
     private func writeRows(
@@ -225,6 +275,7 @@ public final class XLWorksheetFile {
         let sheetDataElement = XMLUtils.ensureChildElement(name: "sheetData", in: worksheetElement)
         let sheetDataChildren = rowElementsAndOtherChildren(in: sheetDataElement)
         var rowElementByNumber = sheetDataChildren.rowElementByNumber
+        let formulaSharedIndicesByDefinitionAddress = sharedFormulaIndicesByDefinitionAddress()
         for (rowNumber, row) in existingRowsWithNumber {
             let rowElement = rowElementForWriting(
                 rowNumber: rowNumber,
@@ -235,12 +286,29 @@ public final class XLWorksheetFile {
                 to: rowElement,
                 rowNumber: rowNumber,
                 sharedStrings: sharedStrings,
-                styles: styles
+                styles: styles,
+                formulaSharedIndicesByDefinitionAddress: formulaSharedIndicesByDefinitionAddress
             )
         }
 
         let rowElements = rowElementByNumber.sorted { $0.key < $1.key }.map { $0.value as XMLNode }
         sheetDataElement.children = rowElements + sheetDataChildren.otherChildren
+    }
+
+    private func sharedFormulaIndicesByDefinitionAddress() -> [XLCellAddress: Int] {
+        var indexByAddress: [XLCellAddress: Int] = [:]
+        for (rowNumber, row) in existingRowsWithNumber {
+            for (column, cell) in row.existingCellsWithColumn {
+                guard case .sharedDefinition = cell.formula else {
+                    continue
+                }
+
+                let address = XLCellAddress(row: rowNumber, column: column)
+                indexByAddress[address] = indexByAddress.count
+            }
+        }
+
+        return indexByAddress
     }
 
     private func rowElementForWriting(

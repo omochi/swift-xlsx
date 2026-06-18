@@ -2,9 +2,9 @@ import MemberwiseInit
 
 @MemberwiseInit(.public)
 public struct XLWorksheet {
-    public var package: XLDocumentPackage
-    public var sheetID: Int
-    public var file: XLWorksheetFile
+    public let package: XLDocumentPackage
+    public let sheetID: Int
+    public let file: XLWorksheetFile
 
     public var name: String {
         get {
