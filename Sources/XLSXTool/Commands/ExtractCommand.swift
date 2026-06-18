@@ -57,7 +57,7 @@ public struct ExtractCommand: ParsableCommand {
     }
 
     private func outputData(_ data: Data, for path: OPCFilePath) -> Data {
-        guard !raw, isXMLFile(path: path),
+        guard !raw, isFormattedXMLFile(path: path),
               let document = try? XMLDocument(data: data)
         else {
             return data
@@ -65,8 +65,11 @@ public struct ExtractCommand: ParsableCommand {
         return Data(document.xmlString(pretty: true).utf8)
     }
 
-    private func isXMLFile(path: OPCFilePath) -> Bool {
-        path.components.last?.lowercased().hasSuffix(".xml") == true
+    private func isFormattedXMLFile(path: OPCFilePath) -> Bool {
+        guard let fileName = path.components.last?.lowercased() else {
+            return false
+        }
+        return fileName.hasSuffix(".xml") || fileName.hasSuffix(".rels")
     }
 
     private func fileURL(for path: OPCFilePath, relativeTo directoryURL: URL) -> URL {

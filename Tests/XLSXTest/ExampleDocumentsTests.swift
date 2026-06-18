@@ -56,7 +56,7 @@ struct ExampleDocumentsTests {
         for path in paths {
             let data = try #require(package.data(at: path))
             let fixtureData = try #require(fixturePackage.data(at: path))
-            if isXMLFile(path) {
+            if isFormattedXMLFile(path) {
                 #expect(try normalizedXMLString(data) == normalizedXMLString(fixtureData))
             } else {
                 #expect(data == fixtureData)
@@ -64,8 +64,11 @@ struct ExampleDocumentsTests {
         }
     }
 
-    private func isXMLFile(_ path: OPCFilePath) -> Bool {
-        path.components.last?.lowercased().hasSuffix(".xml") == true
+    private func isFormattedXMLFile(_ path: OPCFilePath) -> Bool {
+        guard let fileName = path.components.last?.lowercased() else {
+            return false
+        }
+        return fileName.hasSuffix(".xml") || fileName.hasSuffix(".rels")
     }
 
     private func normalizedXMLString(_ data: Data) throws -> String {
