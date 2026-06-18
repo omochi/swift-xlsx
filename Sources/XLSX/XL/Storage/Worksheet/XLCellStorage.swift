@@ -3,10 +3,12 @@ import Foundation
 public final class XLCellStorage {
     public init(
         value: XLCellValue,
-        format: XLCellFormat? = nil
+        format: XLCellFormat? = nil,
+        formula: XLFormula? = nil
     ) {
         self.value = value
         self.format = format
+        self.formula = formula
     }
 
     public init?(
@@ -26,10 +28,12 @@ public final class XLCellStorage {
             in: cellElement,
             styles: styles
         )
+        self.formula = Self.formula(in: cellElement)
     }
 
     public var value: XLCellValue
     public var format: XLCellFormat?
+    public var formula: XLFormula?
 
     public func write(
         to cellElement: XMLElement,
@@ -42,13 +46,23 @@ public final class XLCellStorage {
             guard let element = child as? XMLElement else {
                 return true
             }
-            return element.name.name != "v" && element.name.name != "is"
+            return element.name.name != "f" && element.name.name != "v" && element.name.name != "is"
         }
 
-        try value.write(to: cellElement, sharedStrings: sharedStrings?.records)
+        if let formula {
+            cellElement.appendChild(formula.record.xmlElement())
+        }
+
+        try writeValue(to: cellElement, sharedStrings: sharedStrings)
     }
 
     public func collectSharedStrings(sharedStrings: XLSharedStringsFile) {
+        if formula != nil,
+           case .string = value
+        {
+            return
+        }
+
         switch value {
         case let .string(text):
             sharedStrings.records.register(text)
@@ -64,7 +78,7 @@ public final class XLCellStorage {
     }
 
     public func clone() -> XLCellStorage {
-        XLCellStorage(value: value, format: format)
+        XLCellStorage(value: value, format: format, formula: formula)
     }
 
     private static func formatIndex(in cellElement: XMLElement) -> Int? {
@@ -96,6 +110,14 @@ public final class XLCellStorage {
         )
     }
 
+    private static func formula(in cellElement: XMLElement) -> XLFormula? {
+        guard let formulaElement = cellElement.elements(name: "f").first else {
+            return nil
+        }
+
+        return XLFormula(record: XLFormulaRecord(formulaElement: formulaElement))
+    }
+
     private func writeFormat(
         to cellElement: XMLElement,
         styles: XLStylesFile?
@@ -112,6 +134,27 @@ public final class XLCellStorage {
             name: "s",
             value: styles.cellFormats.index(for: formatRecord).map(String.init)
         )
+    }
+
+    private func writeValue(
+        to cellElement: XMLElement,
+        sharedStrings: XLSharedStringsFile?
+    ) throws {
+        if formula != nil,
+           case let .string(text) = value
+        {
+            cellElement.setAttribute(name: "t", value: "str")
+            appendValueElement(to: cellElement, text: text)
+            return
+        }
+
+        try value.write(to: cellElement, sharedStrings: sharedStrings?.records)
+    }
+
+    private func appendValueElement(to cellElement: XMLElement, text: String) {
+        let valueElement = XMLElement(name: XMLName(name: "v"))
+        valueElement.appendChild(XMLText(text))
+        cellElement.appendChild(valueElement)
     }
 
     private func removeAttribute(name: String, in cellElement: XMLElement) {

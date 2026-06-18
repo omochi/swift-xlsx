@@ -165,6 +165,7 @@ struct XLWorksheetFileTests {
         #expect(worksheet.existingRow(1)?.existingCell(column: 5)?.value == .string("2026-06-16T09:30:00Z"))
         #expect(worksheet.existingRow(1)?.existingCell(column: 6)?.value == .string("inline"))
         #expect(worksheet.existingRow(1)?.existingCell(column: 7)?.value == .string("cached"))
+        #expect(worksheet.existingRow(1)?.existingCell(column: 7)?.formula?.formula == #"TEXT(1,"0")"#)
         #expect(worksheet.existingRow(1)?.existingCell(column: 8) == nil)
         #expect(worksheet.existingRow(1)?.existingCell(column: 9)?.value == .boolean(false))
         #expect(worksheet.existingRow(1)?.existingCell(column: 10)?.value == .boolean(true))
@@ -321,6 +322,26 @@ struct XLWorksheetFileTests {
         #expect(xml.contains(#"<c r="C1" t="e"><v>#N/A</v></c>"#))
     }
 
+    @Test func writesFormulaCellsToWorksheetXML() throws {
+        let worksheet = XLWorksheetFile(rowByNumber: [
+            1: XLRowStorage(cellByColumn: [
+                1: XLCellStorage(
+                    value: .number(42),
+                    formula: XLFormula(formula: "SUM(B1:C1)")
+                ),
+                2: XLCellStorage(
+                    value: .string("cached"),
+                    formula: XLFormula(formula: #"TEXT(1,"0")"#)
+                ),
+            ]),
+        ])
+
+        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+
+        #expect(xml.contains(#"<c r="A1"><f t="normal">SUM(B1:C1)</f><v>42</v></c>"#))
+        #expect(xml.contains(#"<c r="B1" t="str"><f t="normal">TEXT(1,"0")</f><v>cached</v></c>"#))
+    }
+
     @Test func removesCellFormatWhenStandaloneWorksheetHasNoWritePlan() throws {
         let format = XLCellFormat(numberFormat: .builtin(id: 14), applyNumberFormat: true)
         let formattedCell = XLCellStorage(value: .number(42), format: format)
@@ -363,6 +384,35 @@ struct XLWorksheetFileTests {
 
         #expect(worksheetXML.contains(#"<c r="A1" t="s"><v>0</v></c>"#))
         #expect(sharedStringsXML.contains(#"<t>shared</t>"#))
+    }
+
+    @Test func writesFormulaStringCachedValuesWithoutSharedStringsWhenSavingDocument() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("swift-xlsx-tests-\(UUID().uuidString)")
+            .appendingPathExtension("xlsx")
+        defer {
+            try? FileManager.default.removeItem(at: url)
+        }
+
+        let document = XLDocument()
+        let worksheet = try #require(document.workbook.worksheets.first)
+        let cell = worksheet.cell(row: 1, column: 1)
+        cell.value = .string("cached")
+        cell.formula = XLFormula(formula: #"TEXT(1,"0")"#)
+        try document.save(to: url)
+
+        let package = try OPCPackage(data: Data(contentsOf: url))
+        let worksheetXML = try String(
+            decoding: #require(package.data(at: OPCFilePath(string: "/xl/worksheets/sheet1.xml"))),
+            as: UTF8.self
+        )
+        let sharedStringsXML = try String(
+            decoding: #require(package.data(at: OPCFilePath(string: "/xl/sharedStrings.xml"))),
+            as: UTF8.self
+        )
+
+        #expect(worksheetXML.contains(#"<c r="A1" t="str"><f t="normal">TEXT(1,"0")</f><v>cached</v></c>"#))
+        #expect(!sharedStringsXML.contains(#"<t>cached</t>"#))
     }
 
     @Test func writesRowsSortedBeforeOtherSheetDataChildren() throws {

@@ -27,4 +27,13 @@ public struct XLCell {
             storage.format = newValue
         }
     }
+
+    public var formula: XLFormula? {
+        get {
+            storage.formula
+        }
+        nonmutating set {
+            storage.formula = newValue
+        }
+    }
 }
