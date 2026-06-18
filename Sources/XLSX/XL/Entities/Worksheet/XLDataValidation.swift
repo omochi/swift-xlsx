@@ -65,12 +65,12 @@ public struct XLDataValidation: Sendable & Hashable {
     public var address: XLCellRangeAddressList? = nil
     public var validationType: ValidationType? = nil
     public var validationOperator: Operator? = nil
-    public var errorStyle: ErrorStyle? = nil
+    public var errorStyle: ErrorStyle? = .stop
     public var imeMode: ImeMode? = nil
-    public var allowBlank: Bool? = nil
+    public var allowBlank: Bool? = true
     public var showDropDown: Bool? = nil
     public var showInputMessage: Bool? = nil
-    public var showErrorMessage: Bool? = nil
+    public var showErrorMessage: Bool? = true
     public var errorTitle: String? = nil
     public var error: String? = nil
     public var promptTitle: String? = nil

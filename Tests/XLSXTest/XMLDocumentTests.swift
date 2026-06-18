@@ -124,6 +124,22 @@ struct XMLDocumentTests {
         """ + "\n")
     }
 
+    @Test func serializesPrettyDocumentWithoutDocumentFormattingText() throws {
+        let document = try XMLDocument(data: Data("""
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <root><child/></root>
+        """.utf8))
+
+        let output = document.xmlString(pretty: true)
+
+        #expect(output == """
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <root>
+            <child/>
+        </root>
+        """ + "\n")
+    }
+
     @Test func serializesMixedContentWithoutAddingWhitespace() throws {
         let element = XMLElement(
             name: XMLName(name: "root"),

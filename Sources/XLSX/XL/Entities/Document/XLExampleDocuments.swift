@@ -18,14 +18,14 @@ public enum XLExampleDocuments {
         worksheet.cell(row: 1, column: 1).value = .string("Apple")
         worksheet.cell(row: 2, column: 1).value = .string("Banana")
         worksheet.cell(row: 3, column: 1).value = .string("Cherry")
-        worksheet.cell(row: 1, column: 2).value = .string("Apple")
+        worksheet.cell(row: 1, column: 2).value = .string("select↓")
         worksheet.dataValidation = XLDataValidations(
             validations: [
                 XLDataValidation(
                     address: XLCellRangeAddressList([
                         XLCellRangeAddress(
-                            start: XLCellAddress(row: 1, column: 2),
-                            end: XLCellAddress(row: 1, column: 2)
+                            start: XLCellAddress(row: 2, column: 2),
+                            end: XLCellAddress(row: 2, column: 2)
                         ),
                     ]),
                     validationType: .list,

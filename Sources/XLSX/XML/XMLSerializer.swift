@@ -8,6 +8,9 @@ struct XMLSerializer {
     func serialize(document: XMLDocument) -> String {
         var output = #"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>"#
         for child in document.children {
+            if pretty, isDocumentFormattingText(child) {
+                continue
+            }
             if pretty, child is XMLElement {
                 output += "\n"
             }
@@ -17,6 +20,13 @@ struct XMLSerializer {
             output += "\n"
         }
         return output
+    }
+
+    private func isDocumentFormattingText(_ node: XMLNode) -> Bool {
+        guard let text = node as? XMLText else {
+            return false
+        }
+        return text.value.allSatisfy(\.isWhitespace)
     }
 
     func serialize(element: XMLElement) -> String {
