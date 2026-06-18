@@ -143,8 +143,8 @@ public final class XLWorkbookFile {
 
     private func writeWorkbook(to document: XMLDocument) throws {
         let workbookElement = XMLUtils.ensureRootElement(name: "workbook", in: document)
-        workbookElement.ensureNamespace(uri: .spreadsheet)
-        workbookElement.ensureNamespaceURI(prefix: "r", uri: .officeRelationships)
+        workbookElement.setDefaultNamespace(uri: .spreadsheet)
+        workbookElement.declareNamespace(preferredPrefix: "r", uri: .officeRelationships)
 
         let sheetsElement = XMLUtils.ensureChildElement(name: "sheets", in: workbookElement)
         for sheet in sheets {

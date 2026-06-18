@@ -58,7 +58,7 @@ public final class XLStylesFile {
     public func xmlDocument(styleStorage: XLStyleStorage) throws -> XMLDocument {
         let document = original?.clone() ?? XMLDocument()
         let stylesElement = XMLUtils.ensureRootElement(name: "styleSheet", in: document)
-        stylesElement.ensureNamespace(uri: .spreadsheet)
+        stylesElement.setDefaultNamespace(uri: .spreadsheet)
         writeNumberFormats(to: stylesElement, styleStorage: styleStorage)
         try writeFonts(to: stylesElement, styleStorage: styleStorage)
         try writeFills(to: stylesElement, styleStorage: styleStorage)
@@ -269,7 +269,7 @@ public final class XLStylesFile {
             return
         }
 
-        let revisionNamespacePrefix = stylesElement.ensureNamespaceURI(prefix: "xr", uri: .spreadsheetRevision)
+        let revisionNamespacePrefix = stylesElement.declareNamespace(preferredPrefix: "xr", uri: .spreadsheetRevision)
         let cellStylesElement = ensureStyleSheetChildElement(name: "cellStyles", in: stylesElement)
         cellStylesElement.setAttribute(name: "count", value: String(cellStyles.count))
 

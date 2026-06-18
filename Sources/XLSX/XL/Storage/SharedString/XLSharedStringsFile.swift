@@ -37,7 +37,7 @@ public final class XLSharedStringsFile {
     public func xmlDocument(sharedStringStorage: OrderedSet<XLSharedStringRecord>) throws -> XMLDocument {
         let document = original?.clone() ?? XMLDocument()
         let sharedStringsElement = XMLUtils.ensureRootElement(name: "sst", in: document)
-        sharedStringsElement.ensureNamespace(uri: .spreadsheet)
+        sharedStringsElement.setDefaultNamespace(uri: .spreadsheet)
         sharedStringsElement.setAttribute(name: "count", value: String(sharedStringStorage.count))
         sharedStringsElement.setAttribute(name: "uniqueCount", value: String(sharedStringStorage.count))
         try write(to: sharedStringsElement, sharedStringStorage: sharedStringStorage)

@@ -89,6 +89,59 @@ struct XLWorksheetFileTests {
         #expect(worksheet.existingColumn(7)?.width == 12.5)
     }
 
+    @Test func readsCellRangeAddressList() throws {
+        let list = try #require(XLCellRangeAddressList("A1 B2:C3 d4"))
+
+        #expect(list.ranges == [
+            XLCellRangeAddress("A1"),
+            XLCellRangeAddress("B2:C3"),
+            XLCellRangeAddress("D4"),
+        ])
+        #expect(list.description == "A1 B2:C3 D4")
+        #expect(XLCellRangeAddressList("") == nil)
+        #expect(XLCellRangeAddressList("A1 not-address") == nil)
+    }
+
+    @Test func readsDataValidationsFromWorksheetXML() throws {
+        let worksheet = try worksheetFile(data: Data("""
+            <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)"
+                       xmlns:mc="\(XMLNamespaceURI.markupCompatibility.string)"
+                       xmlns:x12ac="\(XMLNamespaceURI.spreadsheetX12.string)"
+                       mc:Ignorable="x12ac">
+              <sheetData/>
+              <dataValidations count="1" disablePrompts="1" xWindow="20" yWindow="30">
+                <dataValidation type="whole" operator="between" errorStyle="warning" imeMode="hiragana" allowBlank="1" showDropDown="0" showInputMessage="1" showErrorMessage="1" errorTitle="Error title" error="Error text" promptTitle="Prompt title" prompt="Prompt text" sqref="B2:B10 D2">
+                  <formula1>1</formula1>
+                  <formula2>10</formula2>
+                  <x12ac:list>"A,B"</x12ac:list>
+                </dataValidation>
+              </dataValidations>
+            </worksheet>
+            """.utf8))
+        let validation = try #require(worksheet.dataValidations.validations.first)
+
+        #expect(worksheet.mcIgnorable == "x12ac")
+        #expect(worksheet.dataValidations.disablePrompts == true)
+        #expect(worksheet.dataValidations.xWindow == 20)
+        #expect(worksheet.dataValidations.yWindow == 30)
+        #expect(validation.validationType == .whole)
+        #expect(validation.validationOperator == .between)
+        #expect(validation.errorStyle == .warning)
+        #expect(validation.imeMode == .hiragana)
+        #expect(validation.allowBlank == true)
+        #expect(validation.showDropDown == false)
+        #expect(validation.showInputMessage == true)
+        #expect(validation.showErrorMessage == true)
+        #expect(validation.errorTitle == "Error title")
+        #expect(validation.error == "Error text")
+        #expect(validation.promptTitle == "Prompt title")
+        #expect(validation.prompt == "Prompt text")
+        #expect(validation.sqref == XLCellRangeAddressList("B2:B10 D2"))
+        #expect(validation.formula1 == "1")
+        #expect(validation.formula2 == "10")
+        #expect(validation.list == #""A,B""#)
+    }
+
     @Test func readsColumnAttributesFromWorksheetXML() throws {
         let worksheet = try worksheetFile(data: Data("""
             <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
@@ -309,6 +362,79 @@ struct XLWorksheetFileTests {
         let sheetDataRange = try #require(xml.range(of: #"<sheetData>"#))
 
         #expect(colsRange.lowerBound < sheetDataRange.lowerBound)
+    }
+
+    @Test func writesDataValidationsAfterSheetData() throws {
+        let worksheet = XLWorksheetFile(
+            rowByNumber: [
+                1: XLRowStorage(cellByColumn: [
+                    1: XLCellStorage(value: .string("value")),
+                ]),
+            ],
+            dataValidations: XLDataValidations(
+                validations: [
+                    XLDataValidation(
+                        sqref: XLCellRangeAddressList([
+                            XLCellRangeAddress("B2:B10")!,
+                            XLCellRangeAddress("D2")!,
+                        ]),
+                        validationType: .whole,
+                        validationOperator: .between,
+                        errorStyle: .warning,
+                        imeMode: .hiragana,
+                        allowBlank: true,
+                        showDropDown: false,
+                        showInputMessage: true,
+                        showErrorMessage: true,
+                        errorTitle: "Error title",
+                        error: "Error text",
+                        promptTitle: "Prompt title",
+                        prompt: "Prompt text",
+                        formula1: "1",
+                        formula2: "10",
+                        list: #""A,B""#
+                    ),
+                ],
+                disablePrompts: true,
+                xWindow: 20,
+                yWindow: 30
+            )
+        )
+
+        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+        let sheetDataRange = try #require(xml.range(of: #"<sheetData>"#))
+        let dataValidationsRange = try #require(xml.range(of: #"<dataValidations"#))
+
+        #expect(sheetDataRange.lowerBound < dataValidationsRange.lowerBound)
+        #expect(xml.contains(#"xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006""#))
+        #expect(xml.contains(#"xmlns:x12ac="http://schemas.microsoft.com/office/spreadsheetml/2011/1/ac""#))
+        #expect(xml.contains(#"mc:Ignorable="x12ac""#))
+        #expect(xml.contains(#"<dataValidations count="1" disablePrompts="1" xWindow="20" yWindow="30">"#))
+        #expect(xml.contains(#"<dataValidation sqref="B2:B10 D2" type="whole" operator="between" errorStyle="warning" imeMode="hiragana" allowBlank="1" showDropDown="0" showInputMessage="1" showErrorMessage="1" errorTitle="Error title" error="Error text" promptTitle="Prompt title" prompt="Prompt text"><formula1>1</formula1><formula2>10</formula2><x12ac:list>"A,B"</x12ac:list></dataValidation>"#))
+    }
+
+    @Test func writesMarkupCompatibilityIgnorableWithResolvedPrefix() throws {
+        let worksheet = try worksheetFile(data: Data("""
+            <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)"
+                       xmlns:mc="urn:custom">
+              <sheetData/>
+            </worksheet>
+            """.utf8))
+        worksheet.dataValidations.validations = [
+            XLDataValidation(
+                sqref: XLCellRangeAddressList([XLCellRangeAddress("A1")!]),
+                validationType: .list,
+                formula1: #""A,B""#,
+                list: #""A,B""#
+            ),
+        ]
+
+        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+
+        #expect(xml.contains(#"xmlns:mc="urn:custom""#))
+        #expect(xml.contains(#"xmlns:mc2="http://schemas.openxmlformats.org/markup-compatibility/2006""#))
+        #expect(xml.contains(#"mc2:Ignorable="x12ac""#))
+        #expect(!xml.contains(#"mc:Ignorable="x12ac""#))
     }
 
     @Test func writesCellValueTypesToWorksheetXML() throws {

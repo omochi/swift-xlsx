@@ -27,8 +27,8 @@ public struct XLWorkbookFileSheet: Sendable & Hashable {
         element.setAttribute(name: "name", value: name)
         element.setAttribute(name: "sheetId", value: String(sheetID))
         try element.setAttribute(
-            name: "id",
             namespaceURI: .officeRelationships,
+            name: "id",
             value: relationshipID
         )
     }

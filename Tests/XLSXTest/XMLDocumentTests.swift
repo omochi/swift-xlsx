@@ -246,13 +246,13 @@ struct XMLDocumentTests {
 
     @Test func setAttributeUsesDeclaredNamespacePrefix() throws {
         let parent = XMLElement(name: XMLName(name: "parent"))
-        parent.ensureNamespace(prefix: "rel", uri: .officeRelationships)
+        parent.namespaces.declare(prefix: "rel", uri: .officeRelationships)
         let child = XMLElement(name: XMLName(name: "child"))
         parent.appendChild(child)
 
         try child.setAttribute(
-            name: "id",
             namespaceURI: .officeRelationships,
+            name: "id",
             value: "rId1"
         )
 
@@ -261,23 +261,33 @@ struct XMLDocumentTests {
         #expect(child.attributes.first?.value == "rId1")
     }
 
+    @Test func setAttributeWritesUncheckedPrefix() {
+        let element = XMLElement(name: XMLName(name: "element"))
+
+        element.setAttribute(uncheckedPrefix: "mc", name: "Ignorable", value: "x12ac")
+
+        #expect(element.attributes.count == 1)
+        #expect(element.attributes.first?.name == XMLName(prefix: "mc", name: "Ignorable"))
+        #expect(element.attributes.first?.value == "x12ac")
+    }
+
     @Test func setAttributeRemovesAttributeWhenValueIsNil() throws {
         let parent = XMLElement(name: XMLName(name: "parent"))
-        parent.ensureNamespace(prefix: "rel", uri: .officeRelationships)
+        parent.namespaces.declare(prefix: "rel", uri: .officeRelationships)
         let child = XMLElement(name: XMLName(name: "child"))
         parent.appendChild(child)
 
         child.setAttribute(name: "plain", value: "value")
         try child.setAttribute(
-            name: "id",
             namespaceURI: .officeRelationships,
+            name: "id",
             value: "rId1"
         )
 
         child.setAttribute(name: "plain", value: Optional<String>.none)
         try child.setAttribute(
-            name: "id",
             namespaceURI: .officeRelationships,
+            name: "id",
             value: Optional<String>.none
         )
 
@@ -307,23 +317,23 @@ struct XMLDocumentTests {
         #expect(element.attribute(name: "count") == nil)
     }
 
-    @Test func ensureNamespaceURIReusesExistingPrefixForURI() {
+    @Test func declareNamespaceReusesExistingPrefixForURI() {
         let element = XMLElement(name: XMLName(name: "element"))
-        element.ensureNamespace(prefix: "rel", uri: .officeRelationships)
+        element.namespaces.declare(prefix: "rel", uri: .officeRelationships)
 
-        let prefix = element.ensureNamespaceURI(prefix: "r", uri: .officeRelationships)
+        let prefix = element.declareNamespace(preferredPrefix: "r", uri: .officeRelationships)
 
         #expect(prefix == "rel")
         #expect(element.namespaces.declarations.count == 1)
         #expect(element.namespaces.uri(for: "rel") == .officeRelationships)
     }
 
-    @Test func ensureNamespaceURIChoosesAvailablePrefixedName() {
+    @Test func declareNamespaceChoosesAvailablePrefixedName() {
         let element = XMLElement(name: XMLName(name: "element"))
-        element.ensureNamespace(prefix: "r", uri: XMLNamespaceURI("urn:other"))
-        element.ensureNamespace(prefix: "r2", uri: XMLNamespaceURI("urn:other-2"))
+        element.namespaces.declare(prefix: "r", uri: XMLNamespaceURI("urn:other"))
+        element.namespaces.declare(prefix: "r2", uri: XMLNamespaceURI("urn:other-2"))
 
-        let prefix = element.ensureNamespaceURI(prefix: "r", uri: .officeRelationships)
+        let prefix = element.declareNamespace(preferredPrefix: "r", uri: .officeRelationships)
 
         #expect(prefix == "r3")
         #expect(element.namespaces.uri(for: "r")?.string == "urn:other")

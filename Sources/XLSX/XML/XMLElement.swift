@@ -75,16 +75,34 @@ public final class XMLElement: XMLNode {
 
     @discardableResult
     public func setAttribute(
+        uncheckedPrefix prefix: String? = nil,
         name: String,
         value: String?
     ) -> XMLAttribute? {
-        try! setAttribute(name: name, namespaceURI: nil, value: value)
+        guard let value else {
+            attributes.removeAll { attribute in
+                attribute.name == XMLName(prefix: prefix, name: name)
+            }
+            return nil
+        }
+
+        if let index = attributes.firstIndex(where: { $0.name == XMLName(prefix: prefix, name: name) }) {
+            attributes[index].value = value
+            return attributes[index]
+        }
+
+        let attribute = XMLAttribute(
+            name: XMLName(prefix: prefix, name: name),
+            value: value
+        )
+        attributes.append(attribute)
+        return attribute
     }
 
     @discardableResult
     public func setAttribute(
+        namespaceURI: XMLNamespaceURI?,
         name: String,
-        namespaceURI: XMLNamespaceURI? = nil,
         value: String?
     ) throws -> XMLAttribute? {
         guard let value else {
@@ -129,15 +147,12 @@ public final class XMLElement: XMLNode {
         children.compactMap { $0 as? XMLElement }.filter { $0.name.name == name }
     }
 
-    public func ensureNamespace(prefix: String? = nil, uri: XMLNamespaceURI) {
-        if namespaceURI(for: prefix) == uri {
-            return
-        }
-        namespaces.declare(prefix: prefix, uri: uri)
+    public func setDefaultNamespace(uri: XMLNamespaceURI) {
+        namespaces.declare(uri: uri)
     }
 
     @discardableResult
-    public func ensureNamespaceURI(prefix preferredPrefix: String, uri: XMLNamespaceURI) -> String {
+    public func declareNamespace(preferredPrefix: String, uri: XMLNamespaceURI) -> String {
         if let prefix = namespacePrefix(for: uri) {
             return prefix
         }

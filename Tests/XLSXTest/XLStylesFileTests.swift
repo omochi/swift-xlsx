@@ -883,7 +883,7 @@ struct XLStylesFileTests {
                 XLSX.XMLElement(name: XMLName(name: "opaqueStyle")),
             ]
         )
-        styleSheetElement.ensureNamespace(uri: .spreadsheet)
+        styleSheetElement.setDefaultNamespace(uri: .spreadsheet)
         let styles = try XLStylesFile(xmlDocument: XMLDocument(children: [styleSheetElement]))
         var styleStorage = XLStyleStorage()
 
