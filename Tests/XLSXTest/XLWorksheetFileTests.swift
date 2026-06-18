@@ -106,7 +106,7 @@ struct XLWorksheetFileTests {
         let worksheet = try worksheetFile(data: Data("""
             <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)"
                        xmlns:mc="\(XMLNamespaceURI.markupCompatibility.string)"
-                       xmlns:x12ac="\(XMLNamespaceURI.spreadsheetX12.string)"
+                       xmlns:x12ac="\(XMLNamespaceURI.spreadsheetX12AC.string)"
                        mc:Ignorable="x12ac">
               <sheetData/>
               <dataValidations count="1" disablePrompts="1" xWindow="20" yWindow="30">

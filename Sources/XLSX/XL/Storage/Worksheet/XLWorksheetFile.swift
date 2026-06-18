@@ -448,7 +448,7 @@ public final class XLWorksheetFile {
 
     private func configureExtensionNamespaces(in worksheetElement: XMLElement) -> String {
         let mcPrefix = worksheetElement.declareNamespace(preferredPrefix: "mc", uri: .markupCompatibility)
-        let x12acPrefix = worksheetElement.declareNamespace(preferredPrefix: "x12ac", uri: .spreadsheetX12)
+        let x12acPrefix = worksheetElement.declareNamespace(preferredPrefix: "x12ac", uri: .spreadsheetX12AC)
         worksheetElement.setAttribute(
             uncheckedPrefix: mcPrefix,
             name: "Ignorable",

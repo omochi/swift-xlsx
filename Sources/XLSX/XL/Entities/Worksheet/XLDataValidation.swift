@@ -123,7 +123,7 @@ public struct XLDataValidation: Sendable & Hashable {
 
     private static func listElement(in xmlElement: XMLElement) -> XMLElement? {
         xmlElement.elements(name: "list").first { element in
-            element.namespaceURI(for: element.name.prefix) == .spreadsheetX12
+            element.namespaceURI(for: element.name.prefix) == .spreadsheetX12AC
         }
     }
 
