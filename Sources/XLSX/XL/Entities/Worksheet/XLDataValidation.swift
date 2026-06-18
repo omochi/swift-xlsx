@@ -60,7 +60,6 @@ public struct XLDataValidation: Sendable & Hashable {
         self.prompt = xmlElement.attribute(name: "prompt")
         self.formula1 = Self.text(in: xmlElement.elements(name: "formula1").first)
         self.formula2 = Self.text(in: xmlElement.elements(name: "formula2").first)
-        self.list = Self.text(in: Self.listElement(in: xmlElement))
     }
 
     public var address: XLCellRangeAddressList? = nil
@@ -78,11 +77,10 @@ public struct XLDataValidation: Sendable & Hashable {
     public var prompt: String? = nil
     public var formula1: String? = nil
     public var formula2: String? = nil
-    public var list: String? = nil
 
-    func write(to xmlElement: XMLElement, x12acPrefix: String) {
+    func write(to xmlElement: XMLElement) {
         xmlElement.attributes = []
-        xmlElement.children = children(x12acPrefix: x12acPrefix)
+        xmlElement.children = children()
         xmlElement.setAttribute(name: "sqref", value: address?.description)
         xmlElement.setAttribute(name: "type", value: validationType?.rawValue)
         xmlElement.setAttribute(name: "operator", value: validationOperator?.rawValue)
@@ -98,16 +96,13 @@ public struct XLDataValidation: Sendable & Hashable {
         xmlElement.setAttribute(name: "prompt", value: prompt)
     }
 
-    private func children(x12acPrefix: String) -> [XMLNode] {
+    private func children() -> [XMLNode] {
         var children: [XMLNode] = []
         if let formula1 {
             children.append(Self.element(name: XMLName(name: "formula1"), text: formula1))
         }
         if let formula2 {
             children.append(Self.element(name: XMLName(name: "formula2"), text: formula2))
-        }
-        if let list {
-            children.append(Self.element(name: XMLName(prefix: x12acPrefix, name: "list"), text: list))
         }
         return children
     }
@@ -119,12 +114,6 @@ public struct XLDataValidation: Sendable & Hashable {
                 XMLText(text),
             ]
         )
-    }
-
-    private static func listElement(in xmlElement: XMLElement) -> XMLElement? {
-        xmlElement.elements(name: "list").first { element in
-            element.namespaceURI(for: element.name.prefix) == .spreadsheetX12AC
-        }
     }
 
     private static func text(in element: XMLElement?) -> String? {

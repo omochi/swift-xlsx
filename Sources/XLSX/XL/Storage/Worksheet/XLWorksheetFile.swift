@@ -6,14 +6,14 @@ public final class XLWorksheetFile {
         self.columnByNumber = [:]
         self.rowByNumber = [:]
         self.dataValidations = XLDataValidations()
-        self.mcIgnorable = "x12ac"
+        self.mcIgnorable = ""
     }
 
     public init(
         columnByNumber: [Int: XLColumnStorage] = [:],
         rowByNumber: [Int: XLRowStorage],
         dataValidations: XLDataValidations = XLDataValidations(),
-        mcIgnorable: String? = "x12ac"
+        mcIgnorable: String? = ""
     ) {
         self.original = nil
         self.columnByNumber = columnByNumber
@@ -37,7 +37,7 @@ public final class XLWorksheetFile {
         self.columnByNumber = Self.columns(in: xmlDocument, styleStorage: styleStorage)
         self.rowByNumber = rowByNumber
         self.dataValidations = Self.dataValidations(in: xmlDocument)
-        self.mcIgnorable = Self.mcIgnorable(in: xmlDocument) ?? "x12ac"
+        self.mcIgnorable = ""
     }
 
     public var columnByNumber: [Int: XLColumnStorage]
@@ -136,14 +136,14 @@ public final class XLWorksheetFile {
         let document = original?.clone() ?? XMLDocument()
         let worksheetElement = XMLUtils.ensureRootElement(name: "worksheet", in: document)
         worksheetElement.setDefaultNamespace(uri: .spreadsheet)
-        let x12acPrefix = configureExtensionNamespaces(in: worksheetElement)
+        configureExtensionNamespaces(in: worksheetElement)
         try writeColumns(to: worksheetElement, styleStorage: styleStorage)
         try writeRows(
             to: worksheetElement,
             sharedStringStorage: sharedStringStorage,
             styleStorage: styleStorage
         )
-        writeDataValidations(to: worksheetElement, x12acPrefix: x12acPrefix)
+        writeDataValidations(to: worksheetElement)
         return document
     }
 
@@ -180,14 +180,6 @@ public final class XLWorksheetFile {
         )
         file.original = original
         return file
-    }
-
-    private static func mcIgnorable(in document: XMLDocument) -> String? {
-        guard let worksheetElement = document.element(name: "worksheet") else {
-            return nil
-        }
-
-        return worksheetElement.attribute(name: "Ignorable", namespaceURI: .markupCompatibility)
     }
 
     private static func dataValidations(in document: XMLDocument) -> XLDataValidations {
@@ -446,21 +438,16 @@ public final class XLWorksheetFile {
         return ranges
     }
 
-    private func configureExtensionNamespaces(in worksheetElement: XMLElement) -> String {
+    private func configureExtensionNamespaces(in worksheetElement: XMLElement) {
         let mcPrefix = worksheetElement.declareNamespace(preferredPrefix: "mc", uri: .markupCompatibility)
-        let x12acPrefix = worksheetElement.declareNamespace(preferredPrefix: "x12ac", uri: .spreadsheetX12AC)
         worksheetElement.setAttribute(
             uncheckedPrefix: mcPrefix,
             name: "Ignorable",
             value: mcIgnorable
         )
-        return x12acPrefix
     }
 
-    private func writeDataValidations(
-        to worksheetElement: XMLElement,
-        x12acPrefix: String
-    ) {
+    private func writeDataValidations(to worksheetElement: XMLElement) {
         var children = worksheetElement.children.filter { child in
             guard let element = child as? XMLElement else {
                 return true
@@ -474,7 +461,7 @@ public final class XLWorksheetFile {
         }
 
         let element = XMLElement(name: XMLName(name: "dataValidations"))
-        dataValidations.write(to: element, x12acPrefix: x12acPrefix)
+        dataValidations.write(to: element)
         children.insert(element, at: dataValidationsInsertionIndex(in: children))
         worksheetElement.children = children
     }

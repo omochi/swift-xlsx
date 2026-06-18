@@ -2,5 +2,4 @@
 <worksheet
     xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:x12ac="http://schemas.microsoft.com/office/spreadsheetml/2011/1/ac"
-    mc:Ignorable="x12ac"/>
+    mc:Ignorable=""/>

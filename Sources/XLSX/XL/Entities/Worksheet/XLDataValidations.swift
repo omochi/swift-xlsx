@@ -20,7 +20,7 @@ public struct XLDataValidations: Sendable & Hashable {
         validations.isEmpty
     }
 
-    func write(to xmlElement: XMLElement, x12acPrefix: String) {
+    func write(to xmlElement: XMLElement) {
         xmlElement.attributes = []
         XMLUtils.setIntAttribute(name: "count", value: validations.count, in: xmlElement)
         XMLUtils.setBoolAttribute(name: "disablePrompts", value: disablePrompts, in: xmlElement)
@@ -28,7 +28,7 @@ public struct XLDataValidations: Sendable & Hashable {
         XMLUtils.setIntAttribute(name: "yWindow", value: yWindow, in: xmlElement)
         xmlElement.children = validations.map { validation in
             let element = XMLElement(name: XMLName(name: "dataValidation"))
-            validation.write(to: element, x12acPrefix: x12acPrefix)
+            validation.write(to: element)
             return element
         }
     }

@@ -332,11 +332,11 @@ struct XMLDocumentTests {
     @Test func setAttributeWritesUncheckedPrefix() {
         let element = XMLElement(name: XMLName(name: "element"))
 
-        element.setAttribute(uncheckedPrefix: "mc", name: "Ignorable", value: "x12ac")
+        element.setAttribute(uncheckedPrefix: "mc", name: "Ignorable", value: "ignored")
 
         #expect(element.attributes.count == 1)
         #expect(element.attributes.first?.name == XMLName(prefix: "mc", name: "Ignorable"))
-        #expect(element.attributes.first?.value == "x12ac")
+        #expect(element.attributes.first?.value == "ignored")
     }
 
     @Test func setAttributeRemovesAttributeWhenValueIsNil() throws {
