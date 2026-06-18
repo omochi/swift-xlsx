@@ -46,13 +46,13 @@ public final class XMLDocument: XMLNode {
         return document as! Self
     }
 
-    public var xmlString: String {
-        let serializer = XMLSerializer()
+    public func xmlString(pretty: Bool = false) -> String {
+        let serializer = XMLSerializer(pretty: pretty)
         return serializer.serialize(document: self)
     }
 
     public var data: Data {
-        Data(xmlString.utf8)
+        Data(xmlString().utf8)
     }
 
     public func element(name: String) -> XMLElement? {

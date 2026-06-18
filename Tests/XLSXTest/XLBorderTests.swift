@@ -52,7 +52,7 @@ struct XLBorderTests {
             horizontal: XLBorder.Line(style: .thick)
         )
 
-        #expect(border.xmlElement().xmlString == #"<border outline="0" diagonalUp="1" diagonalDown="1"><start style="dotted"/><end style="hair"/><left style="thin"><color rgb="FFFF0000"/></left><right/><top style="dashDot"/><bottom style="mediumDashDot"><color theme="4" tint="0.25"/></bottom><diagonal style="double"><color indexed="64"/></diagonal><vertical style="dashed"/><horizontal style="thick"/></border>"#)
+        #expect(border.xmlElement().xmlString() == #"<border outline="0" diagonalUp="1" diagonalDown="1"><start style="dotted"/><end style="hair"/><left style="thin"><color rgb="FFFF0000"/></left><right/><top style="dashDot"/><bottom style="mediumDashDot"><color theme="4" tint="0.25"/></bottom><diagonal style="double"><color indexed="64"/></diagonal><vertical style="dashed"/><horizontal style="thick"/></border>"#)
     }
 
     @Test func omitsDiagonalWithoutDirections() {
@@ -72,6 +72,6 @@ struct XLBorderTests {
             horizontal: nil
         )
 
-        #expect(border.xmlElement().xmlString == "<border/>")
+        #expect(border.xmlElement().xmlString() == "<border/>")
     }
 }

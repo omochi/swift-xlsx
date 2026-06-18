@@ -26,9 +26,9 @@ public struct XLFont: Sendable & Hashable {
             case "shadow":
                 shadow = Self.boolFontProperty(in: childElement)
             case "u":
-                underlineXMLString = childElement.xmlString
+                underlineXMLString = childElement.xmlString()
             case "vertAlign":
-                verticalAlignmentXMLString = childElement.xmlString
+                verticalAlignmentXMLString = childElement.xmlString()
             case "sz":
                 size = XMLUtils.doubleAttribute(name: "val", in: childElement)
             case "color":
@@ -36,11 +36,11 @@ public struct XLFont: Sendable & Hashable {
             case "name":
                 name = childElement.attribute(name: "val")
             case "family":
-                familyXMLString = childElement.xmlString
+                familyXMLString = childElement.xmlString()
             case "charset":
-                charsetXMLString = childElement.xmlString
+                charsetXMLString = childElement.xmlString()
             case "scheme":
-                schemeXMLString = childElement.xmlString
+                schemeXMLString = childElement.xmlString()
             default:
                 break
             }

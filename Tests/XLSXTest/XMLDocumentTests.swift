@@ -61,7 +61,7 @@ struct XMLDocumentTests {
         """
 
         let document = try XMLDocument(data: Data(xml.utf8))
-        let output = document.xmlString
+        let output = document.xmlString()
 
         #expect(output.contains(#"<root xmlns="urn:test" custom="a&amp;b">"#))
         #expect(output.contains(#"<known value="&quot;x&quot;">"#))
@@ -82,9 +82,77 @@ struct XMLDocumentTests {
             ]
         )
 
-        let output = element.xmlString
+        let output = element.xmlString()
 
         #expect(output == #"<root custom="a&amp;b"><child>raw &lt; value</child></root>"#)
+    }
+
+    @Test func serializesDocumentAsPrettyXMLString() throws {
+        let document = XMLDocument(children: [
+            XMLElement(
+                name: XMLName(name: "root"),
+                children: [
+                    XMLElement(
+                        name: XMLName(name: "section"),
+                        children: [
+                            XMLElement(
+                                name: XMLName(name: "leaf"),
+                                attributes: [
+                                    XMLAttribute(name: XMLName(name: "id"), value: "1"),
+                                ]
+                            ),
+                        ]
+                    ),
+                    XMLElement(
+                        name: XMLName(name: "value"),
+                        children: [XMLText("raw < value")]
+                    ),
+                ]
+            ),
+        ])
+
+        let output = document.xmlString(pretty: true)
+
+        #expect(output == """
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <root>
+            <section>
+                <leaf id="1"/>
+            </section>
+            <value>raw &lt; value</value>
+        </root>
+        """ + "\n")
+    }
+
+    @Test func serializesMixedContentWithoutAddingWhitespace() throws {
+        let element = XMLElement(
+            name: XMLName(name: "root"),
+            children: [
+                XMLText("before "),
+                XMLElement(name: XMLName(name: "break")),
+                XMLText(" after"),
+            ]
+        )
+
+        #expect(element.xmlString(pretty: true) == "<root>before <break/> after</root>\n")
+    }
+
+    @Test func serializesPrettyXMLWithWrappedAttributesOverLineLimit() throws {
+        let longValue = String(repeating: "a", count: 90)
+        let element = XMLElement(
+            name: XMLName(name: "root"),
+            attributes: [
+                XMLAttribute(name: XMLName(name: "first"), value: longValue),
+                XMLAttribute(name: XMLName(name: "second"), value: "2"),
+            ]
+        )
+
+        #expect(element.xmlString(pretty: true) == """
+        <root
+            first="\(longValue)"
+            second="2"/>
+        """ + "\n")
+        #expect(element.xmlString() == #"<root first="\#(longValue)" second="2"/>"#)
     }
 
     @Test func parsesNamespaceDeclarationOnNestedElement() throws {
@@ -106,7 +174,7 @@ struct XMLDocumentTests {
         let itemID = try #require(item.attributes.first { $0.name.prefix == "a" && $0.name.name == "id" })
         #expect(item.namespaceURI(for: itemID.name.prefix)?.string == "urn:nested")
 
-        let output = document.xmlString
+        let output = document.xmlString()
         #expect(output.contains(#"<child xmlns:a="urn:nested">"#))
     }
 

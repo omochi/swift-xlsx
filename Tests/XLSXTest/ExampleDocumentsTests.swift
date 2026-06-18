@@ -54,7 +54,46 @@ struct ExampleDocumentsTests {
         #expect(paths == fixturePaths)
 
         for path in paths {
-            #expect(package.data(at: path) == fixturePackage.data(at: path))
+            let data = try #require(package.data(at: path))
+            let fixtureData = try #require(fixturePackage.data(at: path))
+            if isXMLFile(path) {
+                #expect(try normalizedXMLString(data) == normalizedXMLString(fixtureData))
+            } else {
+                #expect(data == fixtureData)
+            }
+        }
+    }
+
+    private func isXMLFile(_ path: OPCFilePath) -> Bool {
+        path.components.last?.lowercased().hasSuffix(".xml") == true
+    }
+
+    private func normalizedXMLString(_ data: Data) throws -> String {
+        let document = try XMLDocument(data: data)
+        removeFormattingText(in: document)
+        return document.xmlString()
+    }
+
+    private func removeFormattingText(in node: XLSX.XMLNode) {
+        for child in node.children {
+            removeFormattingText(in: child)
+        }
+
+        let hasNonWhitespaceText = node.children.contains { child in
+            guard let text = child as? XLSX.XMLText else {
+                return false
+            }
+            return !text.value.allSatisfy(\.isWhitespace)
+        }
+        guard !hasNonWhitespaceText else {
+            return
+        }
+
+        node.children = node.children.filter { child in
+            guard let text = child as? XLSX.XMLText else {
+                return true
+            }
+            return !text.value.allSatisfy(\.isWhitespace)
         }
     }
 }

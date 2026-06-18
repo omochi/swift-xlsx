@@ -84,7 +84,7 @@ public struct OPCPackage: Sendable {
     }
 
     public func data() throws -> Data {
-        try ZIPArchive.encode(fileEntries())
+        try ZIPArchive.encode(allFileEntries())
     }
 
     public func childNames(in directoryPath: OPCFilePath) throws -> [String] {
@@ -97,14 +97,14 @@ public struct OPCPackage: Sendable {
         return directory.children.map(\.0)
     }
 
-    public func fileEntries() -> [OPCFileEntry] {
+    public func allFileEntries() -> [OPCFileEntry] {
         var entries: [OPCFileEntry] = []
         collectEntries(from: root, components: [], into: &entries)
         return entries
     }
 
     public func allFilePaths() -> [OPCFilePath] {
-        fileEntries().compactMap { entry in
+        allFileEntries().compactMap { entry in
             guard case .file = entry.content else {
                 return nil
             }
@@ -159,7 +159,7 @@ public struct OPCPackage: Sendable {
     }
 
     public func write(toDirectoryURL directoryURL: URL) throws {
-        try OPCFileSystem.writeDirectory(fileEntries(), to: directoryURL)
+        try OPCFileSystem.writeDirectory(allFileEntries(), to: directoryURL)
     }
 
     private mutating func ensureDirectory(components: ArraySlice<String>) throws -> OPCPackageNodeID {

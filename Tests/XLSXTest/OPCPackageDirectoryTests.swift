@@ -168,7 +168,7 @@ struct OPCPackageDirectoryTests {
 }
 
 private func directoryNames(in package: OPCPackage, at path: String) -> [String]? {
-    package.fileEntries().compactMap { entry -> [String]? in
+    package.allFileEntries().compactMap { entry -> [String]? in
         guard entry.path.description == path,
               case let .directory(names) = entry.content
         else {

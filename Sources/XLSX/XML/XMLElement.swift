@@ -57,13 +57,13 @@ public final class XMLElement: XMLNode {
         ) as! Self
     }
 
-    public var xmlString: String {
-        let serializer = XMLSerializer()
+    public func xmlString(pretty: Bool = false) -> String {
+        let serializer = XMLSerializer(pretty: pretty)
         return serializer.serialize(element: self)
     }
 
     public var data: Data {
-        Data(xmlString.utf8)
+        Data(xmlString().utf8)
     }
 
     public func attribute(name: String, namespaceURI: XMLNamespaceURI? = nil) -> String? {

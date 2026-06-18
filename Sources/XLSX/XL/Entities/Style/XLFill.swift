@@ -45,7 +45,7 @@ public enum XLFill: Sendable & Hashable {
         if let patternElement = element.elements(name: "patternFill").first {
             self = .pattern(Pattern(element: patternElement))
         } else if let gradientElement = element.elements(name: "gradientFill").first {
-            self = .gradient(xmlString: gradientElement.xmlString)
+            self = .gradient(xmlString: gradientElement.xmlString())
         } else {
             self = .pattern(Pattern())
         }

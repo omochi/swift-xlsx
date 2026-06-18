@@ -130,7 +130,7 @@ struct XLSharedStringsFileTests {
 
         let sharedStrings = XLSharedStringsFile()
         let sharedStringStorage = OrderedSet<XLSharedStringRecord>([
-            .opaque(xmlString: element.xmlString)
+            .opaque(xmlString: element.xmlString())
         ])
 
         let xml = try String(

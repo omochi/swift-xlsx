@@ -121,7 +121,7 @@ public final class XLSharedStringsFile {
             if let text = text(in: element) {
                 records.append(.text(text))
             } else {
-                records.append(.opaque(xmlString: element.xmlString))
+                records.append(.opaque(xmlString: element.xmlString()))
             }
         }
         return records

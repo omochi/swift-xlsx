@@ -43,9 +43,9 @@ public enum XLFormula: Sendable {
                 return nil
             }
         case .array:
-            self = .array(xmlString: record.xmlElement().xmlString)
+            self = .array(xmlString: record.xmlElement().xmlString())
         case .dataTable:
-            self = .dataTable(xmlString: record.xmlElement().xmlString)
+            self = .dataTable(xmlString: record.xmlElement().xmlString())
         }
     }
 
