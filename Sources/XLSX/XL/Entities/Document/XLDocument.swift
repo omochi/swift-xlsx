@@ -19,7 +19,7 @@ public struct XLDocument {
         XLWorkbook(package: package)
     }
 
-    public static func open(_ url: URL) throws -> XLDocument {
+    public static func open(url: URL) throws -> XLDocument {
         try XLDocument(opcPackage: OPCPackage(data: Data(contentsOf: url)))
     }
 

@@ -22,7 +22,7 @@ struct XLDocumentTests {
 
         try Data(contentsOf: try #require(Bundle.module.url(forResource: "simple", withExtension: "xlsx"))).write(to: sourceURL)
 
-        let document = try XLDocument.open(sourceURL)
+        let document = try XLDocument.open(url: sourceURL)
         try document.save(to: destinationURL)
 
         let package = try OPCPackage(data: Data(contentsOf: destinationURL))
@@ -35,7 +35,7 @@ struct XLDocumentTests {
     }
 
     @Test func opensPlainSharedStringCellsAsStringValues() throws {
-        let document = try XLDocument.open(try #require(Bundle.module.url(forResource: "simple", withExtension: "xlsx")))
+        let document = try XLDocument.open(url: try #require(Bundle.module.url(forResource: "simple", withExtension: "xlsx")))
         let worksheet = try #require(document.workbook.worksheets.first)
 
         #expect(worksheet.existingCell(row: 1, column: 1)?.value == .string("A"))
@@ -436,7 +436,7 @@ struct XLDocumentTests {
 
         try Data(contentsOf: try #require(Bundle.module.url(forResource: "simple", withExtension: "xlsx"))).write(to: sourceURL)
 
-        let document = try XLDocument.open(sourceURL)
+        let document = try XLDocument.open(url: sourceURL)
         let worksheet = try #require(document.workbook.worksheets.first)
         worksheet.cell(row: 1, column: 1).value = .string("B")
         try document.save(to: destinationURL)
@@ -453,7 +453,7 @@ struct XLDocumentTests {
     }
 
     @Test func opensWorksheetsIntoWorkbookScope() throws {
-        let document = try XLDocument.open(try #require(Bundle.module.url(forResource: "simple", withExtension: "xlsx")))
+        let document = try XLDocument.open(url: try #require(Bundle.module.url(forResource: "simple", withExtension: "xlsx")))
 
         let worksheet = try #require(document.package.workbook.file.worksheetByID[1])
         #expect(worksheet.path.description == "/xl/worksheets/sheet1.xml")
@@ -968,7 +968,7 @@ struct XLDocumentTests {
         )
         try package.data().write(to: sourceURL)
 
-        let document = try XLDocument.open(sourceURL)
+        let document = try XLDocument.open(url: sourceURL)
         try document.save(to: destinationURL)
 
         let savedPackage = try OPCPackage(data: Data(contentsOf: destinationURL))
@@ -1020,7 +1020,7 @@ struct XLDocumentTests {
         )
         try package.data().write(to: sourceURL)
 
-        let document = try XLDocument.open(sourceURL)
+        let document = try XLDocument.open(url: sourceURL)
         try document.save(to: destinationURL)
 
         let savedPackage = try OPCPackage(data: Data(contentsOf: destinationURL))
