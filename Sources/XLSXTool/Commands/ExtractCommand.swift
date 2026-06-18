@@ -33,9 +33,9 @@ public struct ExtractCommand: ParsableCommand {
             guard isDirectory.boolValue else {
                 throw OPCError.entryIsNotDirectory(directoryURL.path)
             }
-        } else {
-            try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+            try FileManager.default.removeItem(at: directoryURL)
         }
+        try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
 
         for entry in package.allFileEntries() {
             let url = fileURL(for: entry.path, relativeTo: directoryURL)
