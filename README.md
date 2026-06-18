@@ -74,6 +74,10 @@ Existing workbooks can also be opened through `XLDocument.open(url:)`, edited th
 
 既存 workbook は `XLDocument.open(url:)` で開き、workbook や worksheet の handle から編集して、再度保存できます。
 
+When a workbook contains features that are not modeled by the library yet, `swift-xlsx` still tries to keep the original package parts and unknown XML content intact where possible, so unsupported features can round-trip to some extent.
+
+workbook にまだ library が model 化していない機能が含まれている場合でも、`swift-xlsx` は可能な範囲で元の package part や未知の XML content を保持し、未対応機能もある程度 round-trip できるようにしています。
+
 ```swift
 import Foundation
 import XLSX
@@ -121,19 +125,26 @@ ZIP 層は Apple 固有の compression API ではなく、小さな system libra
 
 ## Command Line Tool
 
-The package also includes `xlsx-tool`, a small development and inspection tool for working with `.xlsx` files.
+The package also includes `xlsx-tool`.
 
-この package には `.xlsx` ファイルを扱うための小さな開発・確認用 tool として `xlsx-tool` も含まれています。
+この package には `xlsx-tool` も含まれています。
+
+`example-documents` generates sample workbooks that demonstrate the current library API.
+
+`example-documents` は現在の library API を示す sample workbook を生成します。
 
 ```console
 swift run xlsx-tool example-documents temp
+```
+
+`extract` and `pack` are development helpers for this library. They expand an `.xlsx` file into package files and rebuild an `.xlsx` file from an extracted package directory.
+
+`extract` と `pack` は、この library の開発作業を補助するための command です。`.xlsx` を package file 群へ展開し、展開済み package directory から `.xlsx` を作り直します。
+
+```console
 swift run xlsx-tool extract input.xlsx --output extracted
 swift run xlsx-tool pack extracted --output output.xlsx
 ```
-
-`example-documents` generates sample workbooks, `extract` expands an `.xlsx` file into its package files, and `pack` builds an `.xlsx` file from an extracted package directory.
-
-`example-documents` は sample workbook を生成し、`extract` は `.xlsx` を package file 群へ展開し、`pack` は展開済み package directory から `.xlsx` を作ります。
 
 ## Requirements
 
