@@ -95,7 +95,7 @@ public struct XLCellStyleFormatRef: Hashable {
         case let .builtin(id):
             return id
         case let .format(format):
-            return numberFormats.customNumberFormatID(for: format)
+            return XLNumberFormat.customNumberFormatID(for: format, in: numberFormats)
         }
     }
 

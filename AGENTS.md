@@ -23,6 +23,7 @@
 - struct の stored property は、健全性条件を守るために固定する必要がある場合を除き、`let` ではなく `var` にする。
 - Swift の型メンバーは、先頭から inner type、initializer、stored property の順に定義する。inner type は initializer より前に置く。
 - public API を extension で追加する場合は、`public extension` ではなく無指定の `extension` にし、公開する member 側に `public` を付ける。
+- 既存 API との互換性維持は優先しない。設計を変更するときは、互換用の typealias や wrapper API を残さず、利用側を新しい設計へ更新する。
 
 ## プロトコル表記
 

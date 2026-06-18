@@ -146,7 +146,7 @@ public struct XLCellFormat: Hashable {
             return nil
         }
 
-        if let format = numberFormats.customNumberFormat(for: numberFormatID) {
+        if let format = XLNumberFormat.customNumberFormat(for: numberFormatID, in: numberFormats) {
             return .format(format)
         }
 
@@ -228,7 +228,7 @@ public struct XLCellFormat: Hashable {
         case let .builtin(id):
             return id
         case let .format(format):
-            guard let id = numberFormats.customNumberFormatID(for: format) else {
+            guard let id = XLNumberFormat.customNumberFormatID(for: format, in: numberFormats) else {
                 throw OPCError.missingNumberFormatRecord
             }
 
