@@ -56,7 +56,6 @@ public final class XLStylesFile {
     }
 
     public func xmlDocument(styleStorage: XLStyleStorage) throws -> XMLDocument {
-        let styleStorage = styleStorageForWriting(styleStorage)
         let document = original?.clone() ?? XMLDocument()
         let stylesElement = XMLUtils.ensureRootElement(name: "styleSheet", in: document)
         stylesElement.ensureNamespace(uri: .spreadsheet)
@@ -124,33 +123,6 @@ public final class XLStylesFile {
                 builtinID: 0
             ))
         }
-    }
-
-    private func styleStorageForWriting(_ styleStorage: XLStyleStorage) -> XLStyleStorage {
-        guard let defaultCellStyleFormat else {
-            return styleStorage
-        }
-
-        var styleStorage = styleStorage
-        if styleStorage.cellStyleFormats.firstIndex(of: defaultCellStyleFormat) != nil {
-            return styleStorage
-        }
-
-        if styleStorage.cellStyleFormats.count == 1,
-           isInitialDefaultCellStyleFormat(styleStorage.cellStyleFormats[0])
-        {
-            styleStorage.cellStyleFormats.remove(at: 0)
-            styleStorage.cellStyleFormats.insert(defaultCellStyleFormat, at: 0)
-        }
-
-        return styleStorage
-    }
-
-    private func isInitialDefaultCellStyleFormat(_ format: XLCellStyleFormatRef) -> Bool {
-        format.numberFormat == .builtin(id: 0) &&
-            format.font == XLFont(record: XLFontRecord()) &&
-            format.fill == .pattern(.none) &&
-            format.border == XLBorder()
     }
 
     private static func readCellStyles(

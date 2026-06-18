@@ -777,13 +777,13 @@ struct XLStylesFileTests {
     }
 
     @Test func createsInitialCellXfsWhenOriginalHasNone() throws {
-        let styles = try stylesFile(data: Data("""
+        let parsed = try stylesAndStyleStorage(data: Data("""
             <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
               <opaqueStyle/>
             </styleSheet>
             """.utf8))
 
-        let xml = try String(decoding: styles.xmlDocument(styleStorage: XLStyleStorage()).data, as: UTF8.self)
+        let xml = try String(decoding: parsed.styles.xmlDocument(styleStorage: parsed.styleStorage).data, as: UTF8.self)
 
         #expect(xml.contains(#"<cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>"#))
         #expect(xml.contains(#"<opaqueStyle/>"#))
@@ -810,26 +810,26 @@ struct XLStylesFileTests {
     }
 
     @Test func createsInitialCellStyleXfsWhenOriginalHasNone() throws {
-        let styles = try stylesFile(data: Data("""
+        let parsed = try stylesAndStyleStorage(data: Data("""
             <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
               <opaqueStyle/>
             </styleSheet>
             """.utf8))
 
-        let xml = try String(decoding: styles.xmlDocument(styleStorage: XLStyleStorage()).data, as: UTF8.self)
+        let xml = try String(decoding: parsed.styles.xmlDocument(styleStorage: parsed.styleStorage).data, as: UTF8.self)
 
         #expect(xml.contains(#"<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>"#))
         #expect(xml.contains(#"<opaqueStyle/>"#))
     }
 
     @Test func createsInitialCellStylesWhenOriginalHasNone() throws {
-        let styles = try stylesFile(data: Data("""
+        let parsed = try stylesAndStyleStorage(data: Data("""
             <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
               <opaqueStyle/>
             </styleSheet>
             """.utf8))
 
-        let xml = try String(decoding: styles.xmlDocument(styleStorage: XLStyleStorage()).data, as: UTF8.self)
+        let xml = try String(decoding: parsed.styles.xmlDocument(styleStorage: parsed.styleStorage).data, as: UTF8.self)
 
         #expect(xml.contains(#"<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>"#))
         #expect(xml.contains(#"<opaqueStyle/>"#))
@@ -867,17 +867,18 @@ struct XLStylesFileTests {
     }
 
     @Test func preservesExistingCellStylesTagWhenCellStylesBecomeEmpty() throws {
-        let styles = try stylesFile(data: Data("""
+        let parsed = try stylesAndStyleStorage(data: Data("""
             <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
               <cellStyles count="1">
                 <cellStyle name="標準" xfId="0" builtinId="0"/>
               </cellStyles>
             </styleSheet>
             """.utf8))
+        let styles = parsed.styles
 
         styles.cellStyles = []
 
-        let xml = try String(decoding: styles.xmlDocument(styleStorage: XLStyleStorage()).data, as: UTF8.self)
+        let xml = try String(decoding: styles.xmlDocument(styleStorage: parsed.styleStorage).data, as: UTF8.self)
 
         #expect(xml.contains(#"<cellStyles count="0">"#) || xml.contains(#"<cellStyles count="0"/>"#))
         #expect(!xml.contains(#"<cellStyle "#))
