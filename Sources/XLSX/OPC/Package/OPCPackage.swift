@@ -1,4 +1,6 @@
-import Foundation
+import struct Foundation.Data
+import struct Foundation.URL
+import XLSXXML
 
 public struct OPCPackage: Sendable {
     public init() {

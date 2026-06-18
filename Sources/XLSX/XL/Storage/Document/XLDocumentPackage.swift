@@ -1,6 +1,6 @@
 import MemberwiseInit
-import Foundation
 import OrderedCollections
+import XLSXXML
 
 @MemberwiseInit(.public)
 public final class XLDocumentPackage {

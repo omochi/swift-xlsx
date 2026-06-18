@@ -1,5 +1,6 @@
 import Testing
 import XLSX
+import XLSXXML
 
 @Suite
 struct XLFormulaRecordTests {

@@ -1,5 +1,6 @@
-import Foundation
+import struct Foundation.Data
 import Testing
+import XLSXXML
 @testable import XLSX
 
 @Suite
@@ -41,7 +42,7 @@ struct XMLDocumentTests {
     }
 
     @Test func parsesElementFromXMLString() throws {
-        let element = try XLSX.XMLElement(xmlString: #"<root><child id="1"/></root>"#)
+        let element = try XLSXXML.XMLElement(xmlString: #"<root><child id="1"/></root>"#)
         let child = try #require(firstChildElement(name: "child", of: element))
 
         #expect(element.parent == nil)
@@ -50,7 +51,7 @@ struct XMLDocumentTests {
     }
 
     @Test func parsesElementFromData() throws {
-        let element = try XLSX.XMLElement(data: Data(#"<root value="a&amp;b"/>"#.utf8))
+        let element = try XLSXXML.XMLElement(data: Data(#"<root value="a&amp;b"/>"#.utf8))
 
         #expect(element.attribute(name: "value") == "a&b")
     }
@@ -237,8 +238,8 @@ struct XMLDocumentTests {
         let clonedRoot = try #require(clone.element(name: "root"))
         let originalChild = try #require(firstChildElement(name: "child", of: originalRoot))
         let clonedChild = try #require(firstChildElement(name: "child", of: clonedRoot))
-        let originalText = try #require(originalChild.children.first as? XMLText)
-        let clonedText = try #require(clonedChild.children.first as? XMLText)
+        let originalText = try #require(originalChild.children.first as? XLSXXML.XMLText)
+        let clonedText = try #require(clonedChild.children.first as? XLSXXML.XMLText)
 
         clonedChild.attributes[0].value = "2"
         clonedText.value = "changed"
@@ -426,6 +427,6 @@ struct XMLDocumentTests {
     }
 }
 
-private func firstChildElement(name: String, of element: XLSX.XMLElement) -> XLSX.XMLElement? {
+private func firstChildElement(name: String, of element: XLSXXML.XMLElement) -> XLSXXML.XMLElement? {
     element.elements(name: name).first
 }

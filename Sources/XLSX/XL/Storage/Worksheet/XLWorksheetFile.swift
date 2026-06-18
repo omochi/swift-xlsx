@@ -1,4 +1,5 @@
 import OrderedCollections
+import XLSXXML
 
 public final class XLWorksheetFile {
     public init() {

@@ -1,3 +1,5 @@
+import XLSXXML
+
 public struct XLCellFormatRecord: Sendable & Hashable {
     public init(
         numberFormatID: Int? = nil,

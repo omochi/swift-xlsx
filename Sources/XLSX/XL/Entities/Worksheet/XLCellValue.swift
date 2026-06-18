@@ -1,5 +1,10 @@
-import Foundation
+import struct Foundation.Calendar
+import struct Foundation.Date
+import struct Foundation.DateComponents
+import struct Foundation.TimeZone
+import typealias Foundation.TimeInterval
 import OrderedCollections
+import XLSXXML
 
 public enum XLCellValue: Sendable & Hashable & CustomStringConvertible {
     case number(Double)

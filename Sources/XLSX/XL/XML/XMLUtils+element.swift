@@ -1,3 +1,5 @@
+import XLSXXML
+
 extension XMLUtils {
     public static func ensureRootElement(name: String, in document: XMLDocument) -> XMLElement {
         if let element = document.element(name: name) {

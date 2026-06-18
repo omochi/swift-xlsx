@@ -1,4 +1,5 @@
 import MemberwiseInit
+import XLSXXML
 
 @MemberwiseInit(.public)
 public struct XLDataValidations: Sendable & Hashable {

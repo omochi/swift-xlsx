@@ -1,7 +1,8 @@
-import Foundation
+import struct Foundation.Data
 import OrderedCollections
 import Testing
 import XLSX
+import XLSXXML
 
 @Suite
 struct XLSharedStringsFileTests {

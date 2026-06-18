@@ -1,7 +1,8 @@
-import Foundation
+import struct Foundation.Data
 import OrderedCollections
 import Testing
 import XLSX
+import XLSXXML
 
 @Suite
 struct XLStylesFileTests {
@@ -899,26 +900,26 @@ struct XLStylesFileTests {
     }
 
     @Test func insertsMissingStyleSheetChildrenInStylesheetOrder() throws {
-        let cellStyleElement = XLSX.XMLElement(name: XMLName(name: "cellStyle"))
+        let cellStyleElement = XLSXXML.XMLElement(name: XMLName(name: "cellStyle"))
         cellStyleElement.setAttribute(name: "name", value: "標準")
         cellStyleElement.setAttribute(name: "xfId", value: "0")
         cellStyleElement.setAttribute(name: "builtinId", value: "0")
 
-        let cellStylesElement = XLSX.XMLElement(
+        let cellStylesElement = XLSXXML.XMLElement(
             name: XMLName(name: "cellStyles"),
             children: [cellStyleElement]
         )
         cellStylesElement.setAttribute(name: "count", value: "1")
 
-        let styleSheetElement = XLSX.XMLElement(
+        let styleSheetElement = XLSXXML.XMLElement(
             name: XMLName(name: "styleSheet"),
             children: [
                 cellStylesElement,
-                XLSX.XMLElement(name: XMLName(name: "dxfs")),
-                XLSX.XMLElement(name: XMLName(name: "tableStyles")),
-                XLSX.XMLElement(name: XMLName(name: "colors")),
-                XLSX.XMLElement(name: XMLName(name: "extLst")),
-                XLSX.XMLElement(name: XMLName(name: "opaqueStyle")),
+                XLSXXML.XMLElement(name: XMLName(name: "dxfs")),
+                XLSXXML.XMLElement(name: XMLName(name: "tableStyles")),
+                XLSXXML.XMLElement(name: XMLName(name: "colors")),
+                XLSXXML.XMLElement(name: XMLName(name: "extLst")),
+                XLSXXML.XMLElement(name: XMLName(name: "opaqueStyle")),
             ]
         )
         styleSheetElement.setDefaultNamespace(uri: .spreadsheet)

@@ -25,19 +25,34 @@ let package = Package(
     ],
     targets: [
         .target(
+            name: "XLSXXML",
+            dependencies: [
+                .product(name: "MemberwiseInit", package: "swift-memberwise-init-macro"),
+                .product(name: "SAXParser", package: "xylem"),
+                .product(name: "XMLCore", package: "xylem"),
+            ]
+        ),
+        .target(
             name: "XLSX",
             dependencies: [
                 "CXLSXZLib",
+                "XLSXXML",
                 .product(name: "MemberwiseInit", package: "swift-memberwise-init-macro"),
                 .product(name: "OrderedCollections", package: "swift-collections"),
-                .product(name: "SAXParser", package: "xylem"),
-                .product(name: "XMLCore", package: "xylem"),
+            ]
+        ),
+        .target(
+            name: "XLSXExamples",
+            dependencies: [
+                "XLSX",
             ]
         ),
         .executableTarget(
             name: "XLSXTool",
             dependencies: [
+                "XLSXXML",
                 "XLSX",
+                "XLSXExamples",
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ]
         ),
@@ -47,7 +62,11 @@ let package = Package(
         ),
         .testTarget(
             name: "XLSXTest",
-            dependencies: ["XLSX"],
+            dependencies: [
+                "XLSXXML",
+                "XLSX",
+                "XLSXExamples",
+            ],
             resources: [
                 .process("Resources/simple.xlsx"),
                 .copy("Resources/example-documents"),

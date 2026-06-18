@@ -1,3 +1,5 @@
+import XLSXXML
+
 public enum XLColor: Sendable & Hashable {
     case rgb(String)
     case indexed(Int)

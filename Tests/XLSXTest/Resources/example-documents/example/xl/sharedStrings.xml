@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="51" uniqueCount="51">
+    <si>
+        <t>sum→</t>
+    </si>
+    <si>
+        <t>width=10</t>
+    </si>
+    <si>
+        <t>width=20</t>
+    </si>
+    <si>
+        <t>width=30</t>
+    </si>
+    <si>
+        <t>builtin 0</t>
+    </si>
+    <si>
+        <t>general</t>
+    </si>
+    <si>
+        <t>builtin 1</t>
+    </si>
+    <si>
+        <t>integer</t>
+    </si>
+    <si>
+        <t>builtin 2</t>
+    </si>
+    <si>
+        <t>decimal2</t>
+    </si>
+    <si>
+        <t>builtin 3</t>
+    </si>
+    <si>
+        <t>thousandsInteger</t>
+    </si>
+    <si>
+        <t>builtin 4</t>
+    </si>
+    <si>
+        <t>thousandsDecimal2</t>
+    </si>
+    <si>
+        <t>builtin 9</t>
+    </si>
+    <si>
+        <t>percent</t>
+    </si>
+    <si>
+        <t>builtin 10</t>
+    </si>
+    <si>
+        <t>percentDecimal2</t>
+    </si>
+    <si>
+        <t>builtin 14</t>
+    </si>
+    <si>
+        <t>date</t>
+    </si>
+    <si>
+        <t>builtin 20</t>
+    </si>
+    <si>
+        <t>time</t>
+    </si>
+    <si>
+        <t>builtin 21</t>
+    </si>
+    <si>
+        <t>timeWithSeconds</t>
+    </si>
+    <si>
+        <t>builtin 22</t>
+    </si>
+    <si>
+        <t>dateTime</t>
+    </si>
+    <si>
+        <t>builtin 46</t>
+    </si>
+    <si>
+        <t>elapsedTime</t>
+    </si>
+    <si>
+        <t>builtin 49</t>
+    </si>
+    <si>
+        <t>text</t>
+    </si>
+    <si>
+        <t>custom</t>
+    </si>
+    <si>
+        <t>yyyy"ねん" m"がつ" d"にち"</t>
+    </si>
+    <si>
+        <t>bold</t>
+    </si>
+    <si>
+        <t>italic</t>
+    </si>
+    <si>
+        <t>strike</t>
+    </si>
+    <si>
+        <t>size</t>
+    </si>
+    <si>
+        <t>name</t>
+    </si>
+    <si>
+        <t>red</t>
+    </si>
+    <si>
+        <t>start</t>
+    </si>
+    <si>
+        <t>end</t>
+    </si>
+    <si>
+        <t>left</t>
+    </si>
+    <si>
+        <t>right</t>
+    </si>
+    <si>
+        <t>top</t>
+    </si>
+    <si>
+        <t>bottom</t>
+    </si>
+    <si>
+        <t>diagonal up</t>
+    </si>
+    <si>
+        <t>diagonal down</t>
+    </si>
+    <si>
+        <t>medium</t>
+    </si>
+    <si>
+        <t>Apple</t>
+    </si>
+    <si>
+        <t>select↓</t>
+    </si>
+    <si>
+        <t>Banana</t>
+    </si>
+    <si>
+        <t>Cherry</t>
+    </si>
+</sst>

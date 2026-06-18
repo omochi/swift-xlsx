@@ -1,6 +1,7 @@
-import Foundation
+import struct Foundation.Data
 import Testing
 import XLSX
+import XLSXXML
 
 @Suite
 struct XLWorkbookFileTests {

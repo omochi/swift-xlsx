@@ -1,6 +1,10 @@
 import ArgumentParser
-import Foundation
+import struct Foundation.Data
+import class Foundation.FileManager
+import struct Foundation.ObjCBool
+import struct Foundation.URL
 import XLSX
+import XLSXXML
 
 public struct ExtractCommand: ParsableCommand {
     public static let configuration = CommandConfiguration(

@@ -1,10 +1,11 @@
 import Testing
+import XLSXXML
 @testable import XLSX
 
 @Suite
 struct XLBorderTests {
     @Test func readsBorderLinesFromElement() throws {
-        let element = try XLSX.XMLElement(xmlString: """
+        let element = try XLSXXML.XMLElement(xmlString: """
             <border outline="0" diagonalUp="1" diagonalDown="1">
               <start style="dotted"/>
               <end style="hair"/>

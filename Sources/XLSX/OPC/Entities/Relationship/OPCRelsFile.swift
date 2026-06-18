@@ -1,5 +1,5 @@
 import MemberwiseInit
-import Foundation
+import XLSXXML
 
 @MemberwiseInit(.public)
 public struct OPCRelsFile: Sendable {

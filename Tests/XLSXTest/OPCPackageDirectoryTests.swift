@@ -1,6 +1,11 @@
-import Foundation
+import struct Foundation.Data
+import class Foundation.FileManager
+import struct Foundation.ObjCBool
+import struct Foundation.URL
+import struct Foundation.UUID
 import Testing
 import XLSX
+import XLSXXML
 
 @Suite
 struct OPCPackageDirectoryTests {

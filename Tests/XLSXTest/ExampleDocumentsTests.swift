@@ -1,6 +1,11 @@
-import Foundation
+import class Foundation.Bundle
+import struct Foundation.Data
+import class Foundation.FileManager
+import struct Foundation.UUID
 import Testing
 import XLSX
+import XLSXExamples
+import XLSXXML
 
 @Suite
 struct ExampleDocumentsTests {
@@ -18,38 +23,10 @@ struct ExampleDocumentsTests {
         )
     }
 
-    @Test func savesDataValidationDocumentFixture() throws {
+    @Test func savesExampleDocumentFixture() throws {
         try expectGeneratedDocument(
-            try XLExampleDocuments.dataValidationDocument(),
-            matchesFixtureNamed: "data-validation"
-        )
-    }
-
-    @Test func savesColumnDocumentFixture() throws {
-        try expectGeneratedDocument(
-            try XLExampleDocuments.columnDocument(),
-            matchesFixtureNamed: "column"
-        )
-    }
-
-    @Test func savesFormulaDocumentFixture() throws {
-        try expectGeneratedDocument(
-            try XLExampleDocuments.formulaDocument(),
-            matchesFixtureNamed: "formula"
-        )
-    }
-
-    @Test func savesWorksheetsDocumentFixture() throws {
-        try expectGeneratedDocument(
-            try XLExampleDocuments.worksheetsDocument(),
-            matchesFixtureNamed: "worksheets"
-        )
-    }
-
-    @Test func savesStyleDocumentFixture() throws {
-        try expectGeneratedDocument(
-            try XLExampleDocuments.styleDocument(),
-            matchesFixtureNamed: "style"
+            try XLExampleDocuments.exampleDocument(),
+            matchesFixtureNamed: "example"
         )
     }
 
@@ -98,13 +75,13 @@ struct ExampleDocumentsTests {
         return document.xmlString()
     }
 
-    private func removeFormattingText(in node: XLSX.XMLNode) {
+    private func removeFormattingText(in node: XLSXXML.XMLNode) {
         for child in node.children {
             removeFormattingText(in: child)
         }
 
         let hasNonWhitespaceText = node.children.contains { child in
-            guard let text = child as? XLSX.XMLText else {
+            guard let text = child as? XLSXXML.XMLText else {
                 return false
             }
             return !text.value.allSatisfy(\.isWhitespace)
@@ -114,7 +91,7 @@ struct ExampleDocumentsTests {
         }
 
         node.children = node.children.filter { child in
-            guard let text = child as? XLSX.XMLText else {
+            guard let text = child as? XLSXXML.XMLText else {
                 return true
             }
             return !text.value.allSatisfy(\.isWhitespace)

@@ -1,3 +1,5 @@
+import XLSXXML
+
 extension XMLUtils {
     public static func boolString(value: Bool) -> String {
         value ? "1" : "0"

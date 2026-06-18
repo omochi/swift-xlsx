@@ -1,5 +1,5 @@
-import Foundation
 import OrderedCollections
+import XLSXXML
 
 public final class XLStylesFile {
     public init(

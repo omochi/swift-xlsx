@@ -1,3 +1,5 @@
+import XLSXXML
+
 extension XMLUtils {
     public static func patchChildren<Records: Collection>(
         parentElement: XMLElement,

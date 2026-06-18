@@ -1,6 +1,10 @@
-import Foundation
+import class Foundation.Bundle
+import struct Foundation.Data
+import class Foundation.FileManager
+import struct Foundation.UUID
 import Testing
 import XLSX
+import XLSXXML
 
 @Suite
 struct XLDocumentTests {
@@ -1051,13 +1055,13 @@ private func normalizedXMLString(_ data: Data) throws -> String {
     return document.xmlString()
 }
 
-private func removeFormattingText(in node: XLSX.XMLNode) {
+private func removeFormattingText(in node: XLSXXML.XMLNode) {
     for child in node.children {
         removeFormattingText(in: child)
     }
 
     let hasNonWhitespaceText = node.children.contains { child in
-        guard let text = child as? XLSX.XMLText else {
+        guard let text = child as? XLSXXML.XMLText else {
             return false
         }
         return !text.value.allSatisfy(\.isWhitespace)
@@ -1067,7 +1071,7 @@ private func removeFormattingText(in node: XLSX.XMLNode) {
     }
 
     node.children = node.children.filter { child in
-        guard let text = child as? XLSX.XMLText else {
+        guard let text = child as? XLSXXML.XMLText else {
             return true
         }
         return !text.value.allSatisfy(\.isWhitespace)

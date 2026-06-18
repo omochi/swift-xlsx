@@ -1,7 +1,14 @@
-import Foundation
+import struct Foundation.Calendar
+import struct Foundation.Data
+import struct Foundation.Date
+import struct Foundation.DateComponents
+import class Foundation.FileManager
+import struct Foundation.TimeZone
+import struct Foundation.UUID
 import OrderedCollections
 import Testing
 import XLSX
+import XLSXXML
 
 @Suite
 struct XLWorksheetFileTests {

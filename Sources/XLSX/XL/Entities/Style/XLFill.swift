@@ -1,4 +1,5 @@
 import MemberwiseInit
+import XLSXXML
 
 public enum XLFill: Sendable & Hashable {
     public enum PatternType: String, Sendable & Hashable {
