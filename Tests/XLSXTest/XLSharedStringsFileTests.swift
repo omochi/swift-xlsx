@@ -150,7 +150,7 @@ struct XLSharedStringsFileTests {
     }
 
     private func sharedStringStorage(data: Data) throws -> OrderedSet<XLSharedStringRecord> {
-        try OrderedSet<XLSharedStringRecord>(xmlDocument: XMLDocument(data: data))
+        try XLSharedStringsFile.readStorage(xmlDocument: XMLDocument(data: data))
     }
 
     private func sharedStringsAndStorage(
@@ -159,7 +159,7 @@ struct XLSharedStringsFileTests {
         let document = try XMLDocument(data: data)
         return (
             file: try XLSharedStringsFile(xmlDocument: document),
-            storage: try OrderedSet<XLSharedStringRecord>(xmlDocument: document)
+            storage: try XLSharedStringsFile.readStorage(xmlDocument: document)
         )
     }
 }

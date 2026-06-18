@@ -26,6 +26,14 @@ public final class XLSharedStringsFile {
         return try OPCFilePath(string: "sharedStrings.xml").resolved(relativeTo: workbookPath)
     }
 
+    public static func readStorage(xmlDocument: XMLDocument) throws -> OrderedSet<XLSharedStringRecord> {
+        guard let sharedStringsElement = xmlDocument.element(name: "sst") else {
+            throw OPCError.invalidSharedStringsFile
+        }
+
+        return OrderedSet(sharedStringRecords(in: sharedStringsElement))
+    }
+
     public func xmlDocument(sharedStringStorage: OrderedSet<XLSharedStringRecord>) throws -> XMLDocument {
         let document = original?.clone() ?? XMLDocument()
         let sharedStringsElement = XMLUtils.ensureRootElement(name: "sst", in: document)
@@ -79,5 +87,43 @@ public final class XLSharedStringsFile {
         textElement.appendChild(XMLText(text))
         itemElement.appendChild(textElement)
         return itemElement
+    }
+
+    private static func text(in element: XMLElement) -> String? {
+        let childElements = element.children.compactMap { $0 as? XMLElement }
+        let hasNonWhitespaceText = element.children.contains { child in
+            guard let text = child as? XMLText else {
+                return false
+            }
+            return !text.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+
+        if !hasNonWhitespaceText,
+           childElements.count == 1,
+           let text = childElements.first,
+           text.name.name == "t"
+        {
+            return text.children.compactMap { ($0 as? XMLText)?.value }.joined()
+        }
+
+        return nil
+    }
+
+    private static func sharedStringRecords(in sharedStringsElement: XMLElement) -> [XLSharedStringRecord] {
+        var records: [XLSharedStringRecord] = []
+        for child in sharedStringsElement.children {
+            guard let element = child as? XMLElement,
+                  element.name.name == "si"
+            else {
+                continue
+            }
+
+            if let text = text(in: element) {
+                records.append(.text(text))
+            } else {
+                records.append(.opaque(xmlString: element.xmlString))
+            }
+        }
+        return records
     }
 }

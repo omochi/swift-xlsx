@@ -51,7 +51,7 @@ public final class XLDocumentPackage {
             at: sharedStringsPath,
             default: XLSharedStringsFile(),
             read: { xmlDocument in
-                let decodedSharedStringStorage = try OrderedSet<XLSharedStringRecord>(xmlDocument: xmlDocument)
+                let decodedSharedStringStorage = try XLSharedStringsFile.readStorage(xmlDocument: xmlDocument)
                 sharedStringStorage = decodedSharedStringStorage
                 return try XLSharedStringsFile(xmlDocument: xmlDocument)
             },
