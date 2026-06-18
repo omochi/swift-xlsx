@@ -1,0 +1,18 @@
+name: test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y zlib1g-dev
+      - uses: vapor/swiftly-action@v0.2
+        with:
+          toolchain: "6.3"
+      - run: swift test
