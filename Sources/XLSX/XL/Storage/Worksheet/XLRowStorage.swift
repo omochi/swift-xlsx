@@ -91,20 +91,20 @@ public final class XLRowStorage {
         rowElement.children = cellElements + rowChildren.otherChildren
     }
 
-    public func collectSharedStrings(sharedStringStorage: XLSharedStringRecordsStorage) {
+    public func collectSharedStrings(sharedStringStorage: inout XLSharedStringRecordsStorage) {
         for cell in existingCells {
-            cell.collectSharedStrings(sharedStringStorage: sharedStringStorage)
+            cell.collectSharedStrings(sharedStringStorage: &sharedStringStorage)
         }
     }
 
     public func collectSharedStrings(
-        sharedStringStorage: XLSharedStringRecordsStorage,
+        sharedStringStorage: inout XLSharedStringRecordsStorage,
         formulaSharedIndicesByDefinitionAddress: [XLCellAddress: Int],
         rowNumber: Int
     ) {
         for (column, cell) in existingCellsWithColumn {
             cell.collectSharedStrings(
-                sharedStringStorage: sharedStringStorage,
+                sharedStringStorage: &sharedStringStorage,
                 address: XLCellAddress(row: rowNumber, column: column),
                 formulaSharedIndicesByDefinitionAddress: formulaSharedIndicesByDefinitionAddress
             )

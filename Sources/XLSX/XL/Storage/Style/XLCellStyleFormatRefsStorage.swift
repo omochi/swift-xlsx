@@ -9,7 +9,7 @@ extension XLCellStyleFormatRefsStorage {
         return firstIndex { $0.hasSameStyleValues(as: record) }
     }
 
-    func canonicalRecord(for record: XLCellStyleFormatRef) -> XLCellStyleFormatRef {
+    mutating func canonicalRecord(for record: XLCellStyleFormatRef) -> XLCellStyleFormatRef {
         if let index = index(matching: record) {
             return self[index]
         }

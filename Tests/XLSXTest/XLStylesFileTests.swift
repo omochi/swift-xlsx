@@ -678,7 +678,7 @@ struct XLStylesFileTests {
             </styleSheet>
             """.utf8))
         let styles = parsed.styles
-        let styleStorage = parsed.styleStorage
+        var styleStorage = parsed.styleStorage
         let customFormat = XLCellStyleFormatRef(numberFormat: .builtin(id: 49))
         styleStorage.cellStyleFormats.register(customFormat)
 

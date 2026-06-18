@@ -118,8 +118,8 @@ public final class XLDocumentPackage {
             workbookRels: &workbookRels.file
         )
 
-        let sharedStringStorage = XLSharedStringRecordsStorage()
-        workbook.file.collectSharedStrings(sharedStringStorage: sharedStringStorage)
+        var sharedStringStorage = XLSharedStringRecordsStorage()
+        workbook.file.collectSharedStrings(sharedStringStorage: &sharedStringStorage)
 
         var styleStorage = XLStyleStorage()
         try collectStyle(styleStorage: &styleStorage)

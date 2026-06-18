@@ -1,7 +1,7 @@
 public typealias XLSharedStringRecordsStorage = XLGenericRecordsStorage<XLSharedStringRecord>
 
 extension XLSharedStringRecordsStorage {
-    public convenience init(xmlDocument: XMLDocument) throws {
+    public init(xmlDocument: XMLDocument) throws {
         guard let sharedStringsElement = xmlDocument.element(name: "sst") else {
             throw OPCError.invalidSharedStringsFile
         }
@@ -10,7 +10,7 @@ extension XLSharedStringRecordsStorage {
     }
 
     @discardableResult
-    public func register(_ text: String) -> Int {
+    public mutating func register(_ text: String) -> Int {
         register(.text(text))
     }
 

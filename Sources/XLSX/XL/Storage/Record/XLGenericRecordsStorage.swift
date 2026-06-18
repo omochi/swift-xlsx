@@ -1,4 +1,4 @@
-public final class XLGenericRecordsStorage<Record: Hashable>: RandomAccessCollection {
+public struct XLGenericRecordsStorage<Record: Hashable>: RandomAccessCollection {
     public typealias Index = Int
 
     public init(records: [Record] = []) {
@@ -26,7 +26,7 @@ public final class XLGenericRecordsStorage<Record: Hashable>: RandomAccessCollec
     }
 
     @discardableResult
-    public func register(_ record: Record) -> Int {
+    public mutating func register(_ record: Record) -> Int {
         if let index = indexByRecord[record] {
             return index
         }
@@ -46,9 +46,5 @@ public final class XLGenericRecordsStorage<Record: Hashable>: RandomAccessCollec
 
     public func index(for record: Record) -> Int? {
         indexByRecord[record]
-    }
-
-    public func clone() -> XLGenericRecordsStorage<Record> {
-        XLGenericRecordsStorage(records: Array(self))
     }
 }

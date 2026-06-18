@@ -55,7 +55,7 @@ struct XLSharedStringsFileTests {
     }
 
     @Test func appendsChangedItemsAsPlainText() throws {
-        let sharedStrings = try sharedStringsAndStorage(data: Data("""
+        var sharedStrings = try sharedStringsAndStorage(data: Data("""
             <sst xmlns="\(XMLNamespaceURI.spreadsheet.string)" count="1" uniqueCount="1">
               <si><r><rPr><b/></rPr><t>Hello</t></r></si>
             </sst>
@@ -72,7 +72,7 @@ struct XLSharedStringsFileTests {
     }
 
     @Test func appendsAddedItemsAfterOriginalChildren() throws {
-        let sharedStrings = try sharedStringsAndStorage(data: Data("""
+        var sharedStrings = try sharedStringsAndStorage(data: Data("""
             <sst xmlns="\(XMLNamespaceURI.spreadsheet.string)" count="1" uniqueCount="1">
               <si><t>A</t></si>
               <extLst><ext uri="keep"/></extLst>
@@ -91,7 +91,7 @@ struct XLSharedStringsFileTests {
     }
 
     @Test func keepsExistingRecordOrderWhenNewRecordIsAppended() throws {
-        let sharedStrings = try sharedStringsAndStorage(data: Data("""
+        var sharedStrings = try sharedStringsAndStorage(data: Data("""
             <sst xmlns="\(XMLNamespaceURI.spreadsheet.string)" count="3" uniqueCount="3">
               <si><t>A</t></si>
               <si><t>B</t></si>

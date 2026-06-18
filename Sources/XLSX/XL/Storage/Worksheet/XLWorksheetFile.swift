@@ -133,11 +133,11 @@ public final class XLWorksheetFile {
         return document
     }
 
-    public func collectSharedStrings(sharedStringStorage: XLSharedStringRecordsStorage) {
+    public func collectSharedStrings(sharedStringStorage: inout XLSharedStringRecordsStorage) {
         let formulaSharedIndicesByDefinitionAddress = sharedFormulaIndicesByDefinitionAddress()
         for (rowNumber, row) in existingRowsWithNumber {
             row.collectSharedStrings(
-                sharedStringStorage: sharedStringStorage,
+                sharedStringStorage: &sharedStringStorage,
                 formulaSharedIndicesByDefinitionAddress: formulaSharedIndicesByDefinitionAddress,
                 rowNumber: rowNumber
             )

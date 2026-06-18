@@ -75,7 +75,7 @@ public final class XLCellStorage {
         )
     }
 
-    public func collectSharedStrings(sharedStringStorage: XLSharedStringRecordsStorage) {
+    public func collectSharedStrings(sharedStringStorage: inout XLSharedStringRecordsStorage) {
         if let formula,
            formula.kind != .sharedReference,
            case .string = value
@@ -83,11 +83,11 @@ public final class XLCellStorage {
             return
         }
 
-        collectValueSharedStrings(sharedStringStorage: sharedStringStorage)
+        collectValueSharedStrings(sharedStringStorage: &sharedStringStorage)
     }
 
     public func collectSharedStrings(
-        sharedStringStorage: XLSharedStringRecordsStorage,
+        sharedStringStorage: inout XLSharedStringRecordsStorage,
         address: XLCellAddress,
         formulaSharedIndicesByDefinitionAddress: [XLCellAddress: Int]
     ) {
@@ -102,10 +102,10 @@ public final class XLCellStorage {
             return
         }
 
-        collectValueSharedStrings(sharedStringStorage: sharedStringStorage)
+        collectValueSharedStrings(sharedStringStorage: &sharedStringStorage)
     }
 
-    private func collectValueSharedStrings(sharedStringStorage: XLSharedStringRecordsStorage) {
+    private func collectValueSharedStrings(sharedStringStorage: inout XLSharedStringRecordsStorage) {
         switch value {
         case let .string(text):
             sharedStringStorage.register(text)

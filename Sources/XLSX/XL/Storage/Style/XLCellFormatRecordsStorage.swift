@@ -2,7 +2,7 @@ public typealias XLCellFormatRecordsStorage = XLGenericRecordsStorage<XLCellForm
 
 extension XLCellFormatRecordsStorage {
     @discardableResult
-    public func register(
+    public mutating func register(
         _ format: XLCellFormat,
         styleStorage: XLStyleStorage
     ) throws -> Int {

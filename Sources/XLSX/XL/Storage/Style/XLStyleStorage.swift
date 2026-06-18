@@ -60,17 +60,6 @@ public struct XLStyleStorage {
             cellFormats.isEmpty
     }
 
-    public func clone() -> XLStyleStorage {
-        XLStyleStorage(
-            numberFormats: numberFormats.clone(),
-            fonts: fonts.clone(),
-            fills: fills.clone(),
-            borders: borders.clone(),
-            cellStyleFormats: cellStyleFormats.clone(),
-            cellFormats: cellFormats.clone()
-        )
-    }
-
     private mutating func ensureInitialRecords() {
         if fonts.isEmpty {
             fonts.register(XLFontRecord())
