@@ -1,4 +1,4 @@
-public enum XLSharedStringRecord: Sendable, Hashable, CustomStringConvertible {
+public enum XLSharedStringRecord: Sendable & Hashable & CustomStringConvertible {
     case text(String)
     case opaque(xmlString: String)
 
