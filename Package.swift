@@ -28,8 +28,8 @@ let package = Package(
             name: "XLSXXML",
             dependencies: [
                 .product(name: "MemberwiseInit", package: "swift-memberwise-init-macro"),
-                .product(name: "SAXParser", package: "xylem"),
                 .product(name: "XMLCore", package: "xylem"),
+                .product(name: "SAXParser", package: "xylem"),
             ]
         ),
         .target(
