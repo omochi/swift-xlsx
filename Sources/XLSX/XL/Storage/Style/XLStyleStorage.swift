@@ -3,7 +3,7 @@ import OrderedCollections
 public struct XLStyleStorage {
     public init(
         numberFormats: OrderedSet<String> = OrderedSet<String>(),
-        fonts: OrderedSet<XLFontRecord> = OrderedSet<XLFontRecord>(),
+        fonts: OrderedSet<XLFont> = OrderedSet<XLFont>(),
         fills: OrderedSet<XLFill> = OrderedSet<XLFill>(),
         borders: OrderedSet<XLBorder> = OrderedSet<XLBorder>(),
         cellStyleFormats: OrderedSet<XLCellStyleFormatRef> = OrderedSet<XLCellStyleFormatRef>(),
@@ -24,7 +24,7 @@ public struct XLStyleStorage {
         }
 
         let numberFormats = OrderedSet<String>(Self.readNumberFormats(in: stylesElement))
-        let fonts = OrderedSet<XLFontRecord>(Self.readFonts(in: stylesElement))
+        let fonts = OrderedSet<XLFont>(Self.readFonts(in: stylesElement))
         let fills = OrderedSet<XLFill>(Self.readFills(in: stylesElement))
         let borders = OrderedSet<XLBorder>(Self.readBorders(in: stylesElement))
         let cellStyleFormats = OrderedSet<XLCellStyleFormatRef>(Self.readCellStyleFormats(
@@ -47,7 +47,7 @@ public struct XLStyleStorage {
     }
 
     public var numberFormats: OrderedSet<String>
-    public var fonts: OrderedSet<XLFontRecord>
+    public var fonts: OrderedSet<XLFont>
     public var fills: OrderedSet<XLFill>
     public var borders: OrderedSet<XLBorder>
     public var cellStyleFormats: OrderedSet<XLCellStyleFormatRef>
@@ -64,7 +64,7 @@ public struct XLStyleStorage {
 
     private mutating func ensureInitialRecords() {
         if fonts.isEmpty {
-            fonts.append(XLFontRecord())
+            fonts.append(XLFont())
         }
 
         if fills.isEmpty {
@@ -79,7 +79,7 @@ public struct XLStyleStorage {
         if cellStyleFormats.isEmpty {
             cellStyleFormats.append(XLCellStyleFormatRef(
                 numberFormat: .builtin(id: 0),
-                font: fonts.indices.contains(0) ? XLFont(record: fonts[0]) : nil,
+                font: fonts.indices.contains(0) ? fonts[0] : nil,
                 fill: fills.indices.contains(0) ? fills[0] : nil,
                 border: borders.indices.contains(0) ? borders[0] : nil
             ))
@@ -116,11 +116,11 @@ public struct XLStyleStorage {
             .map { $0.format }
     }
 
-    private static func readFonts(in stylesElement: XMLElement) -> [XLFontRecord] {
+    private static func readFonts(in stylesElement: XMLElement) -> [XLFont] {
         guard let fontsElement = stylesElement.elements(name: "fonts").first else {
             return []
         }
-        return fontsElement.elements(name: "font").map(XLFontRecord.init(element:))
+        return fontsElement.elements(name: "font").map(XLFont.init(element:))
     }
 
     private static func readFills(in stylesElement: XMLElement) -> [XLFill] {
@@ -147,7 +147,7 @@ public struct XLStyleStorage {
     private static func readCellStyleFormats(
         in stylesElement: XMLElement,
         numberFormats: OrderedSet<String>,
-        fonts: OrderedSet<XLFontRecord>,
+        fonts: OrderedSet<XLFont>,
         fills: OrderedSet<XLFill>,
         borders: OrderedSet<XLBorder>
     ) -> [XLCellStyleFormatRef] {

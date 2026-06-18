@@ -74,13 +74,13 @@ public struct XLCellStyleFormatRef: Hashable {
 
     public func record(
         numberFormats: OrderedSet<String>,
-        fonts: OrderedSet<XLFontRecord>,
+        fonts: OrderedSet<XLFont>,
         fills: OrderedSet<XLFill>,
         borders: OrderedSet<XLBorder>
     ) -> XLCellFormatRecord {
         XLCellFormatRecord(
             numberFormatID: numberFormatID(in: numberFormats),
-            fontID: font.flatMap { fonts.firstIndex(of: $0.record) },
+            fontID: font.flatMap { fonts.firstIndex(of: $0) },
             fillID: fill.flatMap { fills.firstIndex(of: $0) },
             borderID: border.flatMap { borders.firstIndex(of: $0) }
         )
@@ -107,7 +107,7 @@ public struct XLCellStyleFormatRef: Hashable {
             }
         case .fonts:
             if let font {
-                styleStorage.fonts.append(font.record)
+                styleStorage.fonts.append(font)
             }
         case .fills:
             if let fill {

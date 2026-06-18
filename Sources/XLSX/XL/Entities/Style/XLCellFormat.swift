@@ -30,7 +30,7 @@ public struct XLCellFormat: Hashable {
     public init(
         record: XLCellFormatRecord,
         numberFormats: OrderedSet<String>,
-        fonts: OrderedSet<XLFontRecord>,
+        fonts: OrderedSet<XLFont>,
         fills: OrderedSet<XLFill>,
         borders: OrderedSet<XLBorder>,
         cellStyleFormats: OrderedSet<XLCellStyleFormatRef>
@@ -80,7 +80,7 @@ public struct XLCellFormat: Hashable {
 
     public func record(
         numberFormats: OrderedSet<String>,
-        fonts: OrderedSet<XLFontRecord>,
+        fonts: OrderedSet<XLFont>,
         fills: OrderedSet<XLFill>,
         borders: OrderedSet<XLBorder>,
         cellStyleFormats: OrderedSet<XLCellStyleFormatRef>
@@ -118,7 +118,7 @@ public struct XLCellFormat: Hashable {
             }
         case .fonts:
             if let font {
-                styleStorage.fonts.append(font.record)
+                styleStorage.fonts.append(font)
             }
         case .fills:
             if let fill {
@@ -153,14 +153,14 @@ public struct XLCellFormat: Hashable {
         return .builtin(id: numberFormatID)
     }
 
-    private static func font(for fontID: Int?, in fonts: OrderedSet<XLFontRecord>) -> XLFont? {
+    private static func font(for fontID: Int?, in fonts: OrderedSet<XLFont>) -> XLFont? {
         guard let fontID,
               fonts.indices.contains(fontID)
         else {
             return nil
         }
 
-        return XLFont(record: fonts[fontID])
+        return fonts[fontID]
     }
 
     private static func fill(for fillID: Int?, in fills: OrderedSet<XLFill>) -> XLFill? {
@@ -183,12 +183,12 @@ public struct XLCellFormat: Hashable {
         return borders[borderID]
     }
 
-    private func fontID(in fonts: OrderedSet<XLFontRecord>) throws -> Int? {
+    private func fontID(in fonts: OrderedSet<XLFont>) throws -> Int? {
         guard let font else {
             return nil
         }
 
-        guard let index = fonts.firstIndex(of: font.record) else {
+        guard let index = fonts.firstIndex(of: font) else {
             throw OPCError.missingFontRecord
         }
 

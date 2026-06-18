@@ -5,45 +5,21 @@ import XLSX
 
 @Suite
 struct XLStylesFileTests {
-    @Test func fontRecordCopiesValues() {
-        let original = XLFontRecord(bold: true, size: 11, name: "Calibri")
+    @Test func fontCopiesValues() {
+        let original = XLFont(bold: true, size: 11, name: "Calibri")
         var copy = original
 
         copy.size = 12
         copy.italic = true
         copy.color = .rgb("FFFF0000")
 
-        #expect(original == XLFontRecord(bold: true, size: 11, name: "Calibri"))
-        #expect(copy == XLFontRecord(
+        #expect(original == XLFont(bold: true, size: 11, name: "Calibri"))
+        #expect(copy == XLFont(
             bold: true,
             italic: true,
             size: 12,
             color: .rgb("FFFF0000"),
             name: "Calibri"
-        ))
-    }
-
-    @Test func fontConvertsFromRecord() {
-        let record = XLFontRecord(
-            bold: true,
-            italic: true,
-            condense: true,
-            underlineXMLString: #"<u val="single"/>"#,
-            size: 12,
-            color: .rgb("FFFF0000"),
-            name: "Arial",
-            familyXMLString: #"<family val="2"/>"#
-        )
-
-        #expect(XLFont(record: record) == XLFont(
-            bold: true,
-            italic: true,
-            condense: true,
-            underlineXMLString: #"<u val="single"/>"#,
-            size: 12,
-            color: .rgb("FFFF0000"),
-            name: "Arial",
-            familyXMLString: #"<family val="2"/>"#
         ))
     }
 
@@ -181,7 +157,7 @@ struct XLStylesFileTests {
             """.utf8))
 
         #expect(Array(styleStorage.fonts) == [
-            XLFontRecord(
+            XLFont(
                 bold: true,
                 italic: true,
                 strike: false,
@@ -196,22 +172,22 @@ struct XLStylesFileTests {
                 familyXMLString: #"<family val="2"/>"#,
                 schemeXMLString: #"<scheme val="minor"/>"#
             ),
-            XLFontRecord(
+            XLFont(
                 underlineXMLString: #"<u val="none"/>"#,
                 size: 12.5,
                 color: .theme(4, tint: 0.4),
                 name: "Arial"
             ),
-            XLFontRecord(name: "Unknown"),
+            XLFont(name: "Unknown"),
         ])
     }
 
     @Test func writesFontColorVariants() throws {
-        let styleStorage = XLStyleStorage(fonts: OrderedSet<XLFontRecord>([
-            XLFontRecord(color: .rgb("FFFF0000")),
-            XLFontRecord(color: .indexed(64)),
-            XLFontRecord(color: .theme(4, tint: -0.25)),
-            XLFontRecord(color: .auto),
+        let styleStorage = XLStyleStorage(fonts: OrderedSet<XLFont>([
+            XLFont(color: .rgb("FFFF0000")),
+            XLFont(color: .indexed(64)),
+            XLFont(color: .theme(4, tint: -0.25)),
+            XLFont(color: .auto),
         ]))
         let styles = XLStylesFile(styleStorage: styleStorage)
 
@@ -238,8 +214,8 @@ struct XLStylesFileTests {
         let styles = parsed.styles
         var styleStorage = parsed.styleStorage
 
-        styleStorage.fonts = OrderedSet<XLFontRecord>([
-            XLFontRecord(
+        styleStorage.fonts = OrderedSet<XLFont>([
+            XLFont(
                 bold: true,
                 condense: true,
                 extend: true,
@@ -251,7 +227,7 @@ struct XLStylesFileTests {
                 name: "Arial",
                 familyXMLString: #"<family val="2"/>"#
             ),
-            XLFontRecord(italic: true, name: "Helvetica Neue"),
+            XLFont(italic: true, name: "Helvetica Neue"),
         ])
 
         let xml = try String(decoding: styles.xmlDocument(styleStorage: styleStorage).data, as: UTF8.self)
@@ -274,7 +250,7 @@ struct XLStylesFileTests {
         let styles = parsed.styles
         var styleStorage = parsed.styleStorage
 
-        styleStorage.fonts = OrderedSet<XLFontRecord>()
+        styleStorage.fonts = OrderedSet<XLFont>()
 
         let xml = try String(decoding: styles.xmlDocument(styleStorage: styleStorage).data, as: UTF8.self)
 
@@ -703,7 +679,7 @@ struct XLStylesFileTests {
     @Test func styleStorageInitAddsInitialStyleRecordsWhenEmpty() throws {
         let styleStorage = XLStyleStorage()
 
-        #expect(Array(styleStorage.fonts) == [XLFontRecord()])
+        #expect(Array(styleStorage.fonts) == [XLFont()])
         #expect(Array(styleStorage.fills) == [
             .pattern(.none),
             .pattern(.gray125),
