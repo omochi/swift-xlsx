@@ -16,12 +16,12 @@ public final class XLWorksheetFile {
 
     public init(
         xmlDocument: XMLDocument,
-        sharedStrings: XLSharedStringsFile,
+        sharedStringStorage: XLSharedStringRecordsStorage,
         styleStorage: XLStyleStorage
     ) throws {
         let rowByNumber = Self.rows(
             in: xmlDocument,
-            sharedStrings: sharedStrings,
+            sharedStringStorage: sharedStringStorage,
             styleStorage: styleStorage
         )
 
@@ -107,18 +107,18 @@ public final class XLWorksheetFile {
     }
 
     public func xmlDocument() throws -> XMLDocument {
-        try xmlDocument(sharedStrings: nil, styleStorage: nil)
+        try xmlDocument(sharedStringStorage: nil, styleStorage: nil)
     }
 
     func xmlDocument(
-        sharedStrings: XLSharedStringsFile,
+        sharedStringStorage: XLSharedStringRecordsStorage,
         styleStorage: XLStyleStorage
     ) throws -> XMLDocument {
-        try xmlDocument(sharedStrings: Optional(sharedStrings), styleStorage: Optional(styleStorage))
+        try xmlDocument(sharedStringStorage: Optional(sharedStringStorage), styleStorage: Optional(styleStorage))
     }
 
     private func xmlDocument(
-        sharedStrings: XLSharedStringsFile?,
+        sharedStringStorage: XLSharedStringRecordsStorage?,
         styleStorage: XLStyleStorage?
     ) throws -> XMLDocument {
         let document = original?.clone() ?? XMLDocument()
@@ -127,17 +127,17 @@ public final class XLWorksheetFile {
         try writeColumns(to: worksheetElement, styleStorage: styleStorage)
         try writeRows(
             to: worksheetElement,
-            sharedStrings: sharedStrings,
+            sharedStringStorage: sharedStringStorage,
             styleStorage: styleStorage
         )
         return document
     }
 
-    public func collectSharedStrings(sharedStrings: XLSharedStringsFile) {
+    public func collectSharedStrings(sharedStringStorage: XLSharedStringRecordsStorage) {
         let formulaSharedIndicesByDefinitionAddress = sharedFormulaIndicesByDefinitionAddress()
         for (rowNumber, row) in existingRowsWithNumber {
             row.collectSharedStrings(
-                sharedStrings: sharedStrings,
+                sharedStringStorage: sharedStringStorage,
                 formulaSharedIndicesByDefinitionAddress: formulaSharedIndicesByDefinitionAddress,
                 rowNumber: rowNumber
             )
@@ -196,7 +196,7 @@ public final class XLWorksheetFile {
 
     private static func rows(
         in document: XMLDocument,
-        sharedStrings: XLSharedStringsFile,
+        sharedStringStorage: XLSharedStringRecordsStorage,
         styleStorage: XLStyleStorage
     ) -> [Int: XLRowStorage] {
         guard let worksheetElement = document.element(name: "worksheet"),
@@ -219,7 +219,7 @@ public final class XLWorksheetFile {
             rows[rowNumber] = XLRowStorage(
                 rowElement: rowElement,
                 rowNumber: rowNumber,
-                sharedStrings: sharedStrings,
+                sharedStringStorage: sharedStringStorage,
                 styleStorage: styleStorage,
                 sharedFormulaDefinitionAddressByIndex: sharedFormulaDefinitionAddressByIndex
             )
@@ -265,7 +265,7 @@ public final class XLWorksheetFile {
 
     private func writeRows(
         to worksheetElement: XMLElement,
-        sharedStrings: XLSharedStringsFile? = nil,
+        sharedStringStorage: XLSharedStringRecordsStorage? = nil,
         styleStorage: XLStyleStorage? = nil
     ) throws {
         guard !rowByNumber.isEmpty else {
@@ -285,7 +285,7 @@ public final class XLWorksheetFile {
             try row.write(
                 to: rowElement,
                 rowNumber: rowNumber,
-                sharedStrings: sharedStrings,
+                sharedStringStorage: sharedStringStorage,
                 styleStorage: styleStorage,
                 formulaSharedIndicesByDefinitionAddress: formulaSharedIndicesByDefinitionAddress
             )

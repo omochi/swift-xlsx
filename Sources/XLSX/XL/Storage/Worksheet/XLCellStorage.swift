@@ -13,13 +13,13 @@ public final class XLCellStorage {
 
     public init?(
         cellElement: XMLElement,
-        sharedStrings: XLSharedStringsFile,
+        sharedStringStorage: XLSharedStringRecordsStorage,
         styleStorage: XLStyleStorage,
         sharedFormulaDefinitionAddressByIndex: [Int: XLCellAddress] = [:]
     ) {
         guard let value = XLCellValue(
             cellElement: cellElement,
-            sharedStrings: sharedStrings
+            sharedStringStorage: sharedStringStorage
         ) else {
             return nil
         }
@@ -42,7 +42,7 @@ public final class XLCellStorage {
     public func write(
         to cellElement: XMLElement,
         address: XLCellAddress? = nil,
-        sharedStrings: XLSharedStringsFile? = nil,
+        sharedStringStorage: XLSharedStringRecordsStorage? = nil,
         styleStorage: XLStyleStorage? = nil,
         formulaSharedIndicesByDefinitionAddress: [XLCellAddress: Int]? = nil
     ) throws {
@@ -70,12 +70,12 @@ public final class XLCellStorage {
 
         try writeValue(
             to: cellElement,
-            sharedStrings: sharedStrings,
+            sharedStringStorage: sharedStringStorage,
             hasFormula: didWriteFormula
         )
     }
 
-    public func collectSharedStrings(sharedStrings: XLSharedStringsFile) {
+    public func collectSharedStrings(sharedStringStorage: XLSharedStringRecordsStorage) {
         if let formula,
            formula.kind != .sharedReference,
            case .string = value
@@ -83,11 +83,11 @@ public final class XLCellStorage {
             return
         }
 
-        collectValueSharedStrings(sharedStrings: sharedStrings)
+        collectValueSharedStrings(sharedStringStorage: sharedStringStorage)
     }
 
     public func collectSharedStrings(
-        sharedStrings: XLSharedStringsFile,
+        sharedStringStorage: XLSharedStringRecordsStorage,
         address: XLCellAddress,
         formulaSharedIndicesByDefinitionAddress: [XLCellAddress: Int]
     ) {
@@ -102,15 +102,15 @@ public final class XLCellStorage {
             return
         }
 
-        collectValueSharedStrings(sharedStrings: sharedStrings)
+        collectValueSharedStrings(sharedStringStorage: sharedStringStorage)
     }
 
-    private func collectValueSharedStrings(sharedStrings: XLSharedStringsFile) {
+    private func collectValueSharedStrings(sharedStringStorage: XLSharedStringRecordsStorage) {
         switch value {
         case let .string(text):
-            sharedStrings.records.register(text)
+            sharedStringStorage.register(text)
         case let .opaqueSharedString(xmlString):
-            sharedStrings.records.register(.opaque(xmlString: xmlString))
+            sharedStringStorage.register(.opaque(xmlString: xmlString))
         case .number, .boolean, .error:
             break
         }
@@ -187,7 +187,7 @@ public final class XLCellStorage {
 
     private func writeValue(
         to cellElement: XMLElement,
-        sharedStrings: XLSharedStringsFile?,
+        sharedStringStorage: XLSharedStringRecordsStorage?,
         hasFormula: Bool
     ) throws {
         if hasFormula,
@@ -198,7 +198,7 @@ public final class XLCellStorage {
             return
         }
 
-        try value.write(to: cellElement, sharedStrings: sharedStrings?.records)
+        try value.write(to: cellElement, sharedStrings: sharedStringStorage)
     }
 
     private func formulaRecord(

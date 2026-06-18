@@ -5,22 +5,22 @@ import XLSX
 @Suite
 struct XLSharedStringsFileTests {
     @Test func readsPlainSharedStrings() throws {
-        let sharedStrings = try sharedStringsFile(data: Data("""
+        let sharedStringStorage = try sharedStringStorage(data: Data("""
             <sst xmlns="\(XMLNamespaceURI.spreadsheet.string)" count="3" uniqueCount="2">
               <si><t>hello</t></si>
               <si><t>world</t></si>
             </sst>
             """.utf8))
 
-        #expect(sharedStrings.records.count == 2)
-        #expect(Array(sharedStrings.records) == [
+        #expect(sharedStringStorage.count == 2)
+        #expect(Array(sharedStringStorage) == [
             .text("hello"),
             .text("world"),
         ])
     }
 
     @Test func doesNotDecodeRichTextRecordAsItem() throws {
-        let sharedStrings = try sharedStringsFile(data: Data("""
+        let sharedStringStorage = try sharedStringStorage(data: Data("""
             <sst xmlns="\(XMLNamespaceURI.spreadsheet.string)">
               <si>
                 <r><rPr><b/></rPr><t>Hello</t></r>
@@ -29,7 +29,7 @@ struct XLSharedStringsFileTests {
             </sst>
             """.utf8))
 
-        let record = try #require(sharedStrings.records.first)
+        let record = try #require(sharedStringStorage.first)
         guard case let .opaque(xmlString) = record else {
             Issue.record("Expected opaque shared string record.")
             return
@@ -38,43 +38,52 @@ struct XLSharedStringsFileTests {
     }
 
     @Test func preservesUnchangedRichTextItemsWhenWriting() throws {
-        let sharedStrings = try sharedStringsFile(data: Data("""
+        let sharedStrings = try sharedStringsAndStorage(data: Data("""
             <sst xmlns="\(XMLNamespaceURI.spreadsheet.string)" count="1" uniqueCount="1">
               <si><r><rPr><b/></rPr><t>Hello</t></r><r><t> world</t></r></si>
               <extLst><ext uri="keep"/></extLst>
             </sst>
             """.utf8))
 
-        let xml = try String(decoding: sharedStrings.xmlDocument().data, as: UTF8.self)
+        let xml = try String(
+            decoding: sharedStrings.file.xmlDocument(sharedStringStorage: sharedStrings.storage).data,
+            as: UTF8.self
+        )
 
         #expect(xml.contains(#"<rPr><b/></rPr>"#))
         #expect(xml.contains(#"<extLst><ext uri="keep"/></extLst>"#))
     }
 
     @Test func appendsChangedItemsAsPlainText() throws {
-        let sharedStrings = try sharedStringsFile(data: Data("""
+        let sharedStrings = try sharedStringsAndStorage(data: Data("""
             <sst xmlns="\(XMLNamespaceURI.spreadsheet.string)" count="1" uniqueCount="1">
               <si><r><rPr><b/></rPr><t>Hello</t></r></si>
             </sst>
             """.utf8))
-        sharedStrings.records.register(sharedStringRecord(text: "Changed"))
+        sharedStrings.storage.register(sharedStringRecord(text: "Changed"))
 
-        let xml = try String(decoding: sharedStrings.xmlDocument().data, as: UTF8.self)
+        let xml = try String(
+            decoding: sharedStrings.file.xmlDocument(sharedStringStorage: sharedStrings.storage).data,
+            as: UTF8.self
+        )
 
         #expect(xml.contains(#"<si><t>Changed</t></si>"#))
         #expect(xml.contains(#"<rPr><b/></rPr>"#))
     }
 
     @Test func appendsAddedItemsAfterOriginalChildren() throws {
-        let sharedStrings = try sharedStringsFile(data: Data("""
+        let sharedStrings = try sharedStringsAndStorage(data: Data("""
             <sst xmlns="\(XMLNamespaceURI.spreadsheet.string)" count="1" uniqueCount="1">
               <si><t>A</t></si>
               <extLst><ext uri="keep"/></extLst>
             </sst>
             """.utf8))
-        sharedStrings.records.register(sharedStringRecord(text: "B"))
+        sharedStrings.storage.register(sharedStringRecord(text: "B"))
 
-        let xml = try String(decoding: sharedStrings.xmlDocument().data, as: UTF8.self)
+        let xml = try String(
+            decoding: sharedStrings.file.xmlDocument(sharedStringStorage: sharedStrings.storage).data,
+            as: UTF8.self
+        )
             .replacingOccurrences(of: "\n", with: "")
             .replacingOccurrences(of: "  ", with: "")
 
@@ -82,16 +91,19 @@ struct XLSharedStringsFileTests {
     }
 
     @Test func keepsExistingRecordOrderWhenNewRecordIsAppended() throws {
-        let sharedStrings = try sharedStringsFile(data: Data("""
+        let sharedStrings = try sharedStringsAndStorage(data: Data("""
             <sst xmlns="\(XMLNamespaceURI.spreadsheet.string)" count="3" uniqueCount="3">
               <si><t>A</t></si>
               <si><t>B</t></si>
               <si><t>C</t></si>
             </sst>
             """.utf8))
-        sharedStrings.records.register(sharedStringRecord(text: "X"))
+        sharedStrings.storage.register(sharedStringRecord(text: "X"))
 
-        let xml = try String(decoding: sharedStrings.xmlDocument().data, as: UTF8.self)
+        let xml = try String(
+            decoding: sharedStrings.file.xmlDocument(sharedStringStorage: sharedStrings.storage).data,
+            as: UTF8.self
+        )
             .replacingOccurrences(of: "\n", with: "")
             .replacingOccurrences(of: "  ", with: "")
 
@@ -115,11 +127,15 @@ struct XLSharedStringsFileTests {
         runElement.appendChild(textElement)
         element.appendChild(runElement)
 
-        let sharedStrings = XLSharedStringsFile(records: [
+        let sharedStrings = XLSharedStringsFile()
+        let sharedStringStorage = XLSharedStringRecordsStorage(records: [
             .opaque(xmlString: element.xmlString)
         ])
 
-        let xml = try String(decoding: sharedStrings.xmlDocument().data, as: UTF8.self)
+        let xml = try String(
+            decoding: sharedStrings.xmlDocument(sharedStringStorage: sharedStringStorage).data,
+            as: UTF8.self
+        )
 
         #expect(xml.contains(#"<si><r><t>Detached</t></r></si>"#))
     }
@@ -130,5 +146,19 @@ struct XLSharedStringsFileTests {
 
     private func sharedStringsFile(data: Data) throws -> XLSharedStringsFile {
         try XLSharedStringsFile(xmlDocument: XMLDocument(data: data))
+    }
+
+    private func sharedStringStorage(data: Data) throws -> XLSharedStringRecordsStorage {
+        try XLSharedStringRecordsStorage(xmlDocument: XMLDocument(data: data))
+    }
+
+    private func sharedStringsAndStorage(
+        data: Data
+    ) throws -> (file: XLSharedStringsFile, storage: XLSharedStringRecordsStorage) {
+        let document = try XMLDocument(data: data)
+        return (
+            file: try XLSharedStringsFile(xmlDocument: document),
+            storage: try XLSharedStringRecordsStorage(xmlDocument: document)
+        )
     }
 }

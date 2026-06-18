@@ -82,7 +82,7 @@ public enum XLCellValue: Sendable & Hashable & CustomStringConvertible {
 
     public init?(
         cellElement: XMLElement,
-        sharedStrings: XLSharedStringsFile? = nil
+        sharedStringStorage: XLSharedStringRecordsStorage? = nil
     ) {
         let cellType = cellElement.attribute(name: "t")
         if cellType == "inlineStr" {
@@ -114,7 +114,7 @@ public enum XLCellValue: Sendable & Hashable & CustomStringConvertible {
             guard let sharedStringIndex = Int(valueText) else {
                 return nil
             }
-            guard let record = sharedStrings?.record(at: sharedStringIndex) else {
+            guard let record = sharedStringStorage?.record(at: sharedStringIndex) else {
                 return nil
             }
 

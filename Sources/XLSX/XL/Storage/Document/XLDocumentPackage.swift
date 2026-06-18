@@ -43,11 +43,17 @@ public final class XLDocumentPackage {
             consumedPaths: &consumedPaths
         )
 
+        let sharedStringsPath = try XLSharedStringsFile.path(workbookPath: workbook.path, workbookRels: workbookRels.file)
+        var sharedStringStorage = XLSharedStringRecordsStorage()
         let sharedStrings = try Self.readFile(
             from: opcPackage,
-            at: try XLSharedStringsFile.path(workbookPath: workbook.path, workbookRels: workbookRels.file),
+            at: sharedStringsPath,
             default: XLSharedStringsFile(),
-            read: XLSharedStringsFile.init(xmlDocument:),
+            read: { xmlDocument in
+                let decodedSharedStringStorage = try XLSharedStringRecordsStorage(xmlDocument: xmlDocument)
+                sharedStringStorage = decodedSharedStringStorage
+                return try XLSharedStringsFile(xmlDocument: xmlDocument)
+            },
             consumedPaths: &consumedPaths
         )
         let stylesPath = try XLStylesFile.path(workbookPath: workbook.path, workbookRels: workbookRels.file)
@@ -72,7 +78,7 @@ public final class XLDocumentPackage {
             for: workbook.file.sheets,
             workbookPath: workbook.path,
             workbookRels: workbookRels.file,
-            sharedStrings: sharedStrings.file,
+            sharedStringStorage: sharedStringStorage,
             styleStorage: styleStorage,
             consumedPaths: &consumedPaths
         )
@@ -112,8 +118,8 @@ public final class XLDocumentPackage {
             workbookRels: &workbookRels.file
         )
 
-        sharedStrings.file.records = XLSharedStringRecordsStorage()
-        workbook.file.collectSharedStrings(sharedStrings: sharedStrings.file)
+        let sharedStringStorage = XLSharedStringRecordsStorage()
+        workbook.file.collectSharedStrings(sharedStringStorage: sharedStringStorage)
 
         var styleStorage = XLStyleStorage()
         styleStorage.resetCollectableStyleElements(cellStyles: &styles.file.cellStyles)
@@ -146,14 +152,14 @@ public final class XLDocumentPackage {
             if !Self.containsOpaqueFile(at: file.path, in: opaqueFiles) {
                 try package.insertXMLFile(pathWithFile: file) { file in
                     try file.xmlDocument(
-                        sharedStrings: sharedStrings.file,
+                        sharedStringStorage: sharedStringStorage,
                         styleStorage: styleStorage
                     )
                 }
             }
         }
         try package.insertXMLFile(pathWithFile: sharedStrings) { file in
-            try file.xmlDocument()
+            try file.xmlDocument(sharedStringStorage: sharedStringStorage)
         }
         try package.insertXMLFile(pathWithFile: styles) { file in
             try file.xmlDocument(styleStorage: styleStorage)
@@ -223,7 +229,7 @@ public final class XLDocumentPackage {
         for sheets: [XLWorkbookFileSheet],
         workbookPath: OPCFilePath,
         workbookRels: OPCRelsFile,
-        sharedStrings: XLSharedStringsFile,
+        sharedStringStorage: XLSharedStringRecordsStorage,
         styleStorage: XLStyleStorage,
         consumedPaths: inout Set<OPCFilePath>
     ) throws -> [Int: OPCPathWithFile<XLWorksheetFile>] {
@@ -238,7 +244,7 @@ public final class XLDocumentPackage {
             let worksheet = try Self.readWorksheetFile(
                 from: package,
                 at: path,
-                sharedStrings: sharedStrings,
+                sharedStringStorage: sharedStringStorage,
                 styleStorage: styleStorage,
                 default: XLWorksheetFile(),
                 consumedPaths: &consumedPaths
@@ -251,7 +257,7 @@ public final class XLDocumentPackage {
     private static func readWorksheetFile(
         from package: OPCPackage,
         at path: OPCFilePath,
-        sharedStrings: XLSharedStringsFile,
+        sharedStringStorage: XLSharedStringRecordsStorage,
         styleStorage: XLStyleStorage,
         default defaultFile: @autoclosure () -> XLWorksheetFile,
         consumedPaths: inout Set<OPCFilePath>
@@ -265,7 +271,7 @@ public final class XLDocumentPackage {
             path: path,
             file: XLWorksheetFile(
                 xmlDocument: XMLDocument(data: data),
-                sharedStrings: sharedStrings,
+                sharedStringStorage: sharedStringStorage,
                 styleStorage: styleStorage
             )
         )

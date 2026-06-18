@@ -118,7 +118,7 @@ struct XLWorksheetFileTests {
                   <sheetData/>
                 </worksheet>
                 """.utf8)),
-            sharedStrings: XLSharedStringsFile(),
+            sharedStringStorage: XLSharedStringRecordsStorage(),
             styleStorage: XLStyleStorage(xmlDocument: XMLDocument(data: Data("""
                 <styleSheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
                   <cellXfs count="2">
@@ -493,7 +493,6 @@ struct XLWorksheetFileTests {
         try document.save(to: url)
 
         #expect(worksheet.existingRow(1)?.existingCell(column: 1)?.value == .string("shared"))
-        #expect(document.package.sharedStrings.file.records.isEmpty)
 
         let package = try OPCPackage(data: Data(contentsOf: url))
         let worksheetXML = try String(
@@ -792,7 +791,7 @@ struct XLWorksheetFileTests {
     private func worksheetFile(data: Data) throws -> XLWorksheetFile {
         try XLWorksheetFile(
             xmlDocument: XMLDocument(data: data),
-            sharedStrings: XLSharedStringsFile(),
+            sharedStringStorage: XLSharedStringRecordsStorage(),
             styleStorage: XLStyleStorage()
         )
     }

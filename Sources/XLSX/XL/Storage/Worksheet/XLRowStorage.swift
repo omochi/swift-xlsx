@@ -5,7 +5,7 @@ public final class XLRowStorage {
     public init(
         rowElement: XMLElement,
         rowNumber: Int,
-        sharedStrings: XLSharedStringsFile,
+        sharedStringStorage: XLSharedStringRecordsStorage,
         styleStorage: XLStyleStorage,
         sharedFormulaDefinitionAddressByIndex: [Int: XLCellAddress] = [:]
     ) {
@@ -16,7 +16,7 @@ public final class XLRowStorage {
                   address.row == rowNumber,
                   let cell = XLCellStorage(
                     cellElement: cellElement,
-                    sharedStrings: sharedStrings,
+                    sharedStringStorage: sharedStringStorage,
                     styleStorage: styleStorage,
                     sharedFormulaDefinitionAddressByIndex: sharedFormulaDefinitionAddressByIndex
                   )
@@ -65,7 +65,7 @@ public final class XLRowStorage {
     public func write(
         to rowElement: XMLElement,
         rowNumber: Int,
-        sharedStrings: XLSharedStringsFile? = nil,
+        sharedStringStorage: XLSharedStringRecordsStorage? = nil,
         styleStorage: XLStyleStorage? = nil,
         formulaSharedIndicesByDefinitionAddress: [XLCellAddress: Int]? = nil
     ) throws {
@@ -81,7 +81,7 @@ public final class XLRowStorage {
             try cell.write(
                 to: cellElement,
                 address: address,
-                sharedStrings: sharedStrings,
+                sharedStringStorage: sharedStringStorage,
                 styleStorage: styleStorage,
                 formulaSharedIndicesByDefinitionAddress: formulaSharedIndicesByDefinitionAddress
             )
@@ -91,20 +91,20 @@ public final class XLRowStorage {
         rowElement.children = cellElements + rowChildren.otherChildren
     }
 
-    public func collectSharedStrings(sharedStrings: XLSharedStringsFile) {
+    public func collectSharedStrings(sharedStringStorage: XLSharedStringRecordsStorage) {
         for cell in existingCells {
-            cell.collectSharedStrings(sharedStrings: sharedStrings)
+            cell.collectSharedStrings(sharedStringStorage: sharedStringStorage)
         }
     }
 
     public func collectSharedStrings(
-        sharedStrings: XLSharedStringsFile,
+        sharedStringStorage: XLSharedStringRecordsStorage,
         formulaSharedIndicesByDefinitionAddress: [XLCellAddress: Int],
         rowNumber: Int
     ) {
         for (column, cell) in existingCellsWithColumn {
             cell.collectSharedStrings(
-                sharedStrings: sharedStrings,
+                sharedStringStorage: sharedStringStorage,
                 address: XLCellAddress(row: rowNumber, column: column),
                 formulaSharedIndicesByDefinitionAddress: formulaSharedIndicesByDefinitionAddress
             )
