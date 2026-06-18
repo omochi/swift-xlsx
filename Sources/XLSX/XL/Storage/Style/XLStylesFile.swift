@@ -2,20 +2,23 @@ import Foundation
 
 public final class XLStylesFile {
     public init(
+        styleStorage: XLStyleStorage,
         cellStyles: [XLCellStyle] = []
     ) {
         self.cellStyles = cellStyles
         self.original = nil
+        ensureInitialCellStyles(styleStorage: styleStorage)
     }
 
     public convenience init(xmlDocument: XMLDocument) throws {
+        let styleStorage = try XLStyleStorage(xmlDocument: xmlDocument)
         try self.init(
             xmlDocument: xmlDocument,
-            styleStorage: XLStyleStorage(xmlDocument: xmlDocument)
+            styleStorage: styleStorage
         )
     }
 
-    public init(
+    public convenience init(
         xmlDocument: XMLDocument,
         styleStorage: XLStyleStorage
     ) throws {
@@ -23,9 +26,13 @@ public final class XLStylesFile {
             throw OPCError.invalidStylesFile
         }
 
-        self.cellStyles = Self.readCellStyles(
+        let cellStyles = Self.readCellStyles(
             in: stylesElement,
             styleStorage: styleStorage
+        )
+        self.init(
+            styleStorage: styleStorage,
+            cellStyles: cellStyles
         )
         self.original = xmlDocument
     }
@@ -51,18 +58,65 @@ public final class XLStylesFile {
         try writeFonts(to: stylesElement, styleStorage: styleStorage)
         try writeFills(to: stylesElement, styleStorage: styleStorage)
         writeBorders(to: stylesElement, styleStorage: styleStorage)
-        try writeCellStyleFormats(to: stylesElement, styleStorage: styleStorage)
+        writeCellStyleFormats(to: stylesElement, styleStorage: styleStorage)
         writeCellFormats(to: stylesElement, styleStorage: styleStorage)
         writeCellStyles(to: stylesElement, styleStorage: styleStorage)
         return document
     }
 
     public func clone() -> XLStylesFile {
-        let file = XLStylesFile(
+        let file = XLStylesFile.unchecked(
             cellStyles: cellStyles
         )
         file.original = original
         return file
+    }
+
+    public func collectStyle(styleStorage: inout XLStyleStorage) {
+        for stage in XLStyleCollectionStage.allCases {
+            collectStyle(stage: stage, styleStorage: &styleStorage)
+        }
+    }
+
+    public func collectStyle(stage: XLStyleCollectionStage, styleStorage: inout XLStyleStorage) {
+        for index in cellStyles.indices {
+            guard let format = cellStyles[index].format else {
+                continue
+            }
+
+            switch stage {
+            case .numberFormats, .fonts, .fills, .borders, .cellFormats:
+                format.collectStyle(stage: stage, styleStorage: &styleStorage)
+            case .cellStyleFormats:
+                cellStyles[index].format = styleStorage.cellStyleFormats.canonicalRecord(for: format)
+            }
+        }
+    }
+
+    private static func unchecked(cellStyles: [XLCellStyle]) -> XLStylesFile {
+        let file = XLStylesFile(__unchecked: ())
+        file.cellStyles = cellStyles
+        file.original = nil
+        return file
+    }
+
+    private init(__unchecked: Void = ()) {
+        self.cellStyles = []
+        self.original = nil
+    }
+
+    private func ensureInitialCellStyles(styleStorage: XLStyleStorage) {
+        guard let defaultCellStyleFormat = styleStorage.cellStyleFormats.record(at: 0) else {
+            return
+        }
+
+        if cellStyles.isEmpty {
+            cellStyles.append(XLCellStyle(
+                name: "Normal",
+                format: defaultCellStyleFormat,
+                builtinID: 0
+            ))
+        }
     }
 
     private static func readCellStyles(
@@ -180,7 +234,7 @@ public final class XLStylesFile {
         )
     }
 
-    private func writeCellStyleFormats(to stylesElement: XMLElement, styleStorage: XLStyleStorage) throws {
+    private func writeCellStyleFormats(to stylesElement: XMLElement, styleStorage: XLStyleStorage) {
         let cellStyleFormats = styleStorage.cellStyleFormats
         if cellStyleFormats.isEmpty && stylesElement.elements(name: "cellStyleXfs").isEmpty {
             return
@@ -189,12 +243,12 @@ public final class XLStylesFile {
         let cellStyleXfsElement = ensureStyleSheetChildElement(name: "cellStyleXfs", in: stylesElement)
         cellStyleXfsElement.setAttribute(name: "count", value: String(cellStyleFormats.count))
 
-        cellStyleXfsElement.children = try XMLUtils.patchChildren(
+        cellStyleXfsElement.children = XMLUtils.patchChildren(
             parentElement: cellStyleXfsElement,
             replacingElementName: "xf",
             records: cellStyleFormats,
             makeElement: { cellStyleFormat in
-                try cellStyleFormat.record(
+                cellStyleFormat.record(
                     numberFormats: styleStorage.numberFormats,
                     fonts: styleStorage.fonts,
                     fills: styleStorage.fills,

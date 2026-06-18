@@ -13,6 +13,7 @@ public struct XLStyleStorage {
         self.borders = borders
         self.cellStyleFormats = cellStyleFormats
         self.cellFormats = cellFormats
+        ensureInitialRecords()
     }
 
     public init(xmlDocument: XMLDocument) throws {
@@ -59,51 +60,6 @@ public struct XLStyleStorage {
             cellFormats.isEmpty
     }
 
-    public mutating func resetCollectableStyleElements(cellStyles: inout [XLCellStyle]) {
-        numberFormats = XLNumberFormatsStorage()
-        fonts = XLFontRecordsStorage(records: [
-            XLFontRecord()
-        ])
-        fills = XLFillsStorage(records: [
-            .pattern(.none),
-            .pattern(.gray125)
-        ])
-        borders = XLBordersStorage(records: [
-            XLBorder()
-        ])
-        let defaultCellStyleFormat = XLCellStyleFormatRef(
-            numberFormat: .builtin(id: 0),
-            font: XLFont(),
-            fill: .pattern(.none),
-            border: XLBorder()
-        )
-        cellStyleFormats = XLCellStyleFormatRefsStorage(records: [
-            defaultCellStyleFormat
-        ])
-        if let defaultCellStyleIndex = cellStyles.firstIndex(where: { $0.builtinID == 0 }) {
-            cellStyles[defaultCellStyleIndex].format = defaultCellStyleFormat
-        } else {
-            cellStyles.insert(
-                XLCellStyle(name: "Normal", format: defaultCellStyleFormat, builtinID: 0),
-                at: 0
-            )
-        }
-        for cellStyle in cellStyles {
-            if let format = cellStyle.format {
-                cellStyleFormats.register(format)
-            }
-        }
-        cellFormats = XLCellFormatRecordsStorage(records: [
-            XLCellFormatRecord(
-                numberFormatID: 0,
-                fontID: 0,
-                fillID: 0,
-                borderID: 0,
-                styleFormatID: 0
-            )
-        ])
-    }
-
     public func clone() -> XLStyleStorage {
         XLStyleStorage(
             numberFormats: numberFormats.clone(),
@@ -113,6 +69,40 @@ public struct XLStyleStorage {
             cellStyleFormats: cellStyleFormats.clone(),
             cellFormats: cellFormats.clone()
         )
+    }
+
+    private mutating func ensureInitialRecords() {
+        if fonts.isEmpty {
+            fonts.register(XLFontRecord())
+        }
+
+        if fills.isEmpty {
+            fills.register(.pattern(.none))
+            fills.register(.pattern(.gray125))
+        }
+
+        if borders.isEmpty {
+            borders.register(XLBorder())
+        }
+
+        if cellStyleFormats.isEmpty {
+            cellStyleFormats.register(XLCellStyleFormatRef(
+                numberFormat: .builtin(id: 0),
+                font: fonts.record(at: 0).map(XLFont.init(record:)),
+                fill: fills.record(at: 0),
+                border: borders.record(at: 0)
+            ))
+        }
+
+        if cellFormats.isEmpty {
+            cellFormats.register(XLCellFormatRecord(
+                numberFormatID: 0,
+                fontID: 0,
+                fillID: 0,
+                borderID: 0,
+                styleFormatID: 0
+            ))
+        }
     }
 
     private static func readNumberFormats(in stylesElement: XMLElement) -> [String] {

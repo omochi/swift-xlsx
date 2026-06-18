@@ -88,6 +88,6 @@ public struct XLCellStyle: Hashable {
             return nil
         }
 
-        return cellStyleFormats.index(for: format)
+        return cellStyleFormats.index(matching: format)
     }
 }

@@ -70,29 +70,38 @@ public struct XLCellStyleFormatRef: Hashable {
         }
     }
 
+    func hasSameStyleValues(as other: XLCellStyleFormatRef) -> Bool {
+        numberFormat == other.numberFormat &&
+            font == other.font &&
+            fill == other.fill &&
+            border == other.border
+    }
+
     public func record(
         numberFormats: XLNumberFormatsStorage,
         fonts: XLFontRecordsStorage,
         fills: XLFillsStorage,
         borders: XLBordersStorage
-    ) throws -> XLCellFormatRecord {
-        try XLCellFormat(
-            numberFormat: numberFormat,
-            font: font,
-            fill: fill,
-            border: border,
-            styleFormat: nil,
-            applyNumberFormat: false,
-            applyFont: false,
-            applyFill: false,
-            applyBorder: false
-        ).record(
-            numberFormats: numberFormats,
-            fonts: fonts,
-            fills: fills,
-            borders: borders,
-            cellStyleFormats: XLCellStyleFormatRefsStorage()
+    ) -> XLCellFormatRecord {
+        XLCellFormatRecord(
+            numberFormatID: numberFormatID(in: numberFormats),
+            fontID: font.flatMap { fonts.index(for: $0.record) },
+            fillID: fill.flatMap { fills.index(for: $0) },
+            borderID: border.flatMap { borders.index(for: $0) }
         )
+    }
+
+    private func numberFormatID(in numberFormats: XLNumberFormatsStorage) -> Int? {
+        guard let numberFormat else {
+            return nil
+        }
+
+        switch numberFormat {
+        case let .builtin(id):
+            return id
+        case let .format(format):
+            return numberFormats.id(for: format)
+        }
     }
 
     public func collectStyle(stage: XLStyleCollectionStage, styleStorage: inout XLStyleStorage) {

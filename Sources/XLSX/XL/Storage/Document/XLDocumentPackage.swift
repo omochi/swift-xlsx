@@ -61,7 +61,7 @@ public final class XLDocumentPackage {
         let styles = try Self.readFile(
             from: opcPackage,
             at: stylesPath,
-            default: XLStylesFile(),
+            default: XLStylesFile(styleStorage: styleStorage),
             read: { xmlDocument in
                 let decodedStyleStorage = try XLStyleStorage(xmlDocument: xmlDocument)
                 styleStorage = decodedStyleStorage
@@ -122,9 +122,7 @@ public final class XLDocumentPackage {
         workbook.file.collectSharedStrings(sharedStringStorage: sharedStringStorage)
 
         var styleStorage = XLStyleStorage()
-        styleStorage.resetCollectableStyleElements(cellStyles: &styles.file.cellStyles)
-
-        try workbook.file.collectStyle(styleStorage: &styleStorage)
+        try collectStyle(styleStorage: &styleStorage)
 
         workbookRels.file.ensureRelationship(
             type: XMLNamespaceURI.sharedStrings.string,
@@ -189,6 +187,13 @@ public final class XLDocumentPackage {
             styles: styles.clone { $0.clone() },
             opaqueFiles: opaqueFiles
         )
+    }
+
+    private func collectStyle(styleStorage: inout XLStyleStorage) throws {
+        for stage in XLStyleCollectionStage.allCases {
+            styles.file.collectStyle(stage: stage, styleStorage: &styleStorage)
+            try workbook.file.collectStyle(stage: stage, styleStorage: &styleStorage)
+        }
     }
 
     private static func readFile<File>(
