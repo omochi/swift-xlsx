@@ -20,6 +20,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/gohanlon/swift-memberwise-init-macro.git", from: "0.6.0"),
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.0"),
+        .package(url: "https://github.com/apple/swift-collections.git", from: "1.6.0"),
         .package(url: "https://github.com/compnerd/xylem.git", branch: "main"),
     ],
     targets: [
@@ -28,6 +29,7 @@ let package = Package(
             dependencies: [
                 "CXLSXZLib",
                 .product(name: "MemberwiseInit", package: "swift-memberwise-init-macro"),
+                .product(name: "OrderedCollections", package: "swift-collections"),
                 .product(name: "SAXParser", package: "xylem"),
                 .product(name: "XMLCore", package: "xylem"),
             ]

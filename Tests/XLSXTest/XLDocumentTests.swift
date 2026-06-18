@@ -107,7 +107,9 @@ struct XLDocumentTests {
         let cell = try #require(worksheet.existingCell(row: 1, column: 1))
         let customFormatCell = try #require(worksheet.existingCell(row: 1, column: 2))
         let styleStorage = try XLStyleStorage(xmlDocument: XMLDocument(data: stylesData))
-        let storedRecord = try #require(styleStorage.cellFormats.record(at: 1))
+        let storedRecord = try #require(
+            styleStorage.cellFormats.indices.contains(1) ? styleStorage.cellFormats[1] : nil
+        )
         let border = XLBorder(left: XLBorder.Line(style: .thin, color: .rgb("FFFF0000")))
 
         #expect(cell.format == XLCellFormat(

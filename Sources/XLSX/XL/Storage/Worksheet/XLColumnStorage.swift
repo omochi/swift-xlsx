@@ -1,4 +1,5 @@
 import MemberwiseInit
+import OrderedCollections
 
 @MemberwiseInit(.public)
 public final class XLColumnStorage {
@@ -64,12 +65,12 @@ public final class XLColumnStorage {
                 return nil
             }
 
-            guard let record = styleStorage.cellFormats.record(at: formatIndex) else {
+            guard styleStorage.cellFormats.indices.contains(formatIndex) else {
                 return nil
             }
 
             return XLCellFormat(
-                record: record,
+                record: styleStorage.cellFormats[formatIndex],
                 numberFormats: styleStorage.numberFormats,
                 fonts: styleStorage.fonts,
                 fills: styleStorage.fills,
@@ -84,7 +85,7 @@ public final class XLColumnStorage {
             }
 
             let formatRecord = try format.record(styleStorage: styleStorage)
-            return styleStorage.cellFormats.index(for: formatRecord)
+            return styleStorage.cellFormats.firstIndex(of: formatRecord)
         }
     }
 

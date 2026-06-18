@@ -1,5 +1,6 @@
 import MemberwiseInit
 import Foundation
+import OrderedCollections
 
 @MemberwiseInit(.public)
 public final class XLDocumentPackage {
@@ -44,13 +45,13 @@ public final class XLDocumentPackage {
         )
 
         let sharedStringsPath = try XLSharedStringsFile.path(workbookPath: workbook.path, workbookRels: workbookRels.file)
-        var sharedStringStorage = XLSharedStringRecordsStorage()
+        var sharedStringStorage = OrderedSet<XLSharedStringRecord>()
         let sharedStrings = try Self.readFile(
             from: opcPackage,
             at: sharedStringsPath,
             default: XLSharedStringsFile(),
             read: { xmlDocument in
-                let decodedSharedStringStorage = try XLSharedStringRecordsStorage(xmlDocument: xmlDocument)
+                let decodedSharedStringStorage = try OrderedSet<XLSharedStringRecord>(xmlDocument: xmlDocument)
                 sharedStringStorage = decodedSharedStringStorage
                 return try XLSharedStringsFile(xmlDocument: xmlDocument)
             },
@@ -118,10 +119,14 @@ public final class XLDocumentPackage {
             workbookRels: &workbookRels.file
         )
 
-        var sharedStringStorage = XLSharedStringRecordsStorage()
+        var sharedStringStorage = OrderedSet<XLSharedStringRecord>()
         workbook.file.collectSharedStrings(sharedStringStorage: &sharedStringStorage)
 
-        var styleStorage = XLStyleStorage()
+        var cellStyleFormats = OrderedSet<XLCellStyleFormatRef>()
+        if let defaultCellStyleFormat = styles.file.defaultCellStyleFormat {
+            cellStyleFormats.append(defaultCellStyleFormat)
+        }
+        var styleStorage = XLStyleStorage(cellStyleFormats: cellStyleFormats)
         try collectStyle(styleStorage: &styleStorage)
 
         workbookRels.file.ensureRelationship(
@@ -234,7 +239,7 @@ public final class XLDocumentPackage {
         for sheets: [XLWorkbookFileSheet],
         workbookPath: OPCFilePath,
         workbookRels: OPCRelsFile,
-        sharedStringStorage: XLSharedStringRecordsStorage,
+        sharedStringStorage: OrderedSet<XLSharedStringRecord>,
         styleStorage: XLStyleStorage,
         consumedPaths: inout Set<OPCFilePath>
     ) throws -> [Int: OPCPathWithFile<XLWorksheetFile>] {
@@ -262,7 +267,7 @@ public final class XLDocumentPackage {
     private static func readWorksheetFile(
         from package: OPCPackage,
         at path: OPCFilePath,
-        sharedStringStorage: XLSharedStringRecordsStorage,
+        sharedStringStorage: OrderedSet<XLSharedStringRecord>,
         styleStorage: XLStyleStorage,
         default defaultFile: @autoclosure () -> XLWorksheetFile,
         consumedPaths: inout Set<OPCFilePath>

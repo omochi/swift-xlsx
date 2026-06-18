@@ -1,3 +1,5 @@
+import OrderedCollections
+
 public final class XLWorksheetFile {
     public init() {
         self.original = nil
@@ -16,7 +18,7 @@ public final class XLWorksheetFile {
 
     public init(
         xmlDocument: XMLDocument,
-        sharedStringStorage: XLSharedStringRecordsStorage,
+        sharedStringStorage: OrderedSet<XLSharedStringRecord>,
         styleStorage: XLStyleStorage
     ) throws {
         let rowByNumber = Self.rows(
@@ -111,14 +113,14 @@ public final class XLWorksheetFile {
     }
 
     func xmlDocument(
-        sharedStringStorage: XLSharedStringRecordsStorage,
+        sharedStringStorage: OrderedSet<XLSharedStringRecord>,
         styleStorage: XLStyleStorage
     ) throws -> XMLDocument {
         try xmlDocument(sharedStringStorage: Optional(sharedStringStorage), styleStorage: Optional(styleStorage))
     }
 
     private func xmlDocument(
-        sharedStringStorage: XLSharedStringRecordsStorage?,
+        sharedStringStorage: OrderedSet<XLSharedStringRecord>?,
         styleStorage: XLStyleStorage?
     ) throws -> XMLDocument {
         let document = original?.clone() ?? XMLDocument()
@@ -133,7 +135,7 @@ public final class XLWorksheetFile {
         return document
     }
 
-    public func collectSharedStrings(sharedStringStorage: inout XLSharedStringRecordsStorage) {
+    public func collectSharedStrings(sharedStringStorage: inout OrderedSet<XLSharedStringRecord>) {
         let formulaSharedIndicesByDefinitionAddress = sharedFormulaIndicesByDefinitionAddress()
         for (rowNumber, row) in existingRowsWithNumber {
             row.collectSharedStrings(
@@ -196,7 +198,7 @@ public final class XLWorksheetFile {
 
     private static func rows(
         in document: XMLDocument,
-        sharedStringStorage: XLSharedStringRecordsStorage,
+        sharedStringStorage: OrderedSet<XLSharedStringRecord>,
         styleStorage: XLStyleStorage
     ) -> [Int: XLRowStorage] {
         guard let worksheetElement = document.element(name: "worksheet"),
@@ -265,7 +267,7 @@ public final class XLWorksheetFile {
 
     private func writeRows(
         to worksheetElement: XMLElement,
-        sharedStringStorage: XLSharedStringRecordsStorage? = nil,
+        sharedStringStorage: OrderedSet<XLSharedStringRecord>? = nil,
         styleStorage: XLStyleStorage? = nil
     ) throws {
         guard !rowByNumber.isEmpty else {

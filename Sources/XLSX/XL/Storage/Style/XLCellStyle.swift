@@ -1,3 +1,5 @@
+import OrderedCollections
+
 public struct XLCellStyle: Hashable {
     public init(
         name: String? = nil,
@@ -19,12 +21,14 @@ public struct XLCellStyle: Hashable {
 
     public init(
         element: XMLElement,
-        cellStyleFormats: XLCellStyleFormatRefsStorage
+        cellStyleFormats: OrderedSet<XLCellStyleFormatRef>
     ) {
         let styleFormatID = XMLUtils.intAttribute(name: "xfId", in: element)
         self.init(
             name: element.attribute(name: "name"),
-            format: styleFormatID.flatMap { cellStyleFormats.record(at: $0) },
+            format: styleFormatID.flatMap { id in
+                cellStyleFormats.indices.contains(id) ? cellStyleFormats[id] : nil
+            },
             builtinID: XMLUtils.intAttribute(name: "builtinId", in: element),
             customBuiltin: XMLUtils.boolAttribute(name: "customBuiltin", in: element, defaultValue: nil),
             hidden: XMLUtils.boolAttribute(name: "hidden", in: element, defaultValue: nil),
@@ -62,7 +66,7 @@ public struct XLCellStyle: Hashable {
     }
 
     public func xmlElement(
-        cellStyleFormats: XLCellStyleFormatRefsStorage,
+        cellStyleFormats: OrderedSet<XLCellStyleFormatRef>,
         revisionNamespacePrefix: String?
     ) -> XMLElement {
         let element = XMLElement(name: XMLName(name: "cellStyle"))
@@ -83,11 +87,11 @@ public struct XLCellStyle: Hashable {
         return element
     }
 
-    private func styleFormatID(in cellStyleFormats: XLCellStyleFormatRefsStorage) -> Int? {
+    private func styleFormatID(in cellStyleFormats: OrderedSet<XLCellStyleFormatRef>) -> Int? {
         guard let format else {
             return nil
         }
 
-        return cellStyleFormats.index(matching: format)
+        return cellStyleFormats.firstIndex(of: format)
     }
 }

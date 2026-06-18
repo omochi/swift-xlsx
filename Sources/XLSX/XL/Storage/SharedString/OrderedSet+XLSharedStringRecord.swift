@@ -1,21 +1,18 @@
-public typealias XLSharedStringRecordsStorage = XLGenericRecordsStorage<XLSharedStringRecord>
+import OrderedCollections
 
-extension XLSharedStringRecordsStorage {
+extension OrderedSet where Element == XLSharedStringRecord {
     public init(xmlDocument: XMLDocument) throws {
         guard let sharedStringsElement = xmlDocument.element(name: "sst") else {
             throw OPCError.invalidSharedStringsFile
         }
 
-        self.init(records: Self.sharedStringRecords(in: sharedStringsElement))
-    }
-
-    @discardableResult
-    public mutating func register(_ text: String) -> Int {
-        register(.text(text))
+        self.init(Self.sharedStringRecords(in: sharedStringsElement))
     }
 
     public func text(at index: Int) -> String? {
-        guard case let .text(text) = record(at: index) else {
+        guard indices.contains(index),
+              case let .text(text) = self[index]
+        else {
             return nil
         }
         return text

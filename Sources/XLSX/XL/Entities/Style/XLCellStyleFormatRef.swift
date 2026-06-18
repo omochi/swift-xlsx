@@ -1,3 +1,5 @@
+import OrderedCollections
+
 public struct XLCellStyleFormatRef: Hashable {
     private struct Storage {
         var numberFormat: XLNumberFormat?
@@ -70,28 +72,21 @@ public struct XLCellStyleFormatRef: Hashable {
         }
     }
 
-    func hasSameStyleValues(as other: XLCellStyleFormatRef) -> Bool {
-        numberFormat == other.numberFormat &&
-            font == other.font &&
-            fill == other.fill &&
-            border == other.border
-    }
-
     public func record(
-        numberFormats: XLNumberFormatsStorage,
-        fonts: XLFontRecordsStorage,
-        fills: XLFillsStorage,
-        borders: XLBordersStorage
+        numberFormats: OrderedSet<String>,
+        fonts: OrderedSet<XLFontRecord>,
+        fills: OrderedSet<XLFill>,
+        borders: OrderedSet<XLBorder>
     ) -> XLCellFormatRecord {
         XLCellFormatRecord(
             numberFormatID: numberFormatID(in: numberFormats),
-            fontID: font.flatMap { fonts.index(for: $0.record) },
-            fillID: fill.flatMap { fills.index(for: $0) },
-            borderID: border.flatMap { borders.index(for: $0) }
+            fontID: font.flatMap { fonts.firstIndex(of: $0.record) },
+            fillID: fill.flatMap { fills.firstIndex(of: $0) },
+            borderID: border.flatMap { borders.firstIndex(of: $0) }
         )
     }
 
-    private func numberFormatID(in numberFormats: XLNumberFormatsStorage) -> Int? {
+    private func numberFormatID(in numberFormats: OrderedSet<String>) -> Int? {
         guard let numberFormat else {
             return nil
         }
@@ -100,7 +95,7 @@ public struct XLCellStyleFormatRef: Hashable {
         case let .builtin(id):
             return id
         case let .format(format):
-            return numberFormats.id(for: format)
+            return numberFormats.customNumberFormatID(for: format)
         }
     }
 
@@ -108,22 +103,22 @@ public struct XLCellStyleFormatRef: Hashable {
         switch stage {
         case .numberFormats:
             if case let .format(format)? = numberFormat {
-                styleStorage.numberFormats.register(format)
+                styleStorage.numberFormats.append(format)
             }
         case .fonts:
             if let font {
-                styleStorage.fonts.register(font.record)
+                styleStorage.fonts.append(font.record)
             }
         case .fills:
             if let fill {
-                styleStorage.fills.register(fill)
+                styleStorage.fills.append(fill)
             }
         case .borders:
             if let border {
-                styleStorage.borders.register(border)
+                styleStorage.borders.append(border)
             }
         case .cellStyleFormats:
-            styleStorage.cellStyleFormats.register(self)
+            styleStorage.cellStyleFormats.append(self)
         case .cellFormats:
             break
         }

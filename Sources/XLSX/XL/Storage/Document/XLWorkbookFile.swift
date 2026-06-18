@@ -1,5 +1,6 @@
 import MemberwiseInit
 import Foundation
+import OrderedCollections
 
 public final class XLWorkbookFile {
     @MemberwiseInit(.public)
@@ -111,7 +112,7 @@ public final class XLWorkbookFile {
         return RemovedWorksheet(sheet: sheet, file: file)
     }
 
-    public func collectSharedStrings(sharedStringStorage: inout XLSharedStringRecordsStorage) {
+    public func collectSharedStrings(sharedStringStorage: inout OrderedSet<XLSharedStringRecord>) {
         for worksheet in worksheets {
             worksheet.file.collectSharedStrings(sharedStringStorage: &sharedStringStorage)
         }

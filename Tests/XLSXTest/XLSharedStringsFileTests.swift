@@ -1,4 +1,5 @@
 import Foundation
+import OrderedCollections
 import Testing
 import XLSX
 
@@ -60,7 +61,7 @@ struct XLSharedStringsFileTests {
               <si><r><rPr><b/></rPr><t>Hello</t></r></si>
             </sst>
             """.utf8))
-        sharedStrings.storage.register(sharedStringRecord(text: "Changed"))
+        sharedStrings.storage.append(sharedStringRecord(text: "Changed"))
 
         let xml = try String(
             decoding: sharedStrings.file.xmlDocument(sharedStringStorage: sharedStrings.storage).data,
@@ -78,7 +79,7 @@ struct XLSharedStringsFileTests {
               <extLst><ext uri="keep"/></extLst>
             </sst>
             """.utf8))
-        sharedStrings.storage.register(sharedStringRecord(text: "B"))
+        sharedStrings.storage.append(sharedStringRecord(text: "B"))
 
         let xml = try String(
             decoding: sharedStrings.file.xmlDocument(sharedStringStorage: sharedStrings.storage).data,
@@ -98,7 +99,7 @@ struct XLSharedStringsFileTests {
               <si><t>C</t></si>
             </sst>
             """.utf8))
-        sharedStrings.storage.register(sharedStringRecord(text: "X"))
+        sharedStrings.storage.append(sharedStringRecord(text: "X"))
 
         let xml = try String(
             decoding: sharedStrings.file.xmlDocument(sharedStringStorage: sharedStrings.storage).data,
@@ -128,7 +129,7 @@ struct XLSharedStringsFileTests {
         element.appendChild(runElement)
 
         let sharedStrings = XLSharedStringsFile()
-        let sharedStringStorage = XLSharedStringRecordsStorage(records: [
+        let sharedStringStorage = OrderedSet<XLSharedStringRecord>([
             .opaque(xmlString: element.xmlString)
         ])
 
@@ -148,17 +149,17 @@ struct XLSharedStringsFileTests {
         try XLSharedStringsFile(xmlDocument: XMLDocument(data: data))
     }
 
-    private func sharedStringStorage(data: Data) throws -> XLSharedStringRecordsStorage {
-        try XLSharedStringRecordsStorage(xmlDocument: XMLDocument(data: data))
+    private func sharedStringStorage(data: Data) throws -> OrderedSet<XLSharedStringRecord> {
+        try OrderedSet<XLSharedStringRecord>(xmlDocument: XMLDocument(data: data))
     }
 
     private func sharedStringsAndStorage(
         data: Data
-    ) throws -> (file: XLSharedStringsFile, storage: XLSharedStringRecordsStorage) {
+    ) throws -> (file: XLSharedStringsFile, storage: OrderedSet<XLSharedStringRecord>) {
         let document = try XMLDocument(data: data)
         return (
             file: try XLSharedStringsFile(xmlDocument: document),
-            storage: try XLSharedStringRecordsStorage(xmlDocument: document)
+            storage: try OrderedSet<XLSharedStringRecord>(xmlDocument: document)
         )
     }
 }

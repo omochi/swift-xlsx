@@ -1,11 +1,12 @@
 import MemberwiseInit
+import OrderedCollections
 
 @MemberwiseInit(.public)
 public final class XLRowStorage {
     public init(
         rowElement: XMLElement,
         rowNumber: Int,
-        sharedStringStorage: XLSharedStringRecordsStorage,
+        sharedStringStorage: OrderedSet<XLSharedStringRecord>,
         styleStorage: XLStyleStorage,
         sharedFormulaDefinitionAddressByIndex: [Int: XLCellAddress] = [:]
     ) {
@@ -65,7 +66,7 @@ public final class XLRowStorage {
     public func write(
         to rowElement: XMLElement,
         rowNumber: Int,
-        sharedStringStorage: XLSharedStringRecordsStorage? = nil,
+        sharedStringStorage: OrderedSet<XLSharedStringRecord>? = nil,
         styleStorage: XLStyleStorage? = nil,
         formulaSharedIndicesByDefinitionAddress: [XLCellAddress: Int]? = nil
     ) throws {
@@ -91,14 +92,14 @@ public final class XLRowStorage {
         rowElement.children = cellElements + rowChildren.otherChildren
     }
 
-    public func collectSharedStrings(sharedStringStorage: inout XLSharedStringRecordsStorage) {
+    public func collectSharedStrings(sharedStringStorage: inout OrderedSet<XLSharedStringRecord>) {
         for cell in existingCells {
             cell.collectSharedStrings(sharedStringStorage: &sharedStringStorage)
         }
     }
 
     public func collectSharedStrings(
-        sharedStringStorage: inout XLSharedStringRecordsStorage,
+        sharedStringStorage: inout OrderedSet<XLSharedStringRecord>,
         formulaSharedIndicesByDefinitionAddress: [XLCellAddress: Int],
         rowNumber: Int
     ) {

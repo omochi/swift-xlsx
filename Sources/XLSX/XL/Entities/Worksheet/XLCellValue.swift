@@ -1,4 +1,5 @@
 import Foundation
+import OrderedCollections
 
 public enum XLCellValue: Sendable & Hashable & CustomStringConvertible {
     case number(Double)
@@ -82,7 +83,7 @@ public enum XLCellValue: Sendable & Hashable & CustomStringConvertible {
 
     public init?(
         cellElement: XMLElement,
-        sharedStringStorage: XLSharedStringRecordsStorage? = nil
+        sharedStringStorage: OrderedSet<XLSharedStringRecord>? = nil
     ) {
         let cellType = cellElement.attribute(name: "t")
         if cellType == "inlineStr" {
@@ -114,9 +115,12 @@ public enum XLCellValue: Sendable & Hashable & CustomStringConvertible {
             guard let sharedStringIndex = Int(valueText) else {
                 return nil
             }
-            guard let record = sharedStringStorage?.record(at: sharedStringIndex) else {
+            guard let sharedStringStorage,
+                  sharedStringStorage.indices.contains(sharedStringIndex)
+            else {
                 return nil
             }
+            let record = sharedStringStorage[sharedStringIndex]
 
             if case let .text(text) = record {
                 self = .string(text)
@@ -134,7 +138,7 @@ public enum XLCellValue: Sendable & Hashable & CustomStringConvertible {
 
     public func write(
         to cellElement: XMLElement,
-        sharedStrings: XLSharedStringRecordsStorage? = nil
+        sharedStrings: OrderedSet<XLSharedStringRecord>? = nil
     ) throws {
         switch self {
         case .number:
@@ -207,9 +211,9 @@ public enum XLCellValue: Sendable & Hashable & CustomStringConvertible {
 
     private func sharedStringIndex(
         for record: XLSharedStringRecord,
-        in sharedStrings: XLSharedStringRecordsStorage
+        in sharedStrings: OrderedSet<XLSharedStringRecord>
     ) throws -> Int {
-        guard let index = sharedStrings.index(for: record) else {
+        guard let index = sharedStrings.firstIndex(of: record) else {
             throw OPCError.invalidSharedStringsFile
         }
         return index
@@ -217,7 +221,7 @@ public enum XLCellValue: Sendable & Hashable & CustomStringConvertible {
 
     private func sharedStringIndex(
         for record: XLSharedStringRecord,
-        in sharedStrings: XLSharedStringRecordsStorage?
+        in sharedStrings: OrderedSet<XLSharedStringRecord>?
     ) throws -> Int {
         guard let sharedStrings else {
             throw OPCError.invalidSharedStringsFile

@@ -1,3 +1,5 @@
+import OrderedCollections
+
 public struct XLCellFormat: Hashable {
     public init(
         numberFormat: XLNumberFormat? = nil,
@@ -27,17 +29,19 @@ public struct XLCellFormat: Hashable {
 
     public init(
         record: XLCellFormatRecord,
-        numberFormats: XLNumberFormatsStorage,
-        fonts: XLFontRecordsStorage,
-        fills: XLFillsStorage,
-        borders: XLBordersStorage,
-        cellStyleFormats: XLCellStyleFormatRefsStorage
+        numberFormats: OrderedSet<String>,
+        fonts: OrderedSet<XLFontRecord>,
+        fills: OrderedSet<XLFill>,
+        borders: OrderedSet<XLBorder>,
+        cellStyleFormats: OrderedSet<XLCellStyleFormatRef>
     ) {
         self.numberFormat = Self.numberFormat(for: record.numberFormatID, in: numberFormats)
         self.font = Self.font(for: record.fontID, in: fonts)
         self.fill = Self.fill(for: record.fillID, in: fills)
         self.border = Self.border(for: record.borderID, in: borders)
-        self.styleFormat = record.styleFormatID.flatMap { cellStyleFormats.record(at: $0) }
+        self.styleFormat = record.styleFormatID.flatMap { id in
+            cellStyleFormats.indices.contains(id) ? cellStyleFormats[id] : nil
+        }
         self.applyNumberFormat = record.applyNumberFormat
         self.applyFont = record.applyFont
         self.applyFill = record.applyFill
@@ -75,11 +79,11 @@ public struct XLCellFormat: Hashable {
     public var applyProtection = false
 
     public func record(
-        numberFormats: XLNumberFormatsStorage,
-        fonts: XLFontRecordsStorage,
-        fills: XLFillsStorage,
-        borders: XLBordersStorage,
-        cellStyleFormats: XLCellStyleFormatRefsStorage
+        numberFormats: OrderedSet<String>,
+        fonts: OrderedSet<XLFontRecord>,
+        fills: OrderedSet<XLFill>,
+        borders: OrderedSet<XLBorder>,
+        cellStyleFormats: OrderedSet<XLCellStyleFormatRef>
     ) throws -> XLCellFormatRecord {
         XLCellFormatRecord(
             numberFormatID: try numberFormatID(in: numberFormats),
@@ -110,24 +114,25 @@ public struct XLCellFormat: Hashable {
         switch stage {
         case .numberFormats:
             if case let .format(format)? = numberFormat {
-                styleStorage.numberFormats.register(format)
+                styleStorage.numberFormats.append(format)
             }
         case .fonts:
             if let font {
-                styleStorage.fonts.register(font.record)
+                styleStorage.fonts.append(font.record)
             }
         case .fills:
             if let fill {
-                styleStorage.fills.register(fill)
+                styleStorage.fills.append(fill)
             }
         case .borders:
             if let border {
-                styleStorage.borders.register(border)
+                styleStorage.borders.append(border)
             }
         case .cellStyleFormats:
             break
         case .cellFormats:
-            try styleStorage.cellFormats.register(self, styleStorage: styleStorage)
+            let record = try self.record(styleStorage: styleStorage)
+            styleStorage.cellFormats.append(record)
         }
 
         styleFormat?.collectStyle(stage: stage, styleStorage: &styleStorage)
@@ -135,86 +140,86 @@ public struct XLCellFormat: Hashable {
 
     private static func numberFormat(
         for numberFormatID: Int?,
-        in numberFormats: XLNumberFormatsStorage
+        in numberFormats: OrderedSet<String>
     ) -> XLNumberFormat? {
         guard let numberFormatID else {
             return nil
         }
 
-        if let format = numberFormats.format(for: numberFormatID) {
+        if let format = numberFormats.customNumberFormat(for: numberFormatID) {
             return .format(format)
         }
 
         return .builtin(id: numberFormatID)
     }
 
-    private static func font(for fontID: Int?, in fonts: XLFontRecordsStorage) -> XLFont? {
+    private static func font(for fontID: Int?, in fonts: OrderedSet<XLFontRecord>) -> XLFont? {
         guard let fontID,
-              let record = fonts.record(at: fontID)
+              fonts.indices.contains(fontID)
         else {
             return nil
         }
 
-        return XLFont(record: record)
+        return XLFont(record: fonts[fontID])
     }
 
-    private static func fill(for fillID: Int?, in fills: XLFillsStorage) -> XLFill? {
+    private static func fill(for fillID: Int?, in fills: OrderedSet<XLFill>) -> XLFill? {
         guard let fillID,
-              let record = fills.record(at: fillID)
+              fills.indices.contains(fillID)
         else {
             return nil
         }
 
-        return record
+        return fills[fillID]
     }
 
-    private static func border(for borderID: Int?, in borders: XLBordersStorage) -> XLBorder? {
+    private static func border(for borderID: Int?, in borders: OrderedSet<XLBorder>) -> XLBorder? {
         guard let borderID,
-              let record = borders.record(at: borderID)
+              borders.indices.contains(borderID)
         else {
             return nil
         }
 
-        return record
+        return borders[borderID]
     }
 
-    private func fontID(in fonts: XLFontRecordsStorage) throws -> Int? {
+    private func fontID(in fonts: OrderedSet<XLFontRecord>) throws -> Int? {
         guard let font else {
             return nil
         }
 
-        guard let index = fonts.index(for: font.record) else {
+        guard let index = fonts.firstIndex(of: font.record) else {
             throw OPCError.missingFontRecord
         }
 
         return index
     }
 
-    private func fillID(in fills: XLFillsStorage) throws -> Int? {
+    private func fillID(in fills: OrderedSet<XLFill>) throws -> Int? {
         guard let fill else {
             return nil
         }
 
-        guard let index = fills.index(for: fill) else {
+        guard let index = fills.firstIndex(of: fill) else {
             throw OPCError.missingFillRecord
         }
 
         return index
     }
 
-    private func borderID(in borders: XLBordersStorage) throws -> Int? {
+    private func borderID(in borders: OrderedSet<XLBorder>) throws -> Int? {
         guard let border else {
             return nil
         }
 
-        guard let index = borders.index(for: border) else {
+        guard let index = borders.firstIndex(of: border) else {
             throw OPCError.missingBorderRecord
         }
 
         return index
     }
 
-    private func numberFormatID(in numberFormats: XLNumberFormatsStorage) throws -> Int? {
+    private func numberFormatID(in numberFormats: OrderedSet<String>) throws -> Int? {
         guard let numberFormat else {
             return nil
         }
@@ -223,7 +228,7 @@ public struct XLCellFormat: Hashable {
         case let .builtin(id):
             return id
         case let .format(format):
-            guard let id = numberFormats.id(for: format) else {
+            guard let id = numberFormats.customNumberFormatID(for: format) else {
                 throw OPCError.missingNumberFormatRecord
             }
 
@@ -231,11 +236,11 @@ public struct XLCellFormat: Hashable {
         }
     }
 
-    private func styleFormatID(in cellStyleFormats: XLCellStyleFormatRefsStorage) -> Int? {
+    private func styleFormatID(in cellStyleFormats: OrderedSet<XLCellStyleFormatRef>) -> Int? {
         guard let styleFormat else {
             return nil
         }
 
-        return cellStyleFormats.index(for: styleFormat)
+        return cellStyleFormats.firstIndex(of: styleFormat)
     }
 }

@@ -1,4 +1,5 @@
 import Foundation
+import OrderedCollections
 
 public final class XLStylesFile {
     public init(
@@ -40,6 +41,10 @@ public final class XLStylesFile {
     public var cellStyles: [XLCellStyle]
     public var original: XMLDocument?
 
+    var defaultCellStyleFormat: XLCellStyleFormatRef? {
+        cellStyles.first { $0.builtinID == 0 }?.format
+    }
+
     public static func path(
         workbookPath: OPCFilePath,
         workbookRels: OPCRelsFile
@@ -51,6 +56,7 @@ public final class XLStylesFile {
     }
 
     public func xmlDocument(styleStorage: XLStyleStorage) throws -> XMLDocument {
+        let styleStorage = styleStorageForWriting(styleStorage)
         let document = original?.clone() ?? XMLDocument()
         let stylesElement = XMLUtils.ensureRootElement(name: "styleSheet", in: document)
         stylesElement.ensureNamespace(uri: .spreadsheet)
@@ -88,7 +94,7 @@ public final class XLStylesFile {
             case .numberFormats, .fonts, .fills, .borders, .cellFormats:
                 format.collectStyle(stage: stage, styleStorage: &styleStorage)
             case .cellStyleFormats:
-                cellStyles[index].format = styleStorage.cellStyleFormats.canonicalRecord(for: format)
+                styleStorage.cellStyleFormats.append(format)
             }
         }
     }
@@ -106,9 +112,10 @@ public final class XLStylesFile {
     }
 
     private func ensureInitialCellStyles(styleStorage: XLStyleStorage) {
-        guard let defaultCellStyleFormat = styleStorage.cellStyleFormats.record(at: 0) else {
+        guard styleStorage.cellStyleFormats.indices.contains(0) else {
             return
         }
+        let defaultCellStyleFormat = styleStorage.cellStyleFormats[0]
 
         if cellStyles.isEmpty {
             cellStyles.append(XLCellStyle(
@@ -117,6 +124,33 @@ public final class XLStylesFile {
                 builtinID: 0
             ))
         }
+    }
+
+    private func styleStorageForWriting(_ styleStorage: XLStyleStorage) -> XLStyleStorage {
+        guard let defaultCellStyleFormat else {
+            return styleStorage
+        }
+
+        var styleStorage = styleStorage
+        if styleStorage.cellStyleFormats.firstIndex(of: defaultCellStyleFormat) != nil {
+            return styleStorage
+        }
+
+        if styleStorage.cellStyleFormats.count == 1,
+           isInitialDefaultCellStyleFormat(styleStorage.cellStyleFormats[0])
+        {
+            styleStorage.cellStyleFormats.remove(at: 0)
+            styleStorage.cellStyleFormats.insert(defaultCellStyleFormat, at: 0)
+        }
+
+        return styleStorage
+    }
+
+    private func isInitialDefaultCellStyleFormat(_ format: XLCellStyleFormatRef) -> Bool {
+        format.numberFormat == .builtin(id: 0) &&
+            format.font == XLFont(record: XLFontRecord()) &&
+            format.fill == .pattern(.none) &&
+            format.border == XLBorder()
     }
 
     private static func readCellStyles(

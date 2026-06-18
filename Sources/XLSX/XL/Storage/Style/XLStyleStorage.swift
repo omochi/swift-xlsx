@@ -1,11 +1,13 @@
+import OrderedCollections
+
 public struct XLStyleStorage {
     public init(
-        numberFormats: XLNumberFormatsStorage = XLNumberFormatsStorage(),
-        fonts: XLFontRecordsStorage = XLFontRecordsStorage(),
-        fills: XLFillsStorage = XLFillsStorage(),
-        borders: XLBordersStorage = XLBordersStorage(),
-        cellStyleFormats: XLCellStyleFormatRefsStorage = XLCellStyleFormatRefsStorage(),
-        cellFormats: XLCellFormatRecordsStorage = XLCellFormatRecordsStorage()
+        numberFormats: OrderedSet<String> = OrderedSet<String>(),
+        fonts: OrderedSet<XLFontRecord> = OrderedSet<XLFontRecord>(),
+        fills: OrderedSet<XLFill> = OrderedSet<XLFill>(),
+        borders: OrderedSet<XLBorder> = OrderedSet<XLBorder>(),
+        cellStyleFormats: OrderedSet<XLCellStyleFormatRef> = OrderedSet<XLCellStyleFormatRef>(),
+        cellFormats: OrderedSet<XLCellFormatRecord> = OrderedSet<XLCellFormatRecord>()
     ) {
         self.numberFormats = numberFormats
         self.fonts = fonts
@@ -21,18 +23,18 @@ public struct XLStyleStorage {
             throw OPCError.invalidStylesFile
         }
 
-        let numberFormats = XLNumberFormatsStorage(records: Self.readNumberFormats(in: stylesElement))
-        let fonts = XLFontRecordsStorage(records: Self.readFonts(in: stylesElement))
-        let fills = XLFillsStorage(records: Self.readFills(in: stylesElement))
-        let borders = XLBordersStorage(records: Self.readBorders(in: stylesElement))
-        let cellStyleFormats = XLCellStyleFormatRefsStorage(records: Self.readCellStyleFormats(
+        let numberFormats = OrderedSet<String>(Self.readNumberFormats(in: stylesElement))
+        let fonts = OrderedSet<XLFontRecord>(Self.readFonts(in: stylesElement))
+        let fills = OrderedSet<XLFill>(Self.readFills(in: stylesElement))
+        let borders = OrderedSet<XLBorder>(Self.readBorders(in: stylesElement))
+        let cellStyleFormats = OrderedSet<XLCellStyleFormatRef>(Self.readCellStyleFormats(
             in: stylesElement,
             numberFormats: numberFormats,
             fonts: fonts,
             fills: fills,
             borders: borders
         ))
-        let cellFormats = XLCellFormatRecordsStorage(records: Self.readCellFormats(in: stylesElement))
+        let cellFormats = OrderedSet<XLCellFormatRecord>(Self.readCellFormats(in: stylesElement))
 
         self.init(
             numberFormats: numberFormats,
@@ -44,12 +46,12 @@ public struct XLStyleStorage {
         )
     }
 
-    public var numberFormats: XLNumberFormatsStorage
-    public var fonts: XLFontRecordsStorage
-    public var fills: XLFillsStorage
-    public var borders: XLBordersStorage
-    public var cellStyleFormats: XLCellStyleFormatRefsStorage
-    public var cellFormats: XLCellFormatRecordsStorage
+    public var numberFormats: OrderedSet<String>
+    public var fonts: OrderedSet<XLFontRecord>
+    public var fills: OrderedSet<XLFill>
+    public var borders: OrderedSet<XLBorder>
+    public var cellStyleFormats: OrderedSet<XLCellStyleFormatRef>
+    public var cellFormats: OrderedSet<XLCellFormatRecord>
 
     public var isEmpty: Bool {
         numberFormats.isEmpty &&
@@ -62,29 +64,29 @@ public struct XLStyleStorage {
 
     private mutating func ensureInitialRecords() {
         if fonts.isEmpty {
-            fonts.register(XLFontRecord())
+            fonts.append(XLFontRecord())
         }
 
         if fills.isEmpty {
-            fills.register(.pattern(.none))
-            fills.register(.pattern(.gray125))
+            fills.append(.pattern(.none))
+            fills.append(.pattern(.gray125))
         }
 
         if borders.isEmpty {
-            borders.register(XLBorder())
+            borders.append(XLBorder())
         }
 
         if cellStyleFormats.isEmpty {
-            cellStyleFormats.register(XLCellStyleFormatRef(
+            cellStyleFormats.append(XLCellStyleFormatRef(
                 numberFormat: .builtin(id: 0),
-                font: fonts.record(at: 0).map(XLFont.init(record:)),
-                fill: fills.record(at: 0),
-                border: borders.record(at: 0)
+                font: fonts.indices.contains(0) ? XLFont(record: fonts[0]) : nil,
+                fill: fills.indices.contains(0) ? fills[0] : nil,
+                border: borders.indices.contains(0) ? borders[0] : nil
             ))
         }
 
         if cellFormats.isEmpty {
-            cellFormats.register(XLCellFormatRecord(
+            cellFormats.append(XLCellFormatRecord(
                 numberFormatID: 0,
                 fontID: 0,
                 fillID: 0,
@@ -144,10 +146,10 @@ public struct XLStyleStorage {
 
     private static func readCellStyleFormats(
         in stylesElement: XMLElement,
-        numberFormats: XLNumberFormatsStorage,
-        fonts: XLFontRecordsStorage,
-        fills: XLFillsStorage,
-        borders: XLBordersStorage
+        numberFormats: OrderedSet<String>,
+        fonts: OrderedSet<XLFontRecord>,
+        fills: OrderedSet<XLFill>,
+        borders: OrderedSet<XLBorder>
     ) -> [XLCellStyleFormatRef] {
         guard let cellStyleXfsElement = stylesElement.elements(name: "cellStyleXfs").first else {
             return []
@@ -160,7 +162,7 @@ public struct XLStyleStorage {
                 fonts: fonts,
                 fills: fills,
                 borders: borders,
-                cellStyleFormats: XLCellStyleFormatRefsStorage()
+                cellStyleFormats: OrderedSet<XLCellStyleFormatRef>()
             )
             return XLCellStyleFormatRef(
                 numberFormat: cellFormat.numberFormat,

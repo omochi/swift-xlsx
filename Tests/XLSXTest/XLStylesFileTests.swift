@@ -1,4 +1,5 @@
 import Foundation
+import OrderedCollections
 import Testing
 import XLSX
 
@@ -134,7 +135,7 @@ struct XLStylesFileTests {
         let styles = parsed.styles
         var styleStorage = parsed.styleStorage
 
-        styleStorage.numberFormats = XLNumberFormatsStorage(records: [
+        styleStorage.numberFormats = OrderedSet<String>([
             "yyyy-mm-dd",
             "#,##0.000",
         ])
@@ -206,7 +207,7 @@ struct XLStylesFileTests {
     }
 
     @Test func writesFontColorVariants() throws {
-        let styleStorage = XLStyleStorage(fonts: XLFontRecordsStorage(records: [
+        let styleStorage = XLStyleStorage(fonts: OrderedSet<XLFontRecord>([
             XLFontRecord(color: .rgb("FFFF0000")),
             XLFontRecord(color: .indexed(64)),
             XLFontRecord(color: .theme(4, tint: -0.25)),
@@ -237,7 +238,7 @@ struct XLStylesFileTests {
         let styles = parsed.styles
         var styleStorage = parsed.styleStorage
 
-        styleStorage.fonts = XLFontRecordsStorage(records: [
+        styleStorage.fonts = OrderedSet<XLFontRecord>([
             XLFontRecord(
                 bold: true,
                 condense: true,
@@ -273,7 +274,7 @@ struct XLStylesFileTests {
         let styles = parsed.styles
         var styleStorage = parsed.styleStorage
 
-        styleStorage.fonts = XLFontRecordsStorage()
+        styleStorage.fonts = OrderedSet<XLFontRecord>()
 
         let xml = try String(decoding: styles.xmlDocument(styleStorage: styleStorage).data, as: UTF8.self)
 
@@ -347,7 +348,7 @@ struct XLStylesFileTests {
         let styles = parsed.styles
         var styleStorage = parsed.styleStorage
 
-        styleStorage.fills = XLFillsStorage(records: [
+        styleStorage.fills = OrderedSet<XLFill>([
             .pattern(XLFill.Pattern(
                 patternType: "solid",
                 foregroundColor: .rgb("FFFFFF00"),
@@ -376,7 +377,7 @@ struct XLStylesFileTests {
         let styles = parsed.styles
         var styleStorage = parsed.styleStorage
 
-        styleStorage.fills = XLFillsStorage()
+        styleStorage.fills = OrderedSet<XLFill>()
 
         let xml = try String(decoding: styles.xmlDocument(styleStorage: styleStorage).data, as: UTF8.self)
 
@@ -449,7 +450,7 @@ struct XLStylesFileTests {
         let styles = parsed.styles
         var styleStorage = parsed.styleStorage
 
-        styleStorage.borders = XLBordersStorage(records: [
+        styleStorage.borders = OrderedSet<XLBorder>([
             XLBorder(
                 left: XLBorder.Line(style: .thin, color: .rgb("FFFF0000")),
                 right: XLBorder.Line(style: .medium)
@@ -485,7 +486,7 @@ struct XLStylesFileTests {
         let styles = parsed.styles
         var styleStorage = parsed.styleStorage
 
-        styleStorage.borders = XLBordersStorage()
+        styleStorage.borders = OrderedSet<XLBorder>()
 
         let xml = try String(decoding: styles.xmlDocument(styleStorage: styleStorage).data, as: UTF8.self)
 
@@ -598,7 +599,7 @@ struct XLStylesFileTests {
         let styles = parsed.styles
         var styleStorage = parsed.styleStorage
 
-        styleStorage.cellFormats = XLCellFormatRecordsStorage(records: [
+        styleStorage.cellFormats = OrderedSet<XLCellFormatRecord>([
             XLCellFormatRecord(
                 numberFormatID: 164,
                 fontID: 1,
@@ -637,7 +638,7 @@ struct XLStylesFileTests {
         let styleFormatCopy = styleFormat
         let otherStyleFormat = XLCellStyleFormatRef(numberFormat: .format("yyyy-mm-dd"))
 
-        styleStorage.cellStyleFormats = XLCellStyleFormatRefsStorage(records: [
+        styleStorage.cellStyleFormats = OrderedSet<XLCellStyleFormatRef>([
             styleFormat,
             styleFormatCopy,
             otherStyleFormat,
@@ -680,7 +681,7 @@ struct XLStylesFileTests {
         let styles = parsed.styles
         var styleStorage = parsed.styleStorage
         let customFormat = XLCellStyleFormatRef(numberFormat: .builtin(id: 49))
-        styleStorage.cellStyleFormats.register(customFormat)
+        styleStorage.cellStyleFormats.append(customFormat)
 
         styles.cellStyles = [
             XLCellStyle(
@@ -771,8 +772,8 @@ struct XLStylesFileTests {
 
         styles.collectStyle(styleStorage: &styleStorage)
 
-        #expect(styleStorage.numberFormats.index(for: "yyyy-mm-dd") != nil)
-        #expect(styleStorage.cellStyleFormats.index(for: format) != nil)
+        #expect(styleStorage.numberFormats.firstIndex(of: "yyyy-mm-dd") != nil)
+        #expect(styleStorage.cellStyleFormats.firstIndex(of: format) != nil)
     }
 
     @Test func createsInitialCellXfsWhenOriginalHasNone() throws {
@@ -799,7 +800,7 @@ struct XLStylesFileTests {
         let styles = parsed.styles
         var styleStorage = parsed.styleStorage
 
-        styleStorage.cellFormats = XLCellFormatRecordsStorage()
+        styleStorage.cellFormats = OrderedSet<XLCellFormatRecord>()
 
         let xml = try String(decoding: styles.xmlDocument(styleStorage: styleStorage).data, as: UTF8.self)
         let cellXfsXML = try elementXML(named: "cellXfs", in: xml)
@@ -856,7 +857,7 @@ struct XLStylesFileTests {
         let styles = parsed.styles
         var styleStorage = parsed.styleStorage
 
-        styleStorage.cellStyleFormats = XLCellStyleFormatRefsStorage()
+        styleStorage.cellStyleFormats = OrderedSet<XLCellStyleFormatRef>()
 
         let xml = try String(decoding: styles.xmlDocument(styleStorage: styleStorage).data, as: UTF8.self)
         let cellStyleXfsXML = try elementXML(named: "cellStyleXfs", in: xml)
@@ -909,10 +910,10 @@ struct XLStylesFileTests {
         let styles = try XLStylesFile(xmlDocument: XMLDocument(children: [styleSheetElement]))
         var styleStorage = XLStyleStorage()
 
-        styleStorage.cellStyleFormats = XLCellStyleFormatRefsStorage(records: [
+        styleStorage.cellStyleFormats = OrderedSet<XLCellStyleFormatRef>([
             XLCellStyleFormatRef(numberFormat: .builtin(id: 0))
         ])
-        styleStorage.cellFormats = XLCellFormatRecordsStorage(records: [
+        styleStorage.cellFormats = OrderedSet<XLCellFormatRecord>([
             XLCellFormatRecord(styleFormatID: 0)
         ])
 

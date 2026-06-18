@@ -1,4 +1,5 @@
 import Foundation
+import OrderedCollections
 import Testing
 import XLSX
 
@@ -118,7 +119,7 @@ struct XLWorksheetFileTests {
                   <sheetData/>
                 </worksheet>
                 """.utf8)),
-            sharedStringStorage: XLSharedStringRecordsStorage(),
+            sharedStringStorage: OrderedSet<XLSharedStringRecord>(),
             styleStorage: XLStyleStorage(xmlDocument: XMLDocument(data: Data("""
                 <styleSheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
                   <cellXfs count="2">
@@ -791,7 +792,7 @@ struct XLWorksheetFileTests {
     private func worksheetFile(data: Data) throws -> XLWorksheetFile {
         try XLWorksheetFile(
             xmlDocument: XMLDocument(data: data),
-            sharedStringStorage: XLSharedStringRecordsStorage(),
+            sharedStringStorage: OrderedSet<XLSharedStringRecord>(),
             styleStorage: XLStyleStorage()
         )
     }

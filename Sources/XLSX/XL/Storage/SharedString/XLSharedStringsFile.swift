@@ -1,4 +1,5 @@
 import Foundation
+import OrderedCollections
 
 public final class XLSharedStringsFile {
     public init() {
@@ -25,7 +26,7 @@ public final class XLSharedStringsFile {
         return try OPCFilePath(string: "sharedStrings.xml").resolved(relativeTo: workbookPath)
     }
 
-    public func xmlDocument(sharedStringStorage: XLSharedStringRecordsStorage) throws -> XMLDocument {
+    public func xmlDocument(sharedStringStorage: OrderedSet<XLSharedStringRecord>) throws -> XMLDocument {
         let document = original?.clone() ?? XMLDocument()
         let sharedStringsElement = XMLUtils.ensureRootElement(name: "sst", in: document)
         sharedStringsElement.ensureNamespace(uri: .spreadsheet)
@@ -43,7 +44,7 @@ public final class XLSharedStringsFile {
 
     private func write(
         to sharedStringsElement: XMLElement,
-        sharedStringStorage: XLSharedStringRecordsStorage
+        sharedStringStorage: OrderedSet<XLSharedStringRecord>
     ) throws {
         sharedStringsElement.children = try XMLUtils.patchChildren(
             parentElement: sharedStringsElement,
