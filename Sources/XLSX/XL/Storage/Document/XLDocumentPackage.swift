@@ -11,7 +11,7 @@ public final class XLDocumentPackage {
     public init(opcPackage: OPCPackage) throws {
         var consumedPaths: Set<OPCFilePath> = []
 
-        let contentTypes = try Self.readFile(
+        let contentTypes = try Self.readXMLFile(
             from: opcPackage,
             at: OPCContentTypesFile.path(),
             default: OPCContentTypesFile(),
@@ -19,7 +19,7 @@ public final class XLDocumentPackage {
             consumedPaths: &consumedPaths
         )
 
-        let packageRels = try Self.readFile(
+        let packageRels = try Self.readXMLFile(
             from: opcPackage,
             at: try OPCRelsFile.path(for: .packageRoot),
             default: OPCRelsFile(),
@@ -28,7 +28,7 @@ public final class XLDocumentPackage {
         )
 
         let workbookPath = try XLWorkbookFile.path(in: packageRels.file)
-        let workbook = try Self.readFile(
+        let workbook = try Self.readXMLFile(
             from: opcPackage,
             at: workbookPath,
             default: XLWorkbookFile(),
@@ -36,7 +36,7 @@ public final class XLDocumentPackage {
             consumedPaths: &consumedPaths
         )
 
-        let workbookRels = try Self.readFile(
+        let workbookRels = try Self.readXMLFile(
             from: opcPackage,
             at: try OPCRelsFile.path(for: workbook.path),
             default: OPCRelsFile(),
@@ -45,34 +45,37 @@ public final class XLDocumentPackage {
         )
 
         let sharedStringsPath = try XLSharedStringsFile.path(workbookPath: workbook.path, workbookRels: workbookRels.file)
-        var sharedStringStorage = OrderedSet<XLSharedStringRecord>()
-        let sharedStrings = try Self.readFile(
-            from: opcPackage,
-            at: sharedStringsPath,
-            default: XLSharedStringsFile(),
-            read: { xmlDocument in
-                let decodedSharedStringStorage = try XLSharedStringsFile.readStorage(xmlDocument: xmlDocument)
-                sharedStringStorage = decodedSharedStringStorage
-                return try XLSharedStringsFile(xmlDocument: xmlDocument)
-            },
+        let sharedStringStorage: OrderedSet<XLSharedStringRecord>
+        let sharedStringsFile: XLSharedStringsFile
+        if let sharedStringsXMLDocument = try Self.readXMLFile(
+            package: opcPackage,
+            path: sharedStringsPath,
             consumedPaths: &consumedPaths
-        )
+        ) {
+            sharedStringStorage = try XLSharedStringsFile.readStorage(xmlDocument: sharedStringsXMLDocument)
+            sharedStringsFile = try XLSharedStringsFile(xmlDocument: sharedStringsXMLDocument)
+        } else {
+            sharedStringStorage = OrderedSet<XLSharedStringRecord>()
+            sharedStringsFile = XLSharedStringsFile()
+        }
+
         let stylesPath = try XLStylesFile.path(workbookPath: workbook.path, workbookRels: workbookRels.file)
-        var styleStorage = XLStyleStorage()
-        let styles = try Self.readFile(
-            from: opcPackage,
-            at: stylesPath,
-            default: XLStylesFile(styleStorage: styleStorage),
-            read: { xmlDocument in
-                let decodedStyleStorage = try XLStyleStorage(xmlDocument: xmlDocument)
-                styleStorage = decodedStyleStorage
-                return try XLStylesFile(
-                    xmlDocument: xmlDocument,
-                    styleStorage: decodedStyleStorage
-                )
-            },
+        let styleStorage: XLStyleStorage
+        let stylesFile: XLStylesFile
+        if let stylesXMLDocument = try Self.readXMLFile(
+            package: opcPackage,
+            path: stylesPath,
             consumedPaths: &consumedPaths
-        )
+        ) {
+            styleStorage = try XLStyleStorage(xmlDocument: stylesXMLDocument)
+            stylesFile = try XLStylesFile(
+                xmlDocument: stylesXMLDocument,
+                styleStorage: styleStorage
+            )
+        } else {
+            styleStorage = XLStyleStorage()
+            stylesFile = XLStylesFile(styleStorage: styleStorage)
+        }
 
         workbook.file.worksheetByID = try Self.worksheets(
             in: opcPackage,
@@ -88,8 +91,8 @@ public final class XLDocumentPackage {
         self.packageRels = packageRels
         self.workbook = workbook
         self.workbookRels = workbookRels
-        self.sharedStrings = sharedStrings
-        self.styles = styles
+        self.sharedStrings = OPCPathWithFile(path: sharedStringsPath, file: sharedStringsFile)
+        self.styles = OPCPathWithFile(path: stylesPath, file: stylesFile)
         self.opaqueFiles = Self.opaqueFiles(in: opcPackage, excluding: consumedPaths)
 
         if opcPackage.data(at: workbookPath) == nil {
@@ -201,22 +204,38 @@ public final class XLDocumentPackage {
         }
     }
 
-    private static func readFile<File>(
+    private static func readXMLFile<File>(
         from package: OPCPackage,
         at path: OPCFilePath,
         default defaultFile: @autoclosure () -> File,
         read: (XMLDocument) throws -> File,
         consumedPaths: inout Set<OPCFilePath>
     ) throws -> OPCPathWithFile<File> {
-        guard let data = package.data(at: path) else {
+        guard let xmlDocument = try readXMLFile(
+            package: package,
+            path: path,
+            consumedPaths: &consumedPaths
+        ) else {
             return OPCPathWithFile(path: path, file: defaultFile())
         }
 
-        consumedPaths.insert(path)
         return try OPCPathWithFile(
             path: path,
-            file: read(XMLDocument(data: data))
+            file: read(xmlDocument)
         )
+    }
+
+    private static func readXMLFile(
+        package: OPCPackage,
+        path: OPCFilePath,
+        consumedPaths: inout Set<OPCFilePath>
+    ) throws -> XMLDocument? {
+        guard let data = package.data(at: path) else {
+            return nil
+        }
+
+        consumedPaths.insert(path)
+        return try XMLDocument(data: data)
     }
 
     private static func opaqueFiles(
