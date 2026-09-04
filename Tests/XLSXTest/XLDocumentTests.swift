@@ -815,6 +815,31 @@ struct XLDocumentTests {
         #expect(worksheet.file.sheetProtection?.passwordHashInfo.algorithmName == "SHA-512")
     }
 
+    @Test func worksheetExposesFrozenPanesAndWritesWorkbookView() throws {
+        let document = XLDocument()
+        let worksheet = try #require(document.workbook.worksheets.first)
+
+        worksheet.frozenPanes = XLFrozenPanes(rowCount: 1, columnCount: 2)
+
+        #expect(worksheet.file.frozenPanes == worksheet.frozenPanes)
+        #expect(worksheet.frozenPanes == XLFrozenPanes(rowCount: 1, columnCount: 2))
+
+        let package = try OPCPackage(data: document.data())
+        let workbookXML = try String(
+            decoding: #require(package.data(at: OPCFilePath(string: "/xl/workbook.xml"))),
+            as: UTF8.self
+        )
+        let worksheetXML = try String(
+            decoding: #require(package.data(at: OPCFilePath(string: "/xl/worksheets/sheet1.xml"))),
+            as: UTF8.self
+        )
+
+        #expect(workbookXML.contains(#"<bookViews><workbookView/></bookViews><sheets>"#))
+        #expect(worksheetXML.contains(
+            #"<pane xSplit="2" ySplit="1" topLeftCell="C2" activePane="bottomRight" state="frozen"/>"#
+        ))
+    }
+
     @Test func workbookWorksheetsShareWorksheetFileInstances() throws {
         let document = XLDocument()
         let worksheet = try #require(document.workbook.worksheets.first)

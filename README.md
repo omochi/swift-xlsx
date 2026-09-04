@@ -100,10 +100,10 @@ The table below lists concrete features rather than broad compatibility levels. 
 | Area | Supported | Not Supported |
 | --- | --- | --- |
 | Workbooks | Create, open, save | Calculation engine, encryption, macros |
-| Worksheets | Add, remove, rename, hide sheets, read existing sheets | Chartsheets, dialog sheets |
+| Worksheets | Add, remove, rename, hide sheets, read existing sheets, freeze top rows and left columns | Chartsheets, dialog sheets |
 | Cells | Plain and rich text in shared and inline strings, phonetic runs and properties, numbers, booleans, dates, formulas, cached formula values | Comments, hyperlinks |
 | Rows | Sparse row and cell storage | Row heights, grouping, hidden rows |
-| Columns | Column widths, column styles | Grouping, hidden columns |
+| Columns | Column widths, column styles, hidden columns | Grouping |
 | Number formats | Built-in formats, custom format strings | Full locale-aware format evaluation |
 | Fonts | Bold, italic, strike, size, name, color | Theme fonts, underline variants, vertical alignment |
 | Fills | Pattern fills, typed colors | Gradient fills, theme color resolution |

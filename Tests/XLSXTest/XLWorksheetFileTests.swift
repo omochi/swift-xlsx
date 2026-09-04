@@ -95,6 +95,45 @@ struct XLWorksheetFileTests {
         #expect(worksheet.existingColumn(7)?.width == 12.5)
     }
 
+    @Test func readsFrozenPanesFromWorksheetXML() throws {
+        let worksheet = try worksheetFile(data: Data("""
+            <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
+              <sheetViews>
+                <sheetView workbookViewId="0">
+                  <pane xSplit="2.0" ySplit="1" topLeftCell="C2" activePane="bottomRight" state="frozen"/>
+                  <selection pane="bottomRight" activeCell="C2" sqref="C2"/>
+                </sheetView>
+              </sheetViews>
+              <sheetData/>
+            </worksheet>
+            """.utf8))
+
+        #expect(worksheet.frozenPanes == XLFrozenPanes(rowCount: 1, columnCount: 2))
+    }
+
+    @Test func preservesUnsupportedPaneWhenFrozenPanesAreNotModified() throws {
+        let worksheet = try worksheetFile(data: Data("""
+            <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
+              <sheetViews>
+                <sheetView workbookViewId="0" zoomScale="125">
+                  <pane xSplit="2310" ySplit="2070" topLeftCell="C6" activePane="bottomRight" state="split" custom="keep"/>
+                  <selection pane="bottomRight" activeCell="E13" sqref="E13"/>
+                </sheetView>
+              </sheetViews>
+              <sheetData/>
+            </worksheet>
+            """.utf8))
+
+        #expect(worksheet.frozenPanes == nil)
+
+        let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
+        #expect(xml.contains(#"<sheetView workbookViewId="0" zoomScale="125">"#))
+        #expect(xml.contains(
+            #"<pane xSplit="2310" ySplit="2070" topLeftCell="C6" activePane="bottomRight" state="split" custom="keep"/>"#
+        ))
+        #expect(xml.contains(#"<selection pane="bottomRight" activeCell="E13" sqref="E13"/>"#))
+    }
+
     @Test func readsCellRangeAddressList() throws {
         let list = try #require(XLCellRangeAddressList("A1 B2:C3 d4"))
 
@@ -476,6 +515,66 @@ struct XLWorksheetFileTests {
         let sheetDataRange = try #require(xml.range(of: #"<sheetData>"#))
 
         #expect(colsRange.lowerBound < sheetDataRange.lowerBound)
+    }
+
+    @Test func writesFrozenPanesBeforeSheetData() throws {
+        let worksheet = XLWorksheetFile()
+        worksheet.frozenPanes = XLFrozenPanes(rowCount: 1, columnCount: 2)
+
+        let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
+        let sheetViewsRange = try #require(xml.range(of: #"<sheetViews>"#))
+        let sheetDataRange = try #require(xml.range(of: #"<sheetData/>"#))
+
+        #expect(sheetViewsRange.lowerBound < sheetDataRange.lowerBound)
+        #expect(xml.contains(
+            #"<sheetView workbookViewId="0"><pane xSplit="2" ySplit="1" topLeftCell="C2" activePane="bottomRight" state="frozen"/><selection pane="bottomRight" activeCell="C2" sqref="C2"/></sheetView>"#
+        ))
+    }
+
+    @Test func replacesExistingPaneOnlyAfterFrozenPanesAreModified() throws {
+        let worksheet = try worksheetFile(data: Data("""
+            <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
+              <sheetViews>
+                <sheetView workbookViewId="0" zoomScale="125">
+                  <pane xSplit="2310" state="split" custom="remove"/>
+                  <selection pane="topRight" activeCell="D4" sqref="D4"/>
+                  <extLst><ext uri="keep"/></extLst>
+                </sheetView>
+              </sheetViews>
+              <sheetData/>
+            </worksheet>
+            """.utf8))
+        worksheet.frozenPanes = XLFrozenPanes(rowCount: 2)
+
+        let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
+
+        #expect(xml.contains(#"<sheetView workbookViewId="0" zoomScale="125">"#))
+        #expect(xml.contains(#"<pane ySplit="2" topLeftCell="A3" activePane="bottomLeft" state="frozen"/>"#))
+        #expect(xml.contains(#"<selection pane="bottomLeft" activeCell="A3" sqref="A3"/>"#))
+        #expect(xml.contains(#"<extLst><ext uri="keep"/></extLst>"#))
+        #expect(!xml.contains(#"custom="remove""#))
+        #expect(!xml.contains(#"activeCell="D4""#))
+    }
+
+    @Test func removesPaneWhenFrozenPanesAreExplicitlyCleared() throws {
+        let worksheet = try worksheetFile(data: Data("""
+            <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
+              <sheetViews>
+                <sheetView workbookViewId="0" zoomScale="125">
+                  <pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>
+                  <selection pane="bottomLeft" activeCell="A2" sqref="A2"/>
+                </sheetView>
+              </sheetViews>
+              <sheetData/>
+            </worksheet>
+            """.utf8))
+        worksheet.frozenPanes = nil
+
+        let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
+
+        #expect(xml.contains(#"<sheetView workbookViewId="0" zoomScale="125">"#))
+        #expect(xml.contains(#"<selection activeCell="A2" sqref="A2"/>"#))
+        #expect(!xml.contains(#"<pane"#))
     }
 
     @Test func writesDataValidationsAfterSheetData() throws {

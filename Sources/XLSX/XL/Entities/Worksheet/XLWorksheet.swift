@@ -42,6 +42,15 @@ public struct XLWorksheet {
         }
     }
 
+    public var frozenPanes: XLFrozenPanes? {
+        get {
+            file.frozenPanes
+        }
+        nonmutating set {
+            file.frozenPanes = newValue
+        }
+    }
+
     public var maxColumnNumber: Int? {
         file.maxColumnNumber
     }

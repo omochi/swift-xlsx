@@ -2,6 +2,11 @@ import OrderedCollections
 import XLSXXML
 
 public final class XLWorksheetFile {
+    private enum FrozenPanesState {
+        case original
+        case modified(XLFrozenPanes?)
+    }
+
     public init() {
         self.original = nil
         self.columnByNumber = [:]
@@ -9,6 +14,7 @@ public final class XLWorksheetFile {
         self.sheetProtection = nil
         self.dataValidations = nil
         self.mcIgnorable = ""
+        self.frozenPanesState = .original
     }
 
     public init(
@@ -24,6 +30,7 @@ public final class XLWorksheetFile {
         self.sheetProtection = sheetProtection
         self.dataValidations = dataValidations
         self.mcIgnorable = mcIgnorable
+        self.frozenPanesState = .original
     }
 
     public init(
@@ -43,6 +50,7 @@ public final class XLWorksheetFile {
         self.sheetProtection = Self.sheetProtection(in: xmlDocument)
         self.dataValidations = Self.dataValidations(in: xmlDocument)
         self.mcIgnorable = ""
+        self.frozenPanesState = .original
     }
 
     public var columnByNumber: [Int: XLColumnStorage]
@@ -51,6 +59,28 @@ public final class XLWorksheetFile {
     public var dataValidations: XLDataValidations?
     public var mcIgnorable: String?
     public var original: XMLDocument?
+    private var frozenPanesState: FrozenPanesState
+
+    public var frozenPanes: XLFrozenPanes? {
+        get {
+            switch frozenPanesState {
+            case .original:
+                return original.flatMap(Self.frozenPanes(in:))
+            case .modified(let frozenPanes):
+                return frozenPanes
+            }
+        }
+        set {
+            frozenPanesState = .modified(newValue)
+        }
+    }
+
+    var requiresDefaultWorkbookView: Bool {
+        switch frozenPanesState {
+        case .original, .modified(nil): return false
+        case .modified: return true
+        }
+    }
 
     public var maxColumnNumber: Int? {
         rowByNumber.values.compactMap(\.maxColumnNumber).max()
@@ -143,6 +173,7 @@ public final class XLWorksheetFile {
         let worksheetElement = XMLUtils.ensureRootElement(name: "worksheet", in: document)
         worksheetElement.setDefaultNamespace(uri: .spreadsheet)
         configureExtensionNamespaces(in: worksheetElement)
+        writeFrozenPanes(to: worksheetElement)
         try writeColumns(to: worksheetElement, styleStorage: styleStorage)
         try writeRows(
             to: worksheetElement,
@@ -187,7 +218,52 @@ public final class XLWorksheetFile {
             mcIgnorable: mcIgnorable
         )
         file.original = original
+        file.frozenPanesState = frozenPanesState
         return file
+    }
+
+    private static func frozenPanes(in document: XMLDocument) -> XLFrozenPanes? {
+        guard let worksheetElement = document.element(name: "worksheet"),
+              let sheetViewsElement = worksheetElement.elements(name: "sheetViews").first,
+              let sheetViewElement = sheetViewsElement.elements(name: "sheetView").last(where: {
+                  XMLUtils.intAttribute(name: "workbookViewId", in: $0) == 0
+              }),
+              let paneElement = sheetViewElement.elements(name: "pane").first,
+              paneElement.attribute(name: "state") == "frozen",
+              let rowCount = frozenPaneCount(
+                  attribute: "ySplit",
+                  maximum: XLCellAddress.maxRowNumber - 1,
+                  in: paneElement
+              ),
+              let columnCount = frozenPaneCount(
+                  attribute: "xSplit",
+                  maximum: XLCellAddress.maxColumnNumber - 1,
+                  in: paneElement
+              ),
+              rowCount > 0 || columnCount > 0
+        else {
+            return nil
+        }
+
+        return XLFrozenPanes(rowCount: rowCount, columnCount: columnCount)
+    }
+
+    private static func frozenPaneCount(
+        attribute name: String,
+        maximum: Int,
+        in element: XMLElement
+    ) -> Int? {
+        guard let string = element.attribute(name: name) else {
+            return 0
+        }
+        guard let value = Double(string),
+              value >= 0,
+              value.rounded() == value,
+              value <= Double(maximum)
+        else {
+            return nil
+        }
+        return Int(value)
     }
 
     private static func sheetProtection(in document: XMLDocument) -> XLSheetProtection? {
@@ -469,6 +545,107 @@ public final class XLWorksheetFile {
             name: "Ignorable",
             value: mcIgnorable
         )
+    }
+
+    private func writeFrozenPanes(to worksheetElement: XMLElement) {
+        guard case .modified(let frozenPanes) = frozenPanesState else {
+            return
+        }
+
+        guard let frozenPanes else {
+            removeFrozenPanes(from: worksheetElement)
+            return
+        }
+
+        let sheetViewsElement = XMLUtils.ensureChildElement(
+            name: "sheetViews",
+            in: worksheetElement,
+            insertionIndex: {
+                self.worksheetChildInsertionIndex(name: "sheetViews", in: worksheetElement.children)
+            }
+        )
+        let sheetViewElement = mainSheetView(in: sheetViewsElement) ?? appendMainSheetView(to: sheetViewsElement)
+        let topLeftCell = XLCellAddress(
+            row: frozenPanes.rowCount + 1,
+            column: frozenPanes.columnCount + 1
+        )
+        let activePane = activePane(frozenPanes: frozenPanes)
+
+        let paneElement = XMLElement(name: XMLName(name: "pane"))
+        XMLUtils.setIntAttribute(
+            name: "xSplit",
+            value: frozenPanes.columnCount > 0 ? frozenPanes.columnCount : nil,
+            in: paneElement
+        )
+        XMLUtils.setIntAttribute(
+            name: "ySplit",
+            value: frozenPanes.rowCount > 0 ? frozenPanes.rowCount : nil,
+            in: paneElement
+        )
+        XMLUtils.setStringAttribute(name: "topLeftCell", value: topLeftCell.description, in: paneElement)
+        XMLUtils.setStringAttribute(name: "activePane", value: activePane, in: paneElement)
+        XMLUtils.setStringAttribute(name: "state", value: "frozen", in: paneElement)
+
+        let selectionElement = XMLElement(name: XMLName(name: "selection"))
+        XMLUtils.setStringAttribute(name: "pane", value: activePane, in: selectionElement)
+        XMLUtils.setStringAttribute(name: "activeCell", value: topLeftCell.description, in: selectionElement)
+        XMLUtils.setStringAttribute(name: "sqref", value: topLeftCell.description, in: selectionElement)
+
+        let otherChildren = sheetViewElement.children.filter { child in
+            guard let element = child as? XMLElement else {
+                return true
+            }
+            return element.name.name != "pane" && element.name.name != "selection"
+        }
+        sheetViewElement.children = [paneElement, selectionElement] + otherChildren
+    }
+
+    private func removeFrozenPanes(from worksheetElement: XMLElement) {
+        guard let sheetViewsElement = worksheetElement.elements(name: "sheetViews").first,
+              let sheetViewElement = mainSheetView(in: sheetViewsElement)
+        else {
+            return
+        }
+
+        let selectionElement = sheetViewElement.elements(name: "selection").last
+        selectionElement?.removeAttribute(name: "pane")
+        let otherChildren = sheetViewElement.children.filter { child in
+            guard let element = child as? XMLElement else {
+                return true
+            }
+            return element.name.name != "pane" && element.name.name != "selection"
+        }
+        sheetViewElement.children = selectionElement.map { [$0] + otherChildren } ?? otherChildren
+    }
+
+    private func mainSheetView(in sheetViewsElement: XMLElement) -> XMLElement? {
+        sheetViewsElement.elements(name: "sheetView").last(where: { element in
+            XMLUtils.intAttribute(name: "workbookViewId", in: element) == 0
+        })
+    }
+
+    private func appendMainSheetView(to sheetViewsElement: XMLElement) -> XMLElement {
+        let element = XMLElement(name: XMLName(name: "sheetView"))
+        XMLUtils.setIntAttribute(name: "workbookViewId", value: 0, in: element)
+
+        let insertionIndex = sheetViewsElement.children.firstIndex { child in
+            guard let childElement = child as? XMLElement else {
+                return false
+            }
+            return childElement.name.name == "extLst"
+        } ?? sheetViewsElement.children.endIndex
+        sheetViewsElement.insertChild(element, at: insertionIndex)
+        return element
+    }
+
+    private func activePane(frozenPanes: XLFrozenPanes) -> String {
+        if frozenPanes.rowCount > 0 && frozenPanes.columnCount > 0 {
+            return "bottomRight"
+        }
+        if frozenPanes.rowCount > 0 {
+            return "bottomLeft"
+        }
+        return "topRight"
     }
 
     private func writeSheetProtection(to worksheetElement: XMLElement) {
