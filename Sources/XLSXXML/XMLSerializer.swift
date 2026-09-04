@@ -82,7 +82,7 @@ struct XMLSerializer {
         case let element as XMLElement:
             return serialize(element: element, depth: depth)
         case let text as XMLText:
-            return escapeText(text.value)
+            return text.xmlString()
         default:
             return node.children.map { serialize(node: $0, depth: depth) }.joined()
         }
@@ -93,7 +93,7 @@ struct XMLSerializer {
         case let element as XMLElement:
             return serializeCompact(element: element)
         case let text as XMLText:
-            return escapeText(text.value)
+            return text.xmlString()
         default:
             return node.children.map(serializeCompact(node:)).joined()
         }
@@ -152,15 +152,8 @@ struct XMLSerializer {
         return "xmlns:\(prefix)"
     }
 
-    private func escapeText(_ string: String) -> String {
-        string
-            .replacingOccurrences(of: "&", with: "&amp;")
-            .replacingOccurrences(of: "<", with: "&lt;")
-            .replacingOccurrences(of: ">", with: "&gt;")
-    }
-
     private func escapeAttribute(_ string: String) -> String {
-        escapeText(string)
+        XMLText(string).xmlString()
             .replacingOccurrences(of: "\"", with: "&quot;")
     }
 }

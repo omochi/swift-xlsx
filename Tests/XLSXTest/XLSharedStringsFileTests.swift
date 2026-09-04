@@ -48,7 +48,7 @@ struct XLSharedStringsFileTests {
             """.utf8))
 
         let xml = try String(
-            decoding: sharedStrings.file.xmlDocument(sharedStringStorage: sharedStrings.storage).data,
+            decoding: sharedStrings.file.xmlDocument(sharedStringStorage: sharedStrings.storage).data(),
             as: UTF8.self
         )
 
@@ -65,7 +65,7 @@ struct XLSharedStringsFileTests {
         sharedStrings.storage.append(sharedStringRecord(text: "Changed"))
 
         let xml = try String(
-            decoding: sharedStrings.file.xmlDocument(sharedStringStorage: sharedStrings.storage).data,
+            decoding: sharedStrings.file.xmlDocument(sharedStringStorage: sharedStrings.storage).data(),
             as: UTF8.self
         )
 
@@ -83,7 +83,7 @@ struct XLSharedStringsFileTests {
         sharedStrings.storage.append(sharedStringRecord(text: "B"))
 
         let xml = try String(
-            decoding: sharedStrings.file.xmlDocument(sharedStringStorage: sharedStrings.storage).data,
+            decoding: sharedStrings.file.xmlDocument(sharedStringStorage: sharedStrings.storage).data(),
             as: UTF8.self
         )
             .replacingOccurrences(of: "\n", with: "")
@@ -103,7 +103,7 @@ struct XLSharedStringsFileTests {
         sharedStrings.storage.append(sharedStringRecord(text: "X"))
 
         let xml = try String(
-            decoding: sharedStrings.file.xmlDocument(sharedStringStorage: sharedStrings.storage).data,
+            decoding: sharedStrings.file.xmlDocument(sharedStringStorage: sharedStrings.storage).data(),
             as: UTF8.self
         )
             .replacingOccurrences(of: "\n", with: "")
@@ -135,7 +135,7 @@ struct XLSharedStringsFileTests {
         ])
 
         let xml = try String(
-            decoding: sharedStrings.xmlDocument(sharedStringStorage: sharedStringStorage).data,
+            decoding: sharedStrings.xmlDocument(sharedStringStorage: sharedStringStorage).data(),
             as: UTF8.self
         )
 

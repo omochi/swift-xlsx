@@ -9,8 +9,12 @@ let package = Package(
     ],
     products: [
         .library(
+            name: "XLSXXML",
+            targets: ["XLSXXML"]
+        ),
+        .library(
             name: "XLSX",
-            targets: ["XLSX"]
+            targets: ["XLSX", "XLSXXML"]
         ),
         .executable(
             name: "xlsx-tool",

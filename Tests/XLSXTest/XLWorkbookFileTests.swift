@@ -27,7 +27,7 @@ struct XLWorkbookFileTests {
             XLWorkbookFileSheet(name: "Second", sheetID: 4, relationshipID: "rId7"),
         ])
 
-        let xml = try String(decoding: workbook.xmlDocument().data, as: UTF8.self)
+        let xml = try String(decoding: workbook.xmlDocument().data(), as: UTF8.self)
 
         #expect(xml.contains(#"<sheet name="First" sheetId="1" r:id="rId1"/>"#))
         #expect(xml.contains(#"<sheet name="Second" sheetId="4" r:id="rId7"/>"#))
@@ -40,7 +40,7 @@ struct XLWorkbookFileTests {
             XLWorkbookFileSheet(name: "VeryHidden", sheetID: 3, relationshipID: "rId3", state: .veryHidden),
         ])
 
-        let xml = try String(decoding: workbook.xmlDocument().data, as: UTF8.self)
+        let xml = try String(decoding: workbook.xmlDocument().data(), as: UTF8.self)
 
         #expect(xml.contains(#"<sheet name="Visible" sheetId="1" r:id="rId1"/>"#))
         #expect(xml.contains(#"<sheet name="Hidden" sheetId="2" r:id="rId2" state="hidden"/>"#))
@@ -61,7 +61,7 @@ struct XLWorkbookFileTests {
             XLWorkbookFileSheet(name: "Added", sheetID: 2, relationshipID: "rId2"),
         ]
 
-        let xml = try String(decoding: workbook.xmlDocument().data, as: UTF8.self)
+        let xml = try String(decoding: workbook.xmlDocument().data(), as: UTF8.self)
 
         #expect(xml.contains(#"<sheet name="New" sheetId="1" rel:id="rId1" state="hidden"/>"#))
         #expect(xml.contains(#"<sheet name="External" sheetId="9" rel:id="rId9" custom="keep"/>"#))
@@ -82,7 +82,7 @@ struct XLWorkbookFileTests {
             XLWorkbookFileSheet(name: "Moved", sheetID: 1, relationshipID: "rId3"),
         ]
 
-        let xml = try String(decoding: workbook.xmlDocument().data, as: UTF8.self)
+        let xml = try String(decoding: workbook.xmlDocument().data(), as: UTF8.self)
 
         #expect(xml.contains(#"<sheet name="Moved" sheetId="1" rel:id="rId3"/>"#))
         #expect(xml.contains(#"<sheet name="Other" sheetId="2" rel:id="rId2"/>"#))
@@ -98,7 +98,7 @@ struct XLWorkbookFileTests {
             XLWorkbookFileSheet(name: "Sheet1", sheetID: 1, relationshipID: "rId1"),
         ]
 
-        let xml = try String(decoding: workbook.xmlDocument().data, as: UTF8.self)
+        let xml = try String(decoding: workbook.xmlDocument().data(), as: UTF8.self)
 
         #expect(xml.contains(#"xmlns:r="urn:other""#))
         #expect(xml.contains(#"xmlns:r2="http://schemas.openxmlformats.org/officeDocument/2006/relationships""#))

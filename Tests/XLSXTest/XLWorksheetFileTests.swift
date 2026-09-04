@@ -341,7 +341,7 @@ struct XLWorksheetFileTests {
             ]),
         ])
 
-        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
 
         #expect(xml.contains(#"<sheetData><row r="2"><c r="B2"><v>left</v></c><c r="D2"><v>right</v></c></row><row r="10"><c r="C10"><v>bottom</v></c></row></sheetData>"#))
     }
@@ -355,7 +355,7 @@ struct XLWorksheetFileTests {
             rowByNumber: [:]
         )
 
-        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
 
         #expect(xml.contains(#"<cols><col min="2" max="2" width="20.0" customWidth="1"/><col min="4" max="4" width="8.5" customWidth="1"/></cols>"#))
     }
@@ -371,7 +371,7 @@ struct XLWorksheetFileTests {
             rowByNumber: [:]
         )
 
-        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
 
         #expect(xml.contains(#"<cols><col min="2" max="4" width="8.5" customWidth="1"/><col min="5" max="5" width="12.0" customWidth="1"/></cols>"#))
     }
@@ -392,7 +392,7 @@ struct XLWorksheetFileTests {
             rowByNumber: [:]
         )
 
-        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
 
         #expect(xml.contains(#"<cols><col min="2" max="2" width="20.0" customWidth="0" hidden="1" bestFit="1" outlineLevel="2" collapsed="1" phonetic="1"/></cols>"#))
     }
@@ -407,7 +407,7 @@ struct XLWorksheetFileTests {
             rowByNumber: [:]
         )
 
-        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
 
         #expect(xml.contains(#"<cols><col min="2" max="3" width="20.0" customWidth="1" hidden="1"/><col min="4" max="4" width="20.0" customWidth="1" hidden="0"/></cols>"#))
     }
@@ -422,7 +422,7 @@ struct XLWorksheetFileTests {
             </worksheet>
             """.utf8))
 
-        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
 
         #expect(xml.contains(#"<col min="2" max="2" width="20.0" customWidth="1"/>"#))
     }
@@ -438,7 +438,7 @@ struct XLWorksheetFileTests {
 
         worksheet.column(2).width = 20
 
-        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
 
         let colsRange = try #require(xml.range(of: #"<cols>"#))
         let sheetDataRange = try #require(xml.range(of: #"<sheetData>"#))
@@ -482,7 +482,7 @@ struct XLWorksheetFileTests {
             )
         )
 
-        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
         let sheetDataRange = try #require(xml.range(of: #"<sheetData>"#))
         let dataValidationsRange = try #require(xml.range(of: #"<dataValidations"#))
 
@@ -518,7 +518,7 @@ struct XLWorksheetFileTests {
             )
         )
 
-        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
         let sheetDataRange = try #require(xml.range(of: #"<sheetData>"#))
         let sheetProtectionRange = try #require(xml.range(of: #"<sheetProtection"#))
         let dataValidationsRange = try #require(xml.range(of: #"<dataValidations"#))
@@ -534,7 +534,7 @@ struct XLWorksheetFileTests {
             sheetProtection: XLSheetProtection()
         )
 
-        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
 
         #expect(xml.contains(#"<sheetProtection sheet="1" objects="1" scenarios="1"/>"#))
     }
@@ -542,7 +542,7 @@ struct XLWorksheetFileTests {
     @Test func preservesEmptyDataValidationsTagWhenPresent() throws {
         let worksheet = XLWorksheetFile(rowByNumber: [:], dataValidations: XLDataValidations())
 
-        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
 
         #expect(xml.contains(#"<dataValidations count="0"/>"#))
     }
@@ -556,7 +556,7 @@ struct XLWorksheetFileTests {
             """.utf8))
         worksheet.dataValidations = nil
 
-        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
 
         #expect(!xml.contains(#"<dataValidations"#))
     }
@@ -576,7 +576,7 @@ struct XLWorksheetFileTests {
             ),
         ])
 
-        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
 
         #expect(xml.contains(#"xmlns:mc="urn:custom""#))
         #expect(xml.contains(#"xmlns:mc2="http://schemas.openxmlformats.org/markup-compatibility/2006""#))
@@ -593,7 +593,7 @@ struct XLWorksheetFileTests {
             ]),
         ])
 
-        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
 
         #expect(xml.contains(#"<c r="A1"><v>42</v></c>"#))
         #expect(xml.contains(#"<c r="B1" t="b"><v>0</v></c>"#))
@@ -614,7 +614,7 @@ struct XLWorksheetFileTests {
             ]),
         ])
 
-        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
 
         #expect(xml.contains(#"<c r="A1"><f t="normal">SUM(B1:C1)</f><v>42</v></c>"#))
         #expect(xml.contains(#"<c r="B1" t="str"><f t="normal">TEXT(1,"0")</f><v>cached</v></c>"#))
@@ -667,7 +667,7 @@ struct XLWorksheetFileTests {
             ]),
         ])
 
-        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
 
         #expect(xml.contains(#"<c r="A1"><f t="shared" si="0" ref="A1:A2">B1+C1</f><v>3</v></c>"#))
         #expect(xml.contains(#"<c r="A2"><f t="shared" si="0"/><v>7</v></c>"#))
@@ -683,7 +683,7 @@ struct XLWorksheetFileTests {
             ]),
         ])
 
-        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
 
         #expect(xml.contains(#"<c r="A1"><v>7</v></c>"#))
         #expect(!xml.contains(#"<f"#))
@@ -717,7 +717,7 @@ struct XLWorksheetFileTests {
             Issue.record("Expected dangling shared formula reference to remain in the model.")
         }
 
-        let xml = try String(decoding: worksheet.file.xmlDocument().data, as: UTF8.self)
+        let xml = try String(decoding: worksheet.file.xmlDocument().data(), as: UTF8.self)
         #expect(xml.contains(#"<c r="A1"><f t="normal">B1+C1</f><v>3</v></c>"#))
         #expect(xml.contains(#"<c r="A2"><v>7</v></c>"#))
     }
@@ -729,12 +729,12 @@ struct XLWorksheetFileTests {
         cell.value = .number(7)
 
         cell.formula = .array(xmlString: "<notFormula/>")
-        var xml = try String(decoding: worksheet.file.xmlDocument().data, as: UTF8.self)
+        var xml = try String(decoding: worksheet.file.xmlDocument().data(), as: UTF8.self)
         #expect(xml.contains(#"<c r="A1"><v>7</v></c>"#))
         #expect(!xml.contains(#"<f"#))
 
         cell.formula = .dataTable(xmlString: "<f")
-        xml = try String(decoding: worksheet.file.xmlDocument().data, as: UTF8.self)
+        xml = try String(decoding: worksheet.file.xmlDocument().data(), as: UTF8.self)
         #expect(xml.contains(#"<c r="A1"><v>7</v></c>"#))
         #expect(!xml.contains(#"<f"#))
     }
@@ -748,7 +748,7 @@ struct XLWorksheetFileTests {
             ]),
         ])
 
-        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
 
         #expect(xml.contains(#"<c r="A1"><v>42</v></c>"#))
     }
@@ -858,7 +858,7 @@ struct XLWorksheetFileTests {
 
         worksheet.cell(row: 5, column: 1).value = .string("middle")
 
-        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
 
         let row2Range = try #require(xml.range(of: #"<row r="2""#))
         let row5Range = try #require(xml.range(of: #"<row r="5""#))
@@ -885,7 +885,7 @@ struct XLWorksheetFileTests {
 
         worksheet.cell(row: 2, column: 3).value = .string("middle")
 
-        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
 
         let cellBRange = try #require(xml.range(of: #"<c r="B2""#))
         let cellCRange = try #require(xml.range(of: #"<c r="C2""#))
@@ -1044,7 +1044,7 @@ struct XLWorksheetFileTests {
             """.utf8))
         worksheet.rowByNumber[1]?.cellByColumn[1]?.value = .string("1")
 
-        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
 
         #expect(xml.contains(#"<row r="1" custom="keep">"#))
         #expect(xml.contains(#"<c r="A1"><v>1</v></c>"#))
@@ -1061,7 +1061,7 @@ struct XLWorksheetFileTests {
             </worksheet>
             """.utf8))
 
-        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+        let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
 
         #expect(xml.contains(#"<c r="A1"><v>42</v></c>"#))
     }

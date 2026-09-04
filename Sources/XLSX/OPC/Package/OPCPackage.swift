@@ -139,7 +139,7 @@ public struct OPCPackage: Sendable {
     }
 
     public mutating func insertFile(xmlDocument: XMLDocument, at path: OPCFilePath) throws {
-        try insertFile(data: xmlDocument.data, at: path)
+        try insertFile(data: xmlDocument.data(), at: path)
     }
 
     public mutating func insertXMLFile<File>(

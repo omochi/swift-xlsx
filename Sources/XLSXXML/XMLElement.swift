@@ -62,8 +62,8 @@ public final class XMLElement: XMLNode {
         return serializer.serialize(element: self)
     }
 
-    public var data: Data {
-        Data(xmlString().utf8)
+    public func data(pretty: Bool = false) -> Data {
+        Data(xmlString(pretty: pretty).utf8)
     }
 
     public func attribute(name: String, namespaceURI: XMLNamespaceURI? = nil) -> String? {
