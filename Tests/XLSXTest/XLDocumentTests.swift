@@ -34,6 +34,17 @@ struct XLDocumentTests {
         #expect(sharedStringsXML.contains("<t>A</t>"))
     }
 
+    @Test func opensAndSerializesWorkbookData() throws {
+        let sourceData = try Data(contentsOf: try #require(Bundle.module.url(forResource: "simple", withExtension: "xlsx")))
+
+        let document = try XLDocument(data: sourceData)
+        let serializedData = try document.data()
+        let reopenedDocument = try XLDocument(data: serializedData)
+        let worksheet = try #require(reopenedDocument.workbook.worksheets.first)
+
+        #expect(worksheet.existingCell(row: 1, column: 1)?.value == .string("A"))
+    }
+
     @Test func opensPlainSharedStringCellsAsStringValues() throws {
         let document = try XLDocument.open(url: try #require(Bundle.module.url(forResource: "simple", withExtension: "xlsx")))
         let worksheet = try #require(document.workbook.worksheets.first)
@@ -792,6 +803,7 @@ struct XLDocumentTests {
 
         #expect(row.number == 3)
         #expect(worksheet.maxRowNumber == 3)
+        #expect(worksheet.maxColumnNumber == 2)
         #expect(worksheet.existingRowNumbers == [3])
         #expect(worksheet.existingRows.map(\.number) == [3])
         #expect(worksheet.existingRows.map(\.existingColumnNumbers) == [[2]])
@@ -817,7 +829,7 @@ struct XLDocumentTests {
         worksheet.column(5).width = 8.5
 
         #expect(column.number == 3)
-        #expect(worksheet.maxColumnNumber == 5)
+        #expect(worksheet.maxColumnNumber == nil)
         #expect(worksheet.existingColumnNumbers == [3, 5])
         #expect(worksheet.existingColumns.map(\.number) == [3, 5])
         #expect(worksheet.existingColumns.map(\.width) == [20, 8.5])

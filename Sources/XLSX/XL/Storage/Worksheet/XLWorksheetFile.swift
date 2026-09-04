@@ -48,7 +48,7 @@ public final class XLWorksheetFile {
     public var original: XMLDocument?
 
     public var maxColumnNumber: Int? {
-        columnByNumber.keys.max()
+        rowByNumber.values.compactMap(\.maxColumnNumber).max()
     }
 
     public var maxRowNumber: Int? {

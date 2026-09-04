@@ -76,6 +76,7 @@ struct XLWorksheetFileTests {
         #expect(worksheet.existingRow(2)?.existingCell(column: 4)?.value == .string("right"))
         #expect(worksheet.existingRow(10)?.existingColumnNumbers == [3])
         #expect(worksheet.existingRow(10)?.existingCell(column: 3)?.value == .string("bottom"))
+        #expect(worksheet.maxColumnNumber == 4)
     }
 
     @Test func readsColumnsFromWorksheetXML() throws {
@@ -764,16 +765,20 @@ struct XLWorksheetFileTests {
         #expect(worksheet.existingRows.map(\.cellByColumn.isEmpty) == [true, true])
     }
 
-    @Test func exposesExistingColumnNumbersAndMaxColumnNumberFromWorksheet() {
+    @Test func exposesExistingColumnNumbersFromWorksheetColumnsAndMaxColumnNumberFromCells() {
         let worksheet = XLWorksheetFile(
             columnByNumber: [
                 4: XLColumnStorage(width: 8.5),
                 2: XLColumnStorage(width: 20),
             ],
-            rowByNumber: [:]
+            rowByNumber: [
+                3: XLRowStorage(cellByColumn: [
+                    5: XLCellStorage(value: .string("right")),
+                ]),
+            ]
         )
 
-        #expect(worksheet.maxColumnNumber == 4)
+        #expect(worksheet.maxColumnNumber == 5)
         #expect(worksheet.existingColumnNumbers == [2, 4])
         #expect(worksheet.existingColumnsWithNumber.map(\.0) == [2, 4])
         #expect(worksheet.existingColumns.map(\.width) == [20, 8.5])
@@ -800,7 +805,7 @@ struct XLWorksheetFileTests {
 
         #expect(worksheet.column(3).width == nil)
         #expect(worksheet.existingColumn(3)?.width == nil)
-        #expect(worksheet.maxColumnNumber == 3)
+        #expect(worksheet.maxColumnNumber == nil)
         #expect(worksheet.existingColumnNumbers == [3])
     }
 
