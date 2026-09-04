@@ -108,7 +108,7 @@ The table below lists concrete features rather than broad compatibility levels. 
 | Fonts | Bold, italic, strike, size, name, color | Theme fonts, underline variants, vertical alignment |
 | Fills | Pattern fills, typed colors | Gradient fills, theme color resolution |
 | Borders | Side borders, diagonal borders, line styles | Theme color resolution, advanced border semantics |
-| Cell formats | Cell-level styles, style collection, named cell styles | Conditional formatting, full style inheritance |
+| Cell formats | Cell-level styles, style collection, named cell styles, protection | Conditional formatting, full style inheritance |
 | Data validation | List validation, validation ranges | Full validation option coverage |
 | Package structure | OPC relationships, content types, shared strings, unknown file preservation | Digital signatures, typed APIs for custom XML extensions |
 | Media and objects | - | Images, drawings, charts, pivot tables, tables, slicers |

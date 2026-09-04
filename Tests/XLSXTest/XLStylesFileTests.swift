@@ -78,6 +78,24 @@ struct XLStylesFileTests {
         #expect(format.applyFont)
     }
 
+    @Test func cellFormatUpdatesApplyProtectionWhenProtectionChanges() throws {
+        var format = XLCellFormat()
+
+        format.protection = XLCellFormatProtection(locked: false)
+        #expect(format.applyProtection)
+
+        format.applyProtection = false
+        #expect(!format.applyProtection)
+
+        format.protection = nil
+        #expect(!format.applyProtection)
+
+        format.protection = XLCellFormatProtection(hidden: true)
+        #expect(format.applyProtection)
+
+        #expect(try format.record(styleStorage: XLStyleStorage()).protection == XLCellFormatProtection(hidden: true))
+    }
+
     @Test func cellStyleFormatRefSharesCellFormatStorage() {
         let styleFormat = XLCellStyleFormatRef(numberFormat: .builtin(id: 14))
         var copy = styleFormat
@@ -514,7 +532,9 @@ struct XLStylesFileTests {
             <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
               <cellXfs count="2">
                 <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
-                <xf numFmtId="14" fontId="1" fillId="2" borderId="3" xfId="4" applyNumberFormat="1" applyFont="0"/>
+                <xf numFmtId="14" fontId="1" fillId="2" borderId="3" xfId="4" applyNumberFormat="1" applyFont="0">
+                  <protection locked="0" hidden="1"/>
+                </xf>
               </cellXfs>
             </styleSheet>
             """.utf8))
@@ -533,8 +553,27 @@ struct XLStylesFileTests {
                 fillID: 2,
                 borderID: 3,
                 styleFormatID: 4,
+                protection: XLCellFormatProtection(locked: false, hidden: true),
                 applyNumberFormat: true,
-                applyFont: false
+                applyFont: false,
+                applyProtection: true
+            ),
+        ])
+    }
+
+    @Test func readsDefaultCellFormatProtectionValues() throws {
+        let styleStorage = try styleStorage(data: Data("""
+            <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+              <cellXfs count="1">
+                <xf><protection/></xf>
+              </cellXfs>
+            </styleSheet>
+            """.utf8))
+
+        #expect(Array(styleStorage.cellFormats) == [
+            XLCellFormatRecord(
+                protection: XLCellFormatProtection(),
+                applyProtection: true
             ),
         ])
     }
@@ -635,6 +674,29 @@ struct XLStylesFileTests {
         #expect(xml.contains(#"<xf numFmtId="164" fontId="1" fillId="2" borderId="3" xfId="0" applyNumberFormat="1" applyFont="1"/>"#))
         #expect(xml.contains(#"<xf xfId="0"/>"#))
         #expect(!xml.contains(#"applyProtection="0""#))
+    }
+
+    @Test func writesCellFormatProtection() throws {
+        let parsed = try stylesAndStyleStorage(data: Data("""
+            <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+              <cellXfs count="1">
+                <xf numFmtId="0"/>
+              </cellXfs>
+            </styleSheet>
+            """.utf8))
+        let styles = parsed.styles
+        var styleStorage = parsed.styleStorage
+
+        styleStorage.cellFormats = OrderedSet<XLCellFormatRecord>([
+            XLCellFormatRecord(protection: XLCellFormatProtection(locked: false)),
+            XLCellFormatRecord(protection: XLCellFormatProtection(hidden: true)),
+        ])
+
+        let xml = try String(decoding: styles.xmlDocument(styleStorage: styleStorage).data, as: UTF8.self)
+
+        #expect(xml.contains(#"<cellXfs count="2">"#))
+        #expect(xml.contains(#"<xf applyProtection="1"><protection locked="0"/></xf>"#))
+        #expect(xml.contains(#"<xf applyProtection="1"><protection hidden="1"/></xf>"#))
     }
 
     @Test func patchesCellStyleFormatsWithoutRemovingOtherStyleChildren() throws {
