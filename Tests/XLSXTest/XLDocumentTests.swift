@@ -761,6 +761,23 @@ struct XLDocumentTests {
         #expect(document.package.workbook.file.sheets[0].name == "Renamed")
     }
 
+    @Test func worksheetStateUsesWorkbookSheetEntry() throws {
+        let document = XLDocument()
+        let worksheet = try #require(document.workbook.worksheets.first)
+
+        #expect(worksheet.state == .visible)
+
+        worksheet.state = .hidden
+
+        #expect(document.package.workbook.file.sheets[0].state == .hidden)
+        let package = try OPCPackage(data: document.data())
+        let workbookXML = try String(
+            decoding: #require(package.data(at: OPCFilePath(string: "/xl/workbook.xml"))),
+            as: UTF8.self
+        )
+        #expect(workbookXML.contains(#"<sheet name="Sheet1" sheetId="1" r:id="rId1" state="hidden"/>"#))
+    }
+
     @Test func worksheetExposesDataValidationThroughFile() throws {
         let document = XLDocument()
         let worksheet = try #require(document.workbook.worksheets.first)

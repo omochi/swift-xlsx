@@ -15,6 +15,15 @@ public struct XLWorksheet {
         }
     }
 
+    public var state: XLSheetState {
+        get {
+            package.workbook.file.sheets[sheetIndex].state
+        }
+        nonmutating set {
+            package.workbook.file.sheets[sheetIndex].state = newValue
+        }
+    }
+
     public var dataValidation: XLDataValidations? {
         get {
             file.dataValidations

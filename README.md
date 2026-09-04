@@ -46,9 +46,9 @@ swift run xlsx-tool example-documents temp
 open temp/example.xlsx
 ```
 
-The code that creates this sample is in [`Sources/XLSXExamples/XLExampleDocuments.swift`](Sources/XLSXExamples/XLExampleDocuments.swift). It writes sheets for formulas, column widths, number formats, fonts, fills, borders, data validation, and password-protected sheet protection.
+The code that creates this sample is in [`Sources/XLSXExamples/XLExampleDocuments.swift`](Sources/XLSXExamples/XLExampleDocuments.swift). It writes sheets for formulas, column widths, number formats, fonts, fills, borders, data validation, password-protected sheet protection, and hidden sheet state.
 
-このサンプルを生成しているコードは [`Sources/XLSXExamples/XLExampleDocuments.swift`](Sources/XLSXExamples/XLExampleDocuments.swift) にあります。数式、列幅、数値形式、フォント、塗りつぶし、罫線、データ validation、パスワード付き sheet protection の sheet を生成します。
+このサンプルを生成しているコードは [`Sources/XLSXExamples/XLExampleDocuments.swift`](Sources/XLSXExamples/XLExampleDocuments.swift) にあります。数式、列幅、数値形式、フォント、塗りつぶし、罫線、データ validation、パスワード付き sheet protection、シートの非表示状態の sheet を生成します。
 
 ## Quick Start
 
@@ -100,7 +100,7 @@ The table below lists concrete features rather than broad compatibility levels. 
 | Area | Supported | Not Supported |
 | --- | --- | --- |
 | Workbooks | Create, open, save | Calculation engine, encryption, macros |
-| Worksheets | Add, remove, rename, read existing sheets | Chartsheets, dialog sheets |
+| Worksheets | Add, remove, rename, hide sheets, read existing sheets | Chartsheets, dialog sheets |
 | Cells | Strings, numbers, booleans, dates, formulas, cached formula values | Rich text editing, comments, hyperlinks |
 | Rows | Sparse row and cell storage | Row heights, grouping, hidden rows |
 | Columns | Column widths, column styles | Grouping, hidden columns |

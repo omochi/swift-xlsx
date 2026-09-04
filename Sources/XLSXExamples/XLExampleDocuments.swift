@@ -27,6 +27,7 @@ public enum XLExampleDocuments {
         writeBorderExamples(to: try document.workbook.appendWorksheet(name: "border"))
         writeDataValidationExamples(to: try document.workbook.appendWorksheet(name: "data validation"))
         writePasswordProtectionExamples(to: try document.workbook.appendWorksheet(name: "password"))
+        writeHiddenSheetExamples(to: try document.workbook.appendWorksheet(name: "hidden"))
         return document
     }
 
@@ -176,5 +177,10 @@ public enum XLExampleDocuments {
                 salt: Data("swift-xlsx-salt!".utf8)
             )
         )
+    }
+
+    private static func writeHiddenSheetExamples(to worksheet: XLWorksheet) {
+        worksheet.cell(row: 1, column: 1).value = .string("hidden")
+        worksheet.state = .hidden
     }
 }

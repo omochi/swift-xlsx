@@ -18,11 +18,13 @@ public struct XLWorkbookFileSheet: Sendable & Hashable {
         self.name = name
         self.sheetID = sheetID
         self.relationshipID = relationshipID
+        self.state = XLSheetState(element: element)
     }
 
     public var name: String
     public var sheetID: Int
     public var relationshipID: String
+    public var state: XLSheetState = .visible
 
     public func write(to element: XMLElement) throws {
         element.setAttribute(name: "name", value: name)
@@ -32,5 +34,6 @@ public struct XLWorkbookFileSheet: Sendable & Hashable {
             name: "id",
             value: relationshipID
         )
+        state.write(to: element)
     }
 }

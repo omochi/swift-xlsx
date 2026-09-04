@@ -10,14 +10,14 @@ struct XLWorkbookFileTests {
             <workbook xmlns="\(XMLNamespaceURI.spreadsheet.string)" xmlns:rel="\(XMLNamespaceURI.officeRelationships.string)">
               <sheets>
                 <sheet name="First" sheetId="1" rel:id="rId1"/>
-                <sheet name="Second" sheetId="4" rel:id="rId7"/>
+                <sheet name="Second" sheetId="4" rel:id="rId7" state="hidden"/>
               </sheets>
             </workbook>
             """.utf8))
 
         #expect(workbook.sheets == [
             XLWorkbookFileSheet(name: "First", sheetID: 1, relationshipID: "rId1"),
-            XLWorkbookFileSheet(name: "Second", sheetID: 4, relationshipID: "rId7"),
+            XLWorkbookFileSheet(name: "Second", sheetID: 4, relationshipID: "rId7", state: .hidden),
         ])
     }
 
@@ -33,6 +33,20 @@ struct XLWorkbookFileTests {
         #expect(xml.contains(#"<sheet name="Second" sheetId="4" r:id="rId7"/>"#))
     }
 
+    @Test func writesHiddenSheetStateOnlyWhenNotVisible() throws {
+        let workbook = XLWorkbookFile(sheets: [
+            XLWorkbookFileSheet(name: "Visible", sheetID: 1, relationshipID: "rId1"),
+            XLWorkbookFileSheet(name: "Hidden", sheetID: 2, relationshipID: "rId2", state: .hidden),
+            XLWorkbookFileSheet(name: "VeryHidden", sheetID: 3, relationshipID: "rId3", state: .veryHidden),
+        ])
+
+        let xml = try String(decoding: workbook.xmlDocument().data, as: UTF8.self)
+
+        #expect(xml.contains(#"<sheet name="Visible" sheetId="1" r:id="rId1"/>"#))
+        #expect(xml.contains(#"<sheet name="Hidden" sheetId="2" r:id="rId2" state="hidden"/>"#))
+        #expect(xml.contains(#"<sheet name="VeryHidden" sheetId="3" r:id="rId3" state="veryHidden"/>"#))
+    }
+
     @Test func patchesKnownSheetElementsWithoutRemovingUnknownContent() throws {
         let workbook = try workbookFile(data: Data("""
             <workbook xmlns="\(XMLNamespaceURI.spreadsheet.string)" xmlns:rel="\(XMLNamespaceURI.officeRelationships.string)">
@@ -43,7 +57,7 @@ struct XLWorkbookFileTests {
             </workbook>
             """.utf8))
         workbook.sheets = [
-            XLWorkbookFileSheet(name: "New", sheetID: 1, relationshipID: "rId1"),
+            XLWorkbookFileSheet(name: "New", sheetID: 1, relationshipID: "rId1", state: .hidden),
             XLWorkbookFileSheet(name: "Added", sheetID: 2, relationshipID: "rId2"),
         ]
 
