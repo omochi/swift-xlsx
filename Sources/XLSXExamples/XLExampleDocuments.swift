@@ -1,3 +1,4 @@
+import struct Foundation.Data
 import XLSX
 
 public enum XLExampleDocuments {
@@ -25,6 +26,7 @@ public enum XLExampleDocuments {
         writeFillExamples(to: try document.workbook.appendWorksheet(name: "fill"))
         writeBorderExamples(to: try document.workbook.appendWorksheet(name: "border"))
         writeDataValidationExamples(to: try document.workbook.appendWorksheet(name: "data validation"))
+        writePasswordProtectionExamples(to: try document.workbook.appendWorksheet(name: "password"))
         return document
     }
 
@@ -161,6 +163,18 @@ public enum XLExampleDocuments {
                     formula1: "$A$1:$A$3"
                 ),
             ]
+        )
+    }
+
+    private static func writePasswordProtectionExamples(to worksheet: XLWorksheet) {
+        worksheet.cell(row: 1, column: 1).value = .string("password:")
+        worksheet.cell(row: 1, column: 2).value = .string("swift-xlsx")
+        worksheet.sheetProtection = XLSheetProtection(
+            passwordHashInfo: XLSheetProtection.PasswordHashInfo.generate(
+                password: "swift-xlsx",
+                algorithm: .sha512,
+                salt: Data("swift-xlsx-salt!".utf8)
+            )
         )
     }
 }

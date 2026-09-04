@@ -6,19 +6,22 @@ public final class XLWorksheetFile {
         self.original = nil
         self.columnByNumber = [:]
         self.rowByNumber = [:]
-        self.dataValidations = XLDataValidations()
+        self.sheetProtection = nil
+        self.dataValidations = nil
         self.mcIgnorable = ""
     }
 
     public init(
         columnByNumber: [Int: XLColumnStorage] = [:],
         rowByNumber: [Int: XLRowStorage],
-        dataValidations: XLDataValidations = XLDataValidations(),
+        sheetProtection: XLSheetProtection? = nil,
+        dataValidations: XLDataValidations? = nil,
         mcIgnorable: String? = ""
     ) {
         self.original = nil
         self.columnByNumber = columnByNumber
         self.rowByNumber = rowByNumber
+        self.sheetProtection = sheetProtection
         self.dataValidations = dataValidations
         self.mcIgnorable = mcIgnorable
     }
@@ -37,13 +40,15 @@ public final class XLWorksheetFile {
         self.original = xmlDocument
         self.columnByNumber = Self.columns(in: xmlDocument, styleStorage: styleStorage)
         self.rowByNumber = rowByNumber
+        self.sheetProtection = Self.sheetProtection(in: xmlDocument)
         self.dataValidations = Self.dataValidations(in: xmlDocument)
         self.mcIgnorable = ""
     }
 
     public var columnByNumber: [Int: XLColumnStorage]
     public var rowByNumber: [Int: XLRowStorage]
-    public var dataValidations: XLDataValidations
+    public var sheetProtection: XLSheetProtection?
+    public var dataValidations: XLDataValidations?
     public var mcIgnorable: String?
     public var original: XMLDocument?
 
@@ -144,6 +149,7 @@ public final class XLWorksheetFile {
             sharedStringStorage: sharedStringStorage,
             styleStorage: styleStorage
         )
+        writeSheetProtection(to: worksheetElement)
         writeDataValidations(to: worksheetElement)
         return document
     }
@@ -176,6 +182,7 @@ public final class XLWorksheetFile {
             rowByNumber: rowByNumber.mapValues { row in
                 row.clone()
             },
+            sheetProtection: sheetProtection,
             dataValidations: dataValidations,
             mcIgnorable: mcIgnorable
         )
@@ -183,11 +190,21 @@ public final class XLWorksheetFile {
         return file
     }
 
-    private static func dataValidations(in document: XMLDocument) -> XLDataValidations {
+    private static func sheetProtection(in document: XMLDocument) -> XLSheetProtection? {
+        guard let worksheetElement = document.element(name: "worksheet"),
+              let sheetProtectionElement = worksheetElement.elements(name: "sheetProtection").first
+        else {
+            return nil
+        }
+
+        return XLSheetProtection(element: sheetProtectionElement)
+    }
+
+    private static func dataValidations(in document: XMLDocument) -> XLDataValidations? {
         guard let worksheetElement = document.element(name: "worksheet"),
               let dataValidationsElement = worksheetElement.elements(name: "dataValidations").first
         else {
-            return XLDataValidations()
+            return nil
         }
 
         return XLDataValidations(xmlElement: dataValidationsElement)
@@ -448,6 +465,25 @@ public final class XLWorksheetFile {
         )
     }
 
+    private func writeSheetProtection(to worksheetElement: XMLElement) {
+        var children = worksheetElement.children.filter { child in
+            guard let element = child as? XMLElement else {
+                return true
+            }
+            return element.name.name != "sheetProtection"
+        }
+
+        guard let sheetProtection else {
+            worksheetElement.children = children
+            return
+        }
+
+        let element = XMLElement(name: XMLName(name: "sheetProtection"))
+        sheetProtection.write(to: element)
+        children.insert(element, at: worksheetChildInsertionIndex(name: "sheetProtection", in: children))
+        worksheetElement.children = children
+    }
+
     private func writeDataValidations(to worksheetElement: XMLElement) {
         var children = worksheetElement.children.filter { child in
             guard let element = child as? XMLElement else {
@@ -456,27 +492,76 @@ public final class XLWorksheetFile {
             return element.name.name != "dataValidations"
         }
 
-        guard !dataValidations.isEmpty else {
+        guard let dataValidations else {
             worksheetElement.children = children
             return
         }
 
         let element = XMLElement(name: XMLName(name: "dataValidations"))
         dataValidations.write(to: element)
-        children.insert(element, at: dataValidationsInsertionIndex(in: children))
+        children.insert(element, at: worksheetChildInsertionIndex(name: "dataValidations", in: children))
         worksheetElement.children = children
     }
 
-    private func dataValidationsInsertionIndex(in children: [XMLNode]) -> Int {
-        guard let sheetDataIndex = children.firstIndex(where: { child in
-            guard let element = child as? XMLElement else {
-                return false
-            }
-            return element.name.name == "sheetData"
-        }) else {
+    private func worksheetChildInsertionIndex(name: String, in children: [XMLNode]) -> Int {
+        guard let order = Self.worksheetChildOrderByName[name] else {
             return children.endIndex
         }
 
-        return children.index(after: sheetDataIndex)
+        return children.firstIndex { child in
+            guard let childElement = child as? XMLElement,
+                  let childOrder = Self.worksheetChildOrderByName[childElement.name.name]
+            else {
+                return false
+            }
+            return childOrder > order
+        } ?? children.endIndex
     }
+
+    private static let worksheetChildOrderNames: [String] = [
+        "sheetPr",
+        "dimension",
+        "sheetViews",
+        "sheetFormatPr",
+        "cols",
+        "sheetData",
+        "sheetCalcPr",
+        "sheetProtection",
+        "protectedRanges",
+        "scenarios",
+        "autoFilter",
+        "sortState",
+        "dataConsolidate",
+        "customSheetViews",
+        "mergeCells",
+        "phoneticPr",
+        "conditionalFormatting",
+        "dataValidations",
+        "hyperlinks",
+        "printOptions",
+        "pageMargins",
+        "pageSetup",
+        "headerFooter",
+        "rowBreaks",
+        "colBreaks",
+        "customProperties",
+        "cellWatches",
+        "ignoredErrors",
+        "smartTags",
+        "drawing",
+        "legacyDrawing",
+        "legacyDrawingHF",
+        "picture",
+        "oleObjects",
+        "controls",
+        "webPublishItems",
+        "tableParts",
+        "extLst",
+    ]
+
+    private static let worksheetChildOrderByName: [String: Int] = Dictionary(
+        uniqueKeysWithValues: worksheetChildOrderNames.enumerated().map { nameIndex, name in
+            (name, nameIndex)
+        }
+    )
 }

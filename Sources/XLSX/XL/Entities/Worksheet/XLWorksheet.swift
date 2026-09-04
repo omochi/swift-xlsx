@@ -15,12 +15,21 @@ public struct XLWorksheet {
         }
     }
 
-    public var dataValidation: XLDataValidations {
+    public var dataValidation: XLDataValidations? {
         get {
             file.dataValidations
         }
         nonmutating set {
             file.dataValidations = newValue
+        }
+    }
+
+    public var sheetProtection: XLSheetProtection? {
+        get {
+            file.sheetProtection
+        }
+        nonmutating set {
+            file.sheetProtection = newValue
         }
     }
 

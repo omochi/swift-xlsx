@@ -139,12 +139,13 @@ struct XLWorksheetFileTests {
               </dataValidations>
             </worksheet>
             """.utf8))
-        let validation = try #require(worksheet.dataValidations.validations.first)
+        let dataValidations = try #require(worksheet.dataValidations)
+        let validation = try #require(dataValidations.validations.first)
 
         #expect(worksheet.mcIgnorable == "")
-        #expect(worksheet.dataValidations.disablePrompts == true)
-        #expect(worksheet.dataValidations.xWindow == 20)
-        #expect(worksheet.dataValidations.yWindow == 30)
+        #expect(dataValidations.disablePrompts == true)
+        #expect(dataValidations.xWindow == 20)
+        #expect(dataValidations.yWindow == 30)
         #expect(validation.validationType == .whole)
         #expect(validation.validationOperator == .between)
         #expect(validation.errorStyle == .warning)
@@ -160,6 +161,67 @@ struct XLWorksheetFileTests {
         #expect(validation.address == XLCellRangeAddressList("B2:B10 D2"))
         #expect(validation.formula1 == "1")
         #expect(validation.formula2 == "10")
+    }
+
+    @Test func readsSheetProtectionFromWorksheetXML() throws {
+        let worksheet = try worksheetFile(data: Data("""
+            <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
+              <sheetData/>
+              <sheetProtection sheet="1" objects="1" scenarios="1" formatCells="0" formatColumns="1" formatRows="1" insertColumns="1" insertRows="1" insertHyperlinks="1" deleteColumns="1" deleteRows="1" selectLockedCells="0" selectUnlockedCells="0" sort="1" autoFilter="1" pivotTables="1" algorithmName="SHA-512" hashValue="aGFzaA==" saltValue="c2FsdA==" spinCount="100000"/>
+            </worksheet>
+            """.utf8))
+        let sheetProtection = try #require(worksheet.sheetProtection)
+
+        #expect(sheetProtection.sheet == true)
+        #expect(sheetProtection.objects == true)
+        #expect(sheetProtection.scenarios == true)
+        #expect(sheetProtection.formatCells == false)
+        #expect(sheetProtection.formatColumns == true)
+        #expect(sheetProtection.formatRows == true)
+        #expect(sheetProtection.insertColumns == true)
+        #expect(sheetProtection.insertRows == true)
+        #expect(sheetProtection.insertHyperlinks == true)
+        #expect(sheetProtection.deleteColumns == true)
+        #expect(sheetProtection.deleteRows == true)
+        #expect(sheetProtection.selectLockedCells == false)
+        #expect(sheetProtection.selectUnlockedCells == false)
+        #expect(sheetProtection.sort == true)
+        #expect(sheetProtection.autoFilter == true)
+        #expect(sheetProtection.pivotTables == true)
+        #expect(sheetProtection.passwordHashInfo.algorithmName == "SHA-512")
+        #expect(sheetProtection.passwordHashInfo.hashValue == Data("hash".utf8))
+        #expect(sheetProtection.passwordHashInfo.saltValue == Data("salt".utf8))
+        #expect(sheetProtection.passwordHashInfo.spinCount == "100000")
+    }
+
+    @Test func generatesSheetProtectionPasswordHashInfo() throws {
+        let hashInfo = XLSheetProtection.PasswordHashInfo.generate(
+            password: "password",
+            algorithm: .sha512,
+            spinCount: 1,
+            salt: Data("salt".utf8)
+        )
+        let expectedHashValue = try #require(Data(base64Encoded: "mNy2XXKqVQVF5I/SRFsfJ3++HhCzl4z2DaWuDNM5XmXUcFnhFNjslZbPz+iFXnsRfXPaa4t/27P6/aanPZXC2A=="))
+
+        #expect(hashInfo.algorithmName == "SHA-512")
+        #expect(hashInfo.hashValue == expectedHashValue)
+        #expect(hashInfo.saltValue == Data("salt".utf8))
+        #expect(hashInfo.spinCount == "1")
+    }
+
+    @Test func generatesSheetProtectionPasswordHashInfoWithDefaultSaltAndSpinCount() throws {
+        let hashInfo = XLSheetProtection.PasswordHashInfo.generate(password: "password", algorithm: .sha512)
+
+        #expect(hashInfo.algorithmName == "SHA-512")
+        #expect(hashInfo.hashValue?.count == 64)
+        #expect(hashInfo.saltValue?.count == 16)
+        #expect(hashInfo.spinCount == "100000")
+    }
+
+    @Test func generatesRandomSheetProtectionSalt() {
+        let salt = XLSheetProtection.PasswordHashInfo.randomSalt()
+
+        #expect(salt.count == 16)
     }
 
     @Test func readsColumnAttributesFromWorksheetXML() throws {
@@ -432,6 +494,73 @@ struct XLWorksheetFileTests {
         #expect(xml.contains(#"<dataValidation sqref="B2:B10 D2" type="whole" operator="between" errorStyle="warning" imeMode="hiragana" allowBlank="1" showDropDown="0" showInputMessage="1" showErrorMessage="1" errorTitle="Error title" error="Error text" promptTitle="Prompt title" prompt="Prompt text"><formula1>1</formula1><formula2>10</formula2></dataValidation>"#))
     }
 
+    @Test func writesSheetProtectionAfterSheetDataBeforeDataValidations() throws {
+        let worksheet = XLWorksheetFile(
+            rowByNumber: [
+                1: XLRowStorage(cellByColumn: [
+                    1: XLCellStorage(value: .string("value")),
+                ]),
+            ],
+            sheetProtection: XLSheetProtection(
+                formatCells: false,
+                password: "ABCD",
+                passwordHashInfo: XLSheetProtection.PasswordHashInfo(
+                    algorithmName: "SHA-512",
+                    hashValue: Data("hash".utf8),
+                    saltValue: Data("salt".utf8),
+                    spinCount: "100000"
+                )
+            ),
+            dataValidations: XLDataValidations(
+                validations: [
+                    XLDataValidation(address: XLCellRangeAddressList("B2:B10")),
+                ]
+            )
+        )
+
+        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+        let sheetDataRange = try #require(xml.range(of: #"<sheetData>"#))
+        let sheetProtectionRange = try #require(xml.range(of: #"<sheetProtection"#))
+        let dataValidationsRange = try #require(xml.range(of: #"<dataValidations"#))
+
+        #expect(sheetDataRange.lowerBound < sheetProtectionRange.lowerBound)
+        #expect(sheetProtectionRange.lowerBound < dataValidationsRange.lowerBound)
+        #expect(xml.contains(#"<sheetProtection sheet="1" objects="1" scenarios="1" formatCells="0" password="ABCD" algorithmName="SHA-512" hashValue="aGFzaA==" saltValue="c2FsdA==" spinCount="100000"/>"#))
+    }
+
+    @Test func writesDefaultSheetProtectionWithRequiredAttributes() throws {
+        let worksheet = XLWorksheetFile(
+            rowByNumber: [:],
+            sheetProtection: XLSheetProtection()
+        )
+
+        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+
+        #expect(xml.contains(#"<sheetProtection sheet="1" objects="1" scenarios="1"/>"#))
+    }
+
+    @Test func preservesEmptyDataValidationsTagWhenPresent() throws {
+        let worksheet = XLWorksheetFile(rowByNumber: [:], dataValidations: XLDataValidations())
+
+        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+
+        #expect(xml.contains(#"<dataValidations count="0"/>"#))
+    }
+
+    @Test func removesDataValidationsTagWhenNil() throws {
+        let worksheet = try worksheetFile(data: Data("""
+            <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
+              <sheetData/>
+              <dataValidations count="0"/>
+            </worksheet>
+            """.utf8))
+        worksheet.dataValidations = nil
+
+        let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
+
+        #expect(!xml.contains(#"<dataValidations"#))
+    }
+
     @Test func writesMarkupCompatibilityIgnorableWithResolvedPrefix() throws {
         let worksheet = try worksheetFile(data: Data("""
             <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)"
@@ -439,13 +568,13 @@ struct XLWorksheetFileTests {
               <sheetData/>
             </worksheet>
             """.utf8))
-        worksheet.dataValidations.validations = [
+        worksheet.dataValidations = XLDataValidations(validations: [
             XLDataValidation(
                 address: XLCellRangeAddressList([XLCellRangeAddress("A1")!]),
                 validationType: .list,
                 formula1: #""A,B""#
             ),
-        ]
+        ])
 
         let xml = try String(decoding: worksheet.xmlDocument().data, as: UTF8.self)
 

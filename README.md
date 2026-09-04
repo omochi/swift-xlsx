@@ -1,8 +1,8 @@
 # swift-xlsx
 
-`swift-xlsx` is a Swift library for reading, editing, and writing `.xlsx` files. It focuses on the OOXML spreadsheet format, the OPC package structure underneath it, and a small Swift API for workbook, worksheet, cell, formula, style, and validation data.
+`swift-xlsx` is a Swift library for reading, editing, and writing `.xlsx` files. It focuses on the OOXML spreadsheet format, the OPC package structure underneath it, and a small Swift API for workbook, worksheet, cell, formula, style, validation, and protection data.
 
-`swift-xlsx` は `.xlsx` ファイルを読み書きするための Swift ライブラリです。OOXML の spreadsheet 形式、その下にある OPC package 構造、そして workbook / worksheet / cell / formula / style / validation を扱う小さな Swift API に焦点を当てています。
+`swift-xlsx` は `.xlsx` ファイルを読み書きするための Swift ライブラリです。OOXML の spreadsheet 形式、その下にある OPC package 構造、そして workbook / worksheet / cell / formula / style / validation / protection を扱う小さな Swift API に焦点を当てています。
 
 The project is still early, but it already aims to be useful as a library: examples are generated from real Swift code, package parts are preserved where possible, and the XML/OPC layers are kept visible enough to make the implementation debuggable.
 
@@ -46,9 +46,9 @@ swift run xlsx-tool example-documents temp
 open temp/example.xlsx
 ```
 
-The code that creates this sample is in [`Sources/XLSXExamples/XLExampleDocuments.swift`](Sources/XLSXExamples/XLExampleDocuments.swift). It writes sheets for formulas, column widths, number formats, fonts, fills, borders, and data validation.
+The code that creates this sample is in [`Sources/XLSXExamples/XLExampleDocuments.swift`](Sources/XLSXExamples/XLExampleDocuments.swift). It writes sheets for formulas, column widths, number formats, fonts, fills, borders, data validation, and password-protected sheet protection.
 
-このサンプルを生成しているコードは [`Sources/XLSXExamples/XLExampleDocuments.swift`](Sources/XLSXExamples/XLExampleDocuments.swift) にあります。数式、列幅、数値形式、フォント、塗りつぶし、罫線、データ validation の sheet を生成します。
+このサンプルを生成しているコードは [`Sources/XLSXExamples/XLExampleDocuments.swift`](Sources/XLSXExamples/XLExampleDocuments.swift) にあります。数式、列幅、数値形式、フォント、塗りつぶし、罫線、データ validation、パスワード付き sheet protection の sheet を生成します。
 
 ## Quick Start
 
@@ -110,6 +110,7 @@ The table below lists concrete features rather than broad compatibility levels. 
 | Borders | Side borders, diagonal borders, line styles | Theme color resolution, advanced border semantics |
 | Cell formats | Cell-level styles, style collection, named cell styles, protection | Conditional formatting, full style inheritance |
 | Data validation | List validation, validation ranges | Full validation option coverage |
+| Sheet protection | Sheet protection flags, password hash info, SHA-512 password hash generation | Workbook protection, legacy password hash generation |
 | Package structure | OPC relationships, content types, shared strings, unknown file preservation | Digital signatures, typed APIs for custom XML extensions |
 | Media and objects | - | Images, drawings, charts, pivot tables, tables, slicers |
 

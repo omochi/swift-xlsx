@@ -34,4 +34,7 @@
     <Override
         PartName="/xl/worksheets/sheet7.xml"
         ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+    <Override
+        PartName="/xl/worksheets/sheet8.xml"
+        ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
 </Types>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="51" uniqueCount="51">
+<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="53" uniqueCount="53">
     <si>
         <t>sum→</t>
     </si>
@@ -152,5 +152,11 @@
     </si>
     <si>
         <t>Cherry</t>
+    </si>
+    <si>
+        <t>password:</t>
+    </si>
+    <si>
+        <t>swift-xlsx</t>
     </si>
 </sst>

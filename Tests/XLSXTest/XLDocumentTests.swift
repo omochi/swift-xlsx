@@ -779,7 +779,23 @@ struct XLDocumentTests {
         )
 
         #expect(worksheet.file.dataValidations == worksheet.dataValidation)
-        #expect(worksheet.file.dataValidations.validations.first?.address?.description == "B2:B10")
+        #expect(worksheet.file.dataValidations?.validations.first?.address?.description == "B2:B10")
+    }
+
+    @Test func worksheetExposesSheetProtectionThroughFile() throws {
+        let document = XLDocument()
+        let worksheet = try #require(document.workbook.worksheets.first)
+
+        worksheet.sheetProtection = XLSheetProtection(
+            formatCells: false,
+            passwordHashInfo: XLSheetProtection.PasswordHashInfo(algorithmName: "SHA-512")
+        )
+
+        #expect(worksheet.file.sheetProtection == worksheet.sheetProtection)
+        #expect(worksheet.file.sheetProtection?.formatCells == false)
+        #expect(worksheet.file.sheetProtection?.selectLockedCells == false)
+        #expect(worksheet.file.sheetProtection?.selectUnlockedCells == false)
+        #expect(worksheet.file.sheetProtection?.passwordHashInfo.algorithmName == "SHA-512")
     }
 
     @Test func workbookWorksheetsShareWorksheetFileInstances() throws {

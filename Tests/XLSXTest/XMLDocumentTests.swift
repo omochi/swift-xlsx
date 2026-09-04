@@ -395,6 +395,12 @@ struct XMLDocumentTests {
         XMLUtils.setBoolAttribute(name: "enabled", value: Optional<Bool>.none, in: element)
         #expect(element.attribute(name: "enabled") == nil)
 
+        XMLUtils.setBoolAttribute(name: "enabled", value: true, default: true, in: element)
+        #expect(element.attribute(name: "enabled") == nil)
+
+        XMLUtils.setBoolAttribute(name: "enabled", value: false, default: true, in: element)
+        #expect(element.attribute(name: "enabled") == XMLUtils.boolString(value: false))
+
         XMLUtils.setIntAttribute(name: "count", value: 1, in: element)
         #expect(element.attribute(name: "count") == "1")
 
