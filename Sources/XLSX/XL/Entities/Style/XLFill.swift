@@ -78,9 +78,9 @@ public enum XLFill: Sendable & Hashable {
         let element = XMLElement(name: XMLName(name: "fill"))
 
         switch self {
-        case let .pattern(pattern):
+        case .pattern(let pattern):
             element.appendChild(pattern.xmlElement())
-        case let .gradient(xmlString):
+        case .gradient(let xmlString):
             element.appendChild(try XMLElement(xmlString: xmlString))
         }
 

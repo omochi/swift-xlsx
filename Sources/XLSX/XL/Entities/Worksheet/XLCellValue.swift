@@ -9,28 +9,29 @@ import XLSXXML
 public enum XLCellValue: Sendable & Hashable & CustomStringConvertible {
     case number(Double)
     case boolean(Bool)
-    case string(String)
+    case text(XLText)
     case error(String)
-    case opaqueSharedString(xmlString: String)
+
+    public static func text(_ string: String) -> XLCellValue {
+        .text(XLText(string))
+    }
 
     public var description: String {
         switch self {
-        case let .number(value):
+        case .number(let value):
             return Self.numberString(value: value)
-        case let .boolean(value):
+        case .boolean(let value):
             return Self.booleanString(value: value)
-        case let .string(text):
-            return text
-        case let .error(value):
+        case .text(let text):
+            return text.string
+        case .error(let value):
             return value
-        case let .opaqueSharedString(xmlString):
-            return xmlString
         }
     }
 
     public var number: Double? {
         switch self {
-        case let .number(value):
+        case .number(let value):
             return value
         default:
             return nil
@@ -39,7 +40,7 @@ public enum XLCellValue: Sendable & Hashable & CustomStringConvertible {
 
     public var date: Date? {
         switch self {
-        case let .number(value):
+        case .number(let value):
             return Self.dateValue(number: value)
         default:
             return nil
@@ -48,35 +49,24 @@ public enum XLCellValue: Sendable & Hashable & CustomStringConvertible {
 
     public var boolean: Bool? {
         switch self {
-        case let .boolean(value):
+        case .boolean(let value):
             return value
         default:
             return nil
         }
     }
 
-    public var string: String? {
+    public var text: XLText? {
         switch self {
-        case let .string(value):
-            return value
-        default:
-            return nil
+        case .text(let value): return value
+        default: return nil
         }
     }
 
     public var error: String? {
         switch self {
-        case let .error(value):
+        case .error(let value):
             return value
-        default:
-            return nil
-        }
-    }
-
-    public var opaqueSharedString: String? {
-        switch self {
-        case let .opaqueSharedString(xmlString):
-            return xmlString
         default:
             return nil
         }
@@ -88,14 +78,14 @@ public enum XLCellValue: Sendable & Hashable & CustomStringConvertible {
 
     public init?(
         cellElement: XMLElement,
-        sharedStringStorage: OrderedSet<XLSharedStringRecord>? = nil
+        sharedStringStorage: OrderedSet<XLText>? = nil
     ) {
         let cellType = cellElement.attribute(name: "t")
         if cellType == "inlineStr" {
             guard let inlineStringElement = cellElement.elements(name: "is").first else {
                 return nil
             }
-            self = .string(Self.textContent(in: inlineStringElement))
+            self = .text(XLText(element: inlineStringElement))
             return
         }
 
@@ -108,12 +98,12 @@ public enum XLCellValue: Sendable & Hashable & CustomStringConvertible {
             if let value = Self.numberValue(string: valueText) {
                 self = .number(value)
             } else {
-                self = .string(valueText)
+                self = .text(valueText)
             }
         case "b":
             self = .boolean(Self.booleanValue(string: valueText) ?? false)
         case "d":
-            self = .string(valueText)
+            self = .text(valueText)
         case "e":
             self = .error(valueText)
         case "s":
@@ -125,25 +115,17 @@ public enum XLCellValue: Sendable & Hashable & CustomStringConvertible {
             else {
                 return nil
             }
-            let record = sharedStringStorage[sharedStringIndex]
-
-            if case let .text(text) = record {
-                self = .string(text)
-            } else if case let .opaque(xmlString) = record {
-                self = .opaqueSharedString(xmlString: xmlString)
-            } else {
-                return nil
-            }
+            self = .text(sharedStringStorage[sharedStringIndex])
         case "str":
-            self = .string(valueText)
+            self = .text(valueText)
         default:
-            self = .string(valueText)
+            self = .text(valueText)
         }
     }
 
     public func write(
         to cellElement: XMLElement,
-        sharedStrings: OrderedSet<XLSharedStringRecord>? = nil
+        sharedStrings: OrderedSet<XLText>? = nil
     ) throws {
         switch self {
         case .number:
@@ -152,30 +134,20 @@ public enum XLCellValue: Sendable & Hashable & CustomStringConvertible {
         case .boolean:
             setCellType("b", in: cellElement)
             appendValueElement(to: cellElement, text: description)
-        case .string(let text):
+        case .text(let text):
             if let sharedStrings {
                 setCellType("s", in: cellElement)
                 appendValueElement(
                     to: cellElement,
-                    text: String(try sharedStringIndex(for: .text(text), in: sharedStrings))
+                    text: String(try sharedStringIndex(for: text, in: sharedStrings))
                 )
             } else {
-                removeCellType(in: cellElement)
-                appendValueElement(to: cellElement, text: description)
+                setCellType("inlineStr", in: cellElement)
+                cellElement.appendChild(try text.xmlElement(name: "is"))
             }
         case .error:
             setCellType("e", in: cellElement)
             appendValueElement(to: cellElement, text: description)
-        case .opaqueSharedString(let xmlString):
-            setCellType("s", in: cellElement)
-            let index = try sharedStringIndex(
-                for: .opaque(xmlString: xmlString),
-                in: sharedStrings
-            )
-            appendValueElement(
-                to: cellElement,
-                text: String(index)
-            )
         }
     }
 
@@ -215,23 +187,23 @@ public enum XLCellValue: Sendable & Hashable & CustomStringConvertible {
 
 
     private func sharedStringIndex(
-        for record: XLSharedStringRecord,
-        in sharedStrings: OrderedSet<XLSharedStringRecord>
+        for text: XLText,
+        in sharedStrings: OrderedSet<XLText>
     ) throws -> Int {
-        guard let index = sharedStrings.firstIndex(of: record) else {
+        guard let index = sharedStrings.firstIndex(of: text) else {
             throw OPCError.invalidSharedStringsFile
         }
         return index
     }
 
     private func sharedStringIndex(
-        for record: XLSharedStringRecord,
-        in sharedStrings: OrderedSet<XLSharedStringRecord>?
+        for text: XLText,
+        in sharedStrings: OrderedSet<XLText>?
     ) throws -> Int {
         guard let sharedStrings else {
             throw OPCError.invalidSharedStringsFile
         }
-        return try sharedStringIndex(for: record, in: sharedStrings)
+        return try sharedStringIndex(for: text, in: sharedStrings)
     }
 
     private func appendValueElement(to cellElement: XMLElement, text: String) {

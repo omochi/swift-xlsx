@@ -345,7 +345,7 @@ struct XLStylesFileTests {
                 backgroundColor: .indexed(64)
             )),
         ])
-        if case let .gradient(xmlString) = styleStorage.fills[2] {
+        if case .gradient(let xmlString) = styleStorage.fills[2] {
             #expect(xmlString.contains(#"<gradientFill degree="45">"#))
             #expect(xmlString.contains(#"<stop position="0"><color rgb="FFFFFFFF"/></stop>"#))
             #expect(xmlString.contains(#"<stop position="1"><color rgb="FF000000"/></stop>"#))

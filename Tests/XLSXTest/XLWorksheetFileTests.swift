@@ -43,16 +43,14 @@ struct XLWorksheetFileTests {
         #expect(XLCellValue.number(61.5).date == utcDate(year: 1900, month: 3, day: 1, hour: 12))
         #expect(XLCellValue.date(utcDate(year: 1900, month: 3, day: 1, hour: 12)).date == utcDate(year: 1900, month: 3, day: 1, hour: 12))
         #expect(XLCellValue.boolean(true).boolean == true)
-        #expect(XLCellValue.string("text").string == "text")
+        #expect(XLCellValue.text("text").text == XLText("text"))
         #expect(XLCellValue.error("#N/A").error == "#N/A")
-        #expect(
-            XLCellValue.opaqueSharedString(xmlString: "<r><t>rich</t></r>").opaqueSharedString ==
-                "<r><t>rich</t></r>"
-        )
+        let text = XLText(content: .plain("text"), phoneticProperties: XLPhoneticProperties(fontID: 2))
+        #expect(XLCellValue.text(text).text == text)
 
-        #expect(XLCellValue.number(42).string == nil)
-        #expect(XLCellValue.string("text").number == nil)
-        #expect(XLCellValue.string("text").date == nil)
+        #expect(XLCellValue.number(42).text == nil)
+        #expect(XLCellValue.text("text").number == nil)
+        #expect(XLCellValue.text("text").date == nil)
     }
 
     @Test func readsSparseRowsAndCellsFromWorksheetXML() throws {
@@ -72,10 +70,10 @@ struct XLWorksheetFileTests {
 
         #expect(worksheet.existingRowNumbers == [2, 10])
         #expect(worksheet.existingRow(2)?.existingColumnNumbers == [2, 4])
-        #expect(worksheet.existingRow(2)?.existingCell(column: 2)?.value == .string("left"))
-        #expect(worksheet.existingRow(2)?.existingCell(column: 4)?.value == .string("right"))
+        #expect(worksheet.existingRow(2)?.existingCell(column: 2)?.value == .text("left"))
+        #expect(worksheet.existingRow(2)?.existingCell(column: 4)?.value == .text("right"))
         #expect(worksheet.existingRow(10)?.existingColumnNumbers == [3])
-        #expect(worksheet.existingRow(10)?.existingCell(column: 3)?.value == .string("bottom"))
+        #expect(worksheet.existingRow(10)?.existingCell(column: 3)?.value == .text("bottom"))
         #expect(worksheet.maxColumnNumber == 4)
     }
 
@@ -254,7 +252,7 @@ struct XLWorksheetFileTests {
                   <sheetData/>
                 </worksheet>
                 """.utf8)),
-            sharedStringStorage: OrderedSet<XLSharedStringRecord>(),
+            sharedStringStorage: OrderedSet<XLText>(),
             styleStorage: XLStyleStorage(xmlDocument: XMLDocument(data: Data("""
                 <styleSheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
                   <cellXfs count="2">
@@ -298,10 +296,10 @@ struct XLWorksheetFileTests {
         #expect(worksheet.existingRow(1)?.existingCell(column: 2)?.value == .number(3.14))
         #expect(worksheet.existingRow(1)?.existingCell(column: 3)?.value == .boolean(true))
         #expect(worksheet.existingRow(1)?.existingCell(column: 4)?.value == .error("#DIV/0!"))
-        #expect(worksheet.existingRow(1)?.existingCell(column: 5)?.value == .string("2026-06-16T09:30:00Z"))
-        #expect(worksheet.existingRow(1)?.existingCell(column: 6)?.value == .string("inline"))
-        #expect(worksheet.existingRow(1)?.existingCell(column: 7)?.value == .string("cached"))
-        if case let .regular(formula) = worksheet.formula(at: XLCellAddress(row: 1, column: 7)) {
+        #expect(worksheet.existingRow(1)?.existingCell(column: 5)?.value == .text("2026-06-16T09:30:00Z"))
+        #expect(worksheet.existingRow(1)?.existingCell(column: 6)?.value == .text("inline"))
+        #expect(worksheet.existingRow(1)?.existingCell(column: 7)?.value == .text("cached"))
+        if case .regular(let formula) = worksheet.formula(at: XLCellAddress(row: 1, column: 7)) {
             #expect(formula == #"TEXT(1,"0")"#)
         } else {
             Issue.record("Expected regular formula.")
@@ -312,6 +310,32 @@ struct XLWorksheetFileTests {
         #expect(worksheet.existingRow(1)?.existingCell(column: 11)?.value == .boolean(true))
         #expect(worksheet.existingRow(1)?.existingCell(column: 12)?.value == .boolean(false))
         #expect(worksheet.existingRow(1)?.existingCell(column: 13)?.value == .number(45292.5))
+    }
+
+    @Test func readsAndWritesInlineTextWithPhonetics() throws {
+        let worksheet = try worksheetFile(data: Data("""
+            <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)">
+              <sheetData>
+                <row r="1">
+                  <c r="A1" t="inlineStr">
+                    <is>
+                      <t>漢字</t>
+                      <rPh sb="0" eb="2"><t>かんじ</t></rPh>
+                      <phoneticPr fontId="2"/>
+                    </is>
+                  </c>
+                </row>
+              </sheetData>
+            </worksheet>
+            """.utf8))
+
+        let text = try #require(worksheet.existingRow(1)?.existingCell(column: 1)?.value.text)
+        #expect(text.string == "漢字")
+        #expect(text.phoneticRuns == [XLPhoneticRun(text: "かんじ", startIndex: 0, endIndex: 2)])
+        #expect(text.phoneticProperties == XLPhoneticProperties(fontID: 2))
+
+        let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
+        #expect(xml.contains(#"<is><t>漢字</t><rPh sb="0" eb="2"><t>かんじ</t></rPh><phoneticPr fontId="2"/></is>"#))
     }
 
     @Test func ignoresStandaloneWorksheetCellFormatWithoutStyles() throws {
@@ -333,17 +357,17 @@ struct XLWorksheetFileTests {
     @Test func writesSparseRowsAndCellsToWorksheetXML() throws {
         let worksheet = XLWorksheetFile(rowByNumber: [
             10: XLRowStorage(cellByColumn: [
-                3: XLCellStorage(value: .string("bottom")),
+                3: XLCellStorage(value: .text("bottom")),
             ]),
             2: XLRowStorage(cellByColumn: [
-                4: XLCellStorage(value: .string("right")),
-                2: XLCellStorage(value: .string("left")),
+                4: XLCellStorage(value: .text("right")),
+                2: XLCellStorage(value: .text("left")),
             ]),
         ])
 
         let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
 
-        #expect(xml.contains(#"<sheetData><row r="2"><c r="B2"><v>left</v></c><c r="D2"><v>right</v></c></row><row r="10"><c r="C10"><v>bottom</v></c></row></sheetData>"#))
+        #expect(xml.contains(#"<sheetData><row r="2"><c r="B2" t="inlineStr"><is><t>left</t></is></c><c r="D2" t="inlineStr"><is><t>right</t></is></c></row><row r="10"><c r="C10" t="inlineStr"><is><t>bottom</t></is></c></row></sheetData>"#))
     }
 
     @Test func writesColumnsToWorksheetXML() throws {
@@ -450,7 +474,7 @@ struct XLWorksheetFileTests {
         let worksheet = XLWorksheetFile(
             rowByNumber: [
                 1: XLRowStorage(cellByColumn: [
-                    1: XLCellStorage(value: .string("value")),
+                    1: XLCellStorage(value: .text("value")),
                 ]),
             ],
             dataValidations: XLDataValidations(
@@ -498,7 +522,7 @@ struct XLWorksheetFileTests {
         let worksheet = XLWorksheetFile(
             rowByNumber: [
                 1: XLRowStorage(cellByColumn: [
-                    1: XLCellStorage(value: .string("value")),
+                    1: XLCellStorage(value: .text("value")),
                 ]),
             ],
             sheetProtection: XLSheetProtection(
@@ -608,7 +632,7 @@ struct XLWorksheetFileTests {
                     formula: .regular("SUM(B1:C1)")
                 ),
                 2: XLCellStorage(
-                    value: .string("cached"),
+                    value: .text("cached"),
                     formula: .regular(#"TEXT(1,"0")"#)
                 ),
             ]),
@@ -634,14 +658,14 @@ struct XLWorksheetFileTests {
             </worksheet>
             """.utf8))
 
-        if case let .sharedDefinition(definition) = worksheet.formula(at: XLCellAddress(row: 1, column: 1)) {
+        if case .sharedDefinition(let definition) = worksheet.formula(at: XLCellAddress(row: 1, column: 1)) {
             #expect(definition.formula == "B1+C1")
             #expect(definition.reference == XLCellRangeAddress("A1:A2"))
         } else {
             Issue.record("Expected shared formula definition.")
         }
 
-        if case let .sharedReference(address) = worksheet.formula(at: XLCellAddress(row: 2, column: 1)) {
+        if case .sharedReference(let address) = worksheet.formula(at: XLCellAddress(row: 2, column: 1)) {
             #expect(address == XLCellAddress(row: 1, column: 1))
         } else {
             Issue.record("Expected shared formula reference.")
@@ -703,7 +727,7 @@ struct XLWorksheetFileTests {
         ))
         referenceCell.formula = .sharedReference(address: definitionCell.address)
 
-        if case let .sharedReference(address) = referenceCell.formula {
+        if case .sharedReference(let address) = referenceCell.formula {
             #expect(address == definitionCell.address)
         } else {
             Issue.record("Expected shared formula reference.")
@@ -711,7 +735,7 @@ struct XLWorksheetFileTests {
 
         definitionCell.formula = .regular("B1+C1")
 
-        if case let .sharedReference(address) = referenceCell.formula {
+        if case .sharedReference(let address) = referenceCell.formula {
             #expect(address == definitionCell.address)
         } else {
             Issue.record("Expected dangling shared formula reference to remain in the model.")
@@ -763,10 +787,10 @@ struct XLWorksheetFileTests {
 
         let document = XLDocument()
         let worksheet = try #require(document.workbook.worksheets.first)
-        worksheet.cell(row: 1, column: 1).value = .string("shared")
+        worksheet.cell(row: 1, column: 1).value = .text("shared")
         try document.save(to: url)
 
-        #expect(worksheet.existingRow(1)?.existingCell(column: 1)?.value == .string("shared"))
+        #expect(worksheet.existingRow(1)?.existingCell(column: 1)?.value == .text("shared"))
 
         let package = try OPCPackage(data: Data(contentsOf: url))
         let worksheetXML = try String(
@@ -793,7 +817,7 @@ struct XLWorksheetFileTests {
         let document = XLDocument()
         let worksheet = try #require(document.workbook.worksheets.first)
         let cell = worksheet.cell(row: 1, column: 1)
-        cell.value = .string("cached")
+        cell.value = .text("cached")
         cell.formula = .regular(#"TEXT(1,"0")"#)
         try document.save(to: url)
 
@@ -822,7 +846,7 @@ struct XLWorksheetFileTests {
         let document = XLDocument()
         let worksheet = try #require(document.workbook.worksheets.first)
         let cell = worksheet.cell(row: 1, column: 1)
-        cell.value = .string("cached")
+        cell.value = .text("cached")
         cell.formula = .sharedReference(address: XLCellAddress(row: 3, column: 1))
         try document.save(to: url)
 
@@ -856,7 +880,7 @@ struct XLWorksheetFileTests {
             </worksheet>
             """.utf8))
 
-        worksheet.cell(row: 5, column: 1).value = .string("middle")
+        worksheet.cell(row: 5, column: 1).value = .text("middle")
 
         let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
 
@@ -883,7 +907,7 @@ struct XLWorksheetFileTests {
             </worksheet>
             """.utf8))
 
-        worksheet.cell(row: 2, column: 3).value = .string("middle")
+        worksheet.cell(row: 2, column: 3).value = .text("middle")
 
         let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
 
@@ -917,7 +941,7 @@ struct XLWorksheetFileTests {
             ],
             rowByNumber: [
                 3: XLRowStorage(cellByColumn: [
-                    5: XLCellStorage(value: .string("right")),
+                    5: XLCellStorage(value: .text("right")),
                 ]),
             ]
         )
@@ -956,13 +980,13 @@ struct XLWorksheetFileTests {
     @Test func returnsExistingRowsWithoutCreatingMissingRows() throws {
         let worksheet = XLWorksheetFile(rowByNumber: [
             2: XLRowStorage(cellByColumn: [
-                1: XLCellStorage(value: .string("left")),
+                1: XLCellStorage(value: .text("left")),
             ]),
         ])
 
         let row = try #require(worksheet.existingRow(2))
         #expect(row.existingColumnNumbers == [1])
-        #expect(row.existingCell(column: 1)?.value == .string("left"))
+        #expect(row.existingCell(column: 1)?.value == .text("left"))
         #expect(worksheet.existingRow(3) == nil)
         #expect(worksheet.existingRowNumbers == [2])
     }
@@ -982,25 +1006,25 @@ struct XLWorksheetFileTests {
     @Test func editsCellsThroughAccessedRow() {
         let worksheet = XLWorksheetFile()
 
-        worksheet.row(3).cell(column: 2).value = .string("value")
+        worksheet.row(3).cell(column: 2).value = .text("value")
 
-        #expect(worksheet.existingRow(3)?.cellByColumn[2]?.value == .string("value"))
+        #expect(worksheet.existingRow(3)?.cellByColumn[2]?.value == .text("value"))
     }
 
     @Test func editsCellsThroughWorksheetCellAccessors() throws {
         let worksheet = XLWorksheetFile()
 
-        worksheet.cell(row: 3, column: 2).value = .string("left")
-        worksheet.cell(address: try #require(XLCellAddress("D4"))).value = .string("right")
+        worksheet.cell(row: 3, column: 2).value = .text("left")
+        worksheet.cell(address: try #require(XLCellAddress("D4"))).value = .text("right")
 
-        #expect(worksheet.existingRow(3)?.existingCell(column: 2)?.value == .string("left"))
-        #expect(worksheet.existingRow(4)?.existingCell(column: 4)?.value == .string("right"))
+        #expect(worksheet.existingRow(3)?.existingCell(column: 2)?.value == .text("left"))
+        #expect(worksheet.existingRow(4)?.existingCell(column: 4)?.value == .text("right"))
     }
 
     @Test func exposesExistingColumnNumbersAndMaxColumnNumber() {
         let row = XLRowStorage(cellByColumn: [
-            4: XLCellStorage(value: .string("right")),
-            2: XLCellStorage(value: .string("left")),
+            4: XLCellStorage(value: .text("right")),
+            2: XLCellStorage(value: .text("left")),
         ])
 
         #expect(row.maxColumnNumber == 4)
@@ -1009,10 +1033,10 @@ struct XLWorksheetFileTests {
 
     @Test func returnsExistingCellsWithoutCreatingMissingCells() {
         let row = XLRowStorage(cellByColumn: [
-            2: XLCellStorage(value: .string("left")),
+            2: XLCellStorage(value: .text("left")),
         ])
 
-        #expect(row.existingCell(column: 2)?.value == .string("left"))
+        #expect(row.existingCell(column: 2)?.value == .text("left"))
         #expect(row.existingCell(column: 2)?.format == nil)
         #expect(row.existingCell(column: 3) == nil)
         #expect(row.existingColumnNumbers == [2])
@@ -1024,9 +1048,9 @@ struct XLWorksheetFileTests {
         #expect(row.maxColumnNumber == nil)
         #expect(row.existingCell(column: 3) == nil)
 
-        #expect(row.cell(column: 3).value == .string(""))
+        #expect(row.cell(column: 3).value == .text(""))
         #expect(row.cell(column: 3).format == nil)
-        #expect(row.existingCell(column: 3)?.value == .string(""))
+        #expect(row.existingCell(column: 3)?.value == .text(""))
         #expect(row.existingCell(column: 3)?.format == nil)
         #expect(row.maxColumnNumber == 3)
         #expect(row.existingColumnNumbers == [3])
@@ -1042,12 +1066,12 @@ struct XLWorksheetFileTests {
               </sheetData>
             </worksheet>
             """.utf8))
-        worksheet.rowByNumber[1]?.cellByColumn[1]?.value = .string("1")
+        worksheet.rowByNumber[1]?.cellByColumn[1]?.value = .text("1")
 
         let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
 
         #expect(xml.contains(#"<row r="1" custom="keep">"#))
-        #expect(xml.contains(#"<c r="A1"><v>1</v></c>"#))
+        #expect(xml.contains(#"<c r="A1" t="inlineStr"><is><t>1</t></is></c>"#))
     }
 
     @Test func removesStandaloneWorksheetCellFormatWhenWritingWithoutPlan() throws {
@@ -1069,7 +1093,7 @@ struct XLWorksheetFileTests {
     private func worksheetFile(data: Data) throws -> XLWorksheetFile {
         try XLWorksheetFile(
             xmlDocument: XMLDocument(data: data),
-            sharedStringStorage: OrderedSet<XLSharedStringRecord>(),
+            sharedStringStorage: OrderedSet<XLText>(),
             styleStorage: XLStyleStorage()
         )
     }

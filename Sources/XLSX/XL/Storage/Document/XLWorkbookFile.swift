@@ -112,7 +112,7 @@ public final class XLWorkbookFile {
         return RemovedWorksheet(sheet: sheet, file: file)
     }
 
-    public func collectSharedStrings(sharedStringStorage: inout OrderedSet<XLSharedStringRecord>) {
+    public func collectSharedStrings(sharedStringStorage: inout OrderedSet<XLText>) {
         for worksheet in worksheets {
             worksheet.file.collectSharedStrings(sharedStringStorage: &sharedStringStorage)
         }

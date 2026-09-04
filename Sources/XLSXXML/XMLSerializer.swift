@@ -78,25 +78,23 @@ struct XMLSerializer {
     }
 
     private func serialize(node: XMLNode, depth: Int) -> String {
-        switch node {
-        case let element as XMLElement:
+        if let element = node as? XMLElement {
             return serialize(element: element, depth: depth)
-        case let text as XMLText:
-            return text.xmlString()
-        default:
-            return node.children.map { serialize(node: $0, depth: depth) }.joined()
         }
+        if let text = node as? XMLText {
+            return text.xmlString()
+        }
+        return node.children.map { serialize(node: $0, depth: depth) }.joined()
     }
 
     private func serializeCompact(node: XMLNode) -> String {
-        switch node {
-        case let element as XMLElement:
+        if let element = node as? XMLElement {
             return serializeCompact(element: element)
-        case let text as XMLText:
-            return text.xmlString()
-        default:
-            return node.children.map(serializeCompact(node:)).joined()
         }
+        if let text = node as? XMLText {
+            return text.xmlString()
+        }
+        return node.children.map(serializeCompact(node:)).joined()
     }
 
     private func serializeCompactStartTag(element: XMLElement, closing: String) -> String {

@@ -9,9 +9,9 @@ public enum XLExampleDocuments {
     public static func simpleDocument() throws -> XLDocument {
         let document = XLDocument()
         let worksheet = try document.workbook.worksheets.first ?? document.workbook.appendWorksheet(name: "Sheet1")
-        worksheet.cell(row: 1, column: 1).value = .string("A")
-        worksheet.cell(row: 1, column: 2).value = .string("B")
-        worksheet.cell(row: 1, column: 3).value = .string("C")
+        worksheet.cell(row: 1, column: 1).value = .text("A")
+        worksheet.cell(row: 1, column: 2).value = .text("B")
+        worksheet.cell(row: 1, column: 3).value = .text("C")
         return document
     }
 
@@ -35,7 +35,7 @@ public enum XLExampleDocuments {
         worksheet.cell(row: 1, column: 2).value = .number(10)
         worksheet.cell(row: 2, column: 2).value = .number(20)
         worksheet.cell(row: 3, column: 2).value = .number(30)
-        worksheet.cell(row: 4, column: 1).value = .string("sum→")
+        worksheet.cell(row: 4, column: 1).value = .text("sum→")
 
         let totalCell = worksheet.cell(row: 4, column: 2)
         totalCell.value = .number(60)
@@ -51,7 +51,7 @@ public enum XLExampleDocuments {
 
         for example in examples {
             worksheet.column(example.column).width = example.width
-            worksheet.cell(row: 1, column: example.column).value = .string("width=\(Int(example.width))")
+            worksheet.cell(row: 1, column: example.column).value = .text("width=\(Int(example.width))")
         }
     }
 
@@ -77,10 +77,10 @@ public enum XLExampleDocuments {
 
         for (index, example) in examples.enumerated() {
             let labelCell = worksheet.cell(row: index + 1, column: 1)
-            labelCell.value = .string("builtin \(example.id)")
+            labelCell.value = .text("builtin \(example.id)")
 
             let symbolCell = worksheet.cell(row: index + 1, column: 2)
-            symbolCell.value = .string(example.symbol)
+            symbolCell.value = .text(example.symbol)
 
             let valueCell = worksheet.cell(row: index + 1, column: 3)
             valueCell.value = .number(example.value)
@@ -89,8 +89,8 @@ public enum XLExampleDocuments {
 
         let customFormat = #"yyyy"ねん" m"がつ" d"にち""#
         let customRow = examples.count + 2
-        worksheet.cell(row: customRow, column: 1).value = .string("custom")
-        worksheet.cell(row: customRow, column: 2).value = .string(customFormat)
+        worksheet.cell(row: customRow, column: 1).value = .text("custom")
+        worksheet.cell(row: customRow, column: 2).value = .text(customFormat)
 
         let valueCell = worksheet.cell(row: customRow, column: 3)
         valueCell.value = .number(45825)
@@ -109,14 +109,14 @@ public enum XLExampleDocuments {
 
         for (index, example) in examples.enumerated() {
             let cell = worksheet.cell(row: index + 1, column: 1)
-            cell.value = .string(example.0)
+            cell.value = .text(example.0)
             cell.format = XLCellFormat(font: example.1)
         }
     }
 
     private static func writeFillExamples(to worksheet: XLWorksheet) {
         let cell = worksheet.cell(row: 1, column: 1)
-        cell.value = .string("red")
+        cell.value = .text("red")
         cell.format = XLCellFormat(fill: .pattern(XLFill.Pattern(
             patternType: .solid,
             foregroundColor: .rgb("FFFF0000"),
@@ -141,16 +141,16 @@ public enum XLExampleDocuments {
 
         for (index, example) in examples.enumerated() {
             let cell = worksheet.cell(row: (index + 1) * 2, column: 2)
-            cell.value = .string(example.0)
+            cell.value = .text(example.0)
             cell.format = XLCellFormat(border: example.1)
         }
     }
 
     private static func writeDataValidationExamples(to worksheet: XLWorksheet) {
-        worksheet.cell(row: 1, column: 1).value = .string("Apple")
-        worksheet.cell(row: 2, column: 1).value = .string("Banana")
-        worksheet.cell(row: 3, column: 1).value = .string("Cherry")
-        worksheet.cell(row: 1, column: 2).value = .string("select↓")
+        worksheet.cell(row: 1, column: 1).value = .text("Apple")
+        worksheet.cell(row: 2, column: 1).value = .text("Banana")
+        worksheet.cell(row: 3, column: 1).value = .text("Cherry")
+        worksheet.cell(row: 1, column: 2).value = .text("select↓")
         worksheet.dataValidation = XLDataValidations(
             validations: [
                 XLDataValidation(
@@ -168,8 +168,8 @@ public enum XLExampleDocuments {
     }
 
     private static func writePasswordProtectionExamples(to worksheet: XLWorksheet) {
-        worksheet.cell(row: 1, column: 1).value = .string("password:")
-        worksheet.cell(row: 1, column: 2).value = .string("swift-xlsx")
+        worksheet.cell(row: 1, column: 1).value = .text("password:")
+        worksheet.cell(row: 1, column: 2).value = .text("swift-xlsx")
         worksheet.sheetProtection = XLSheetProtection(
             passwordHashInfo: XLSheetProtection.PasswordHashInfo.generate(
                 password: "swift-xlsx",
@@ -180,7 +180,7 @@ public enum XLExampleDocuments {
     }
 
     private static func writeHiddenSheetExamples(to worksheet: XLWorksheet) {
-        worksheet.cell(row: 1, column: 1).value = .string("hidden")
+        worksheet.cell(row: 1, column: 1).value = .text("hidden")
         worksheet.state = .hidden
     }
 }

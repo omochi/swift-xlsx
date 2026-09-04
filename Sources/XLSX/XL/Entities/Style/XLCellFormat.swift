@@ -122,7 +122,7 @@ public struct XLCellFormat: Hashable {
     public func collectStyle(stage: XLStyleCollectionStage, styleStorage: inout XLStyleStorage) throws {
         switch stage {
         case .numberFormats:
-            if case let .format(format)? = numberFormat {
+            if case .format(let format)? = numberFormat {
                 styleStorage.numberFormats.append(format)
             }
         case .fonts:
@@ -234,9 +234,9 @@ public struct XLCellFormat: Hashable {
         }
 
         switch numberFormat {
-        case let .builtin(id):
+        case .builtin(let id):
             return id
-        case let .format(format):
+        case .format(let format):
             guard let id = XLNumberFormat.customNumberFormatID(for: format, in: numberFormats) else {
                 throw OPCError.missingNumberFormatRecord
             }

@@ -45,7 +45,7 @@ public final class XLDocumentPackage {
         )
 
         let sharedStringsPath = try XLSharedStringsFile.path(workbookPath: workbook.path, workbookRels: workbookRels.file)
-        let sharedStringStorage: OrderedSet<XLSharedStringRecord>
+        let sharedStringStorage: OrderedSet<XLText>
         let sharedStringsFile: XLSharedStringsFile
         if let sharedStringsXMLDocument = try Self.readXMLFile(
             package: opcPackage,
@@ -55,7 +55,7 @@ public final class XLDocumentPackage {
             sharedStringStorage = try XLSharedStringsFile.readStorage(xmlDocument: sharedStringsXMLDocument)
             sharedStringsFile = try XLSharedStringsFile(xmlDocument: sharedStringsXMLDocument)
         } else {
-            sharedStringStorage = OrderedSet<XLSharedStringRecord>()
+            sharedStringStorage = OrderedSet<XLText>()
             sharedStringsFile = XLSharedStringsFile()
         }
 
@@ -122,7 +122,7 @@ public final class XLDocumentPackage {
             workbookRels: &workbookRels.file
         )
 
-        var sharedStringStorage = OrderedSet<XLSharedStringRecord>()
+        var sharedStringStorage = OrderedSet<XLText>()
         workbook.file.collectSharedStrings(sharedStringStorage: &sharedStringStorage)
 
         var cellStyleFormats = OrderedSet<XLCellStyleFormatRef>()
@@ -258,7 +258,7 @@ public final class XLDocumentPackage {
         for sheets: [XLWorkbookFileSheet],
         workbookPath: OPCFilePath,
         workbookRels: OPCRelsFile,
-        sharedStringStorage: OrderedSet<XLSharedStringRecord>,
+        sharedStringStorage: OrderedSet<XLText>,
         styleStorage: XLStyleStorage,
         consumedPaths: inout Set<OPCFilePath>
     ) throws -> [Int: OPCPathWithFile<XLWorksheetFile>] {
@@ -286,7 +286,7 @@ public final class XLDocumentPackage {
     private static func readWorksheetFile(
         from package: OPCPackage,
         at path: OPCFilePath,
-        sharedStringStorage: OrderedSet<XLSharedStringRecord>,
+        sharedStringStorage: OrderedSet<XLText>,
         styleStorage: XLStyleStorage,
         default defaultFile: @autoclosure () -> XLWorksheetFile,
         consumedPaths: inout Set<OPCFilePath>

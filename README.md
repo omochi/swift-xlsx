@@ -63,7 +63,7 @@ import XLSX
 let document = XLDocument()
 let worksheet = try document.workbook.appendWorksheet(name: "Sheet1")
 
-worksheet.cell(row: 1, column: 1).value = .string("Hello")
+worksheet.cell(row: 1, column: 1).value = .text("Hello")
 worksheet.cell(row: 1, column: 2).value = .number(42)
 worksheet.cell(row: 2, column: 2).formula = .regular("SUM(B1:B1)")
 
@@ -86,7 +86,7 @@ let url = URL(fileURLWithPath: "input.xlsx")
 let document = try XLDocument.open(url: url)
 let worksheet = try document.workbook.appendWorksheet(name: "Generated")
 
-worksheet.cell(row: 1, column: 1).value = .string("Created by swift-xlsx")
+worksheet.cell(row: 1, column: 1).value = .text("Created by swift-xlsx")
 
 try document.save(to: URL(fileURLWithPath: "output.xlsx"))
 ```
@@ -101,7 +101,7 @@ The table below lists concrete features rather than broad compatibility levels. 
 | --- | --- | --- |
 | Workbooks | Create, open, save | Calculation engine, encryption, macros |
 | Worksheets | Add, remove, rename, hide sheets, read existing sheets | Chartsheets, dialog sheets |
-| Cells | Strings, numbers, booleans, dates, formulas, cached formula values | Rich text editing, comments, hyperlinks |
+| Cells | Plain and rich text in shared and inline strings, phonetic runs and properties, numbers, booleans, dates, formulas, cached formula values | Comments, hyperlinks |
 | Rows | Sparse row and cell storage | Row heights, grouping, hidden rows |
 | Columns | Column widths, column styles | Grouping, hidden columns |
 | Number formats | Built-in formats, custom format strings | Full locale-aware format evaluation |

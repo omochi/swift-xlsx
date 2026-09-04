@@ -26,7 +26,7 @@ public struct OPCPackage: Sendable {
             case .directory:
                 _ = try ensureDirectory(at: entry.path)
 
-            case let .file(data):
+            case .file(let data):
                 try insertFile(data: data, at: entry.path)
             }
         }
@@ -50,7 +50,7 @@ public struct OPCPackage: Sendable {
         var current = root
 
         for component in path.components {
-            guard case let .directory(directory) = node(for: current),
+            guard case .directory(let directory) = node(for: current),
                   let next = directory.entryDictionary[component]
             else {
                 return nil
@@ -64,7 +64,7 @@ public struct OPCPackage: Sendable {
 
     public func data(at path: OPCFilePath) -> Data? {
         guard let id = nodeID(at: path),
-              case let .file(file) = node(for: id)
+              case .file(let file) = node(for: id)
         else {
             return nil
         }
@@ -93,7 +93,7 @@ public struct OPCPackage: Sendable {
         guard let id = nodeID(at: directoryPath) else {
             throw OPCError.entryNotFound(directoryPath.description)
         }
-        guard case let .directory(directory) = node(for: id) else {
+        guard case .directory(let directory) = node(for: id) else {
             throw OPCError.entryIsNotDirectory(directoryPath.description)
         }
         return directory.children.map(\.0)
@@ -120,7 +120,7 @@ public struct OPCPackage: Sendable {
         }
 
         let directoryID = try ensureDirectory(components: path.components.dropLast())
-        guard case var .directory(directory) = node(for: directoryID) else {
+        guard case .directory(var directory) = node(for: directoryID) else {
             throw OPCError.entryIsNotDirectory(path.description)
         }
 
@@ -168,7 +168,7 @@ public struct OPCPackage: Sendable {
         var current = root
 
         for component in components {
-            guard case var .directory(directory) = node(for: current) else {
+            guard case .directory(var directory) = node(for: current) else {
                 throw OPCError.entryIsNotDirectory(component)
             }
 
@@ -192,12 +192,12 @@ public struct OPCPackage: Sendable {
 
     private func collectEntries(from id: OPCPackageNodeID, components: [String], into entries: inout [OPCFileEntry]) {
         switch node(for: id) {
-        case let .file(file):
+        case .file(let file):
             entries.append(OPCFileEntry(
                 path: OPCFilePath(components: components),
                 content: .file(file.data)
             ))
-        case let .directory(directory):
+        case .directory(let directory):
             if !components.isEmpty {
                 entries.append(OPCFileEntry(
                     path: OPCFilePath(components: components),
