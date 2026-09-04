@@ -1,6 +1,3 @@
-import MemberwiseInit
-
-@MemberwiseInit(.public)
 public struct XLCellRangeAddress: Sendable, Hashable, LosslessStringConvertible {
     public init?(_ description: String) {
         let parts = description.split(separator: ":", omittingEmptySubsequences: false)
@@ -12,26 +9,45 @@ public struct XLCellRangeAddress: Sendable, Hashable, LosslessStringConvertible 
 
         if parts.count == 1 {
             self.start = start
-            self.end = start
+            self.last = start
             return
         }
 
-        guard let end = XLCellAddress(String(parts[1])) else {
+        guard let last = XLCellAddress(String(parts[1])) else {
             return nil
         }
 
         self.start = start
-        self.end = end
+        self.last = last
+    }
+
+    public init(start: XLCellAddress, last: XLCellAddress) {
+        self.start = start
+        self.last = last
+    }
+
+    public init(start: XLCellAddress, end: XLCellAddress) {
+        self.start = start
+        self.last = XLCellAddress(row: end.row - 1, column: end.column - 1)
     }
 
     public var start: XLCellAddress
-    public var end: XLCellAddress
+    public var last: XLCellAddress
+
+    public var end: XLCellAddress {
+        get {
+            return XLCellAddress(row: last.row + 1, column: last.column + 1)
+        }
+        set {
+            last = XLCellAddress(row: newValue.row - 1, column: newValue.column - 1)
+        }
+    }
 
     public var description: String {
-        if start == end {
+        if start == last {
             return start.description
         }
 
-        return "\(start):\(end)"
+        return "\(start):\(last)"
     }
 }

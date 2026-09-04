@@ -3,26 +3,19 @@ import MemberwiseInit
 @MemberwiseInit(.public)
 public struct XLCellAddress: Sendable & Hashable & LosslessStringConvertible {
     public init?(_ description: String) {
-        var column = 0
         var index = description.unicodeScalars.startIndex
 
         while index < description.unicodeScalars.endIndex {
             let scalar = description.unicodeScalars[index]
-            guard let value = Self.columnValue(of: scalar) else {
+            guard Self.columnDigitValue(of: scalar) != nil else {
                 break
             }
 
-            let (multipliedColumn, didMultiplyOverflow) = column.multipliedReportingOverflow(by: 26)
-            let (nextColumn, didAddOverflow) = multipliedColumn.addingReportingOverflow(value)
-            guard !didMultiplyOverflow, !didAddOverflow else {
-                return nil
-            }
-
-            column = nextColumn
             index = description.unicodeScalars.index(after: index)
         }
 
-        guard column > 0,
+        let columnText = String(description.unicodeScalars[..<index])
+        guard let column = Self.columnValue(string: columnText),
               index < description.unicodeScalars.endIndex
         else {
             return nil
@@ -60,6 +53,12 @@ public struct XLCellAddress: Sendable & Hashable & LosslessStringConvertible {
         precondition(row > 0, "XLCellAddress row must be positive.")
         precondition(column > 0, "XLCellAddress column must be positive.")
 
+        return Self.columnString(column) + String(row)
+    }
+
+    public static func columnString(_ column: Int) -> String {
+        precondition(column > 0, "XLCellAddress column must be positive.")
+
         var remainingColumn = column
         var scalars: [UnicodeScalar] = []
         while remainingColumn > 0 {
@@ -69,7 +68,29 @@ public struct XLCellAddress: Sendable & Hashable & LosslessStringConvertible {
             remainingColumn /= 26
         }
 
-        return String(String.UnicodeScalarView(scalars.reversed())) + String(row)
+        return String(String.UnicodeScalarView(scalars.reversed()))
+    }
+
+    public static func columnValue(string: String) -> Int? {
+        var column = 0
+        for scalar in string.unicodeScalars {
+            guard let value = Self.columnDigitValue(of: scalar) else {
+                return nil
+            }
+
+            let (multipliedColumn, didMultiplyOverflow) = column.multipliedReportingOverflow(by: 26)
+            let (nextColumn, didAddOverflow) = multipliedColumn.addingReportingOverflow(value)
+            guard !didMultiplyOverflow, !didAddOverflow else {
+                return nil
+            }
+
+            column = nextColumn
+        }
+
+        guard column > 0 else {
+            return nil
+        }
+        return column
     }
 
     private static let uppercaseA = 65
@@ -79,7 +100,7 @@ public struct XLCellAddress: Sendable & Hashable & LosslessStringConvertible {
     private static let zero = 48
     private static let nine = 57
 
-    private static func columnValue(of scalar: UnicodeScalar) -> Int? {
+    private static func columnDigitValue(of scalar: UnicodeScalar) -> Int? {
         let value = Int(scalar.value)
         if uppercaseA...uppercaseZ ~= value {
             return value - uppercaseA + 1

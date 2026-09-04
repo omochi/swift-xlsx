@@ -154,7 +154,7 @@ public enum XLExampleDocuments {
                     address: XLCellRangeAddressList([
                         XLCellRangeAddress(
                             start: XLCellAddress(row: 2, column: 2),
-                            end: XLCellAddress(row: 2, column: 2)
+                            last: XLCellAddress(row: 2, column: 2)
                         ),
                     ]),
                     validationType: .list,

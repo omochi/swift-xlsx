@@ -110,6 +110,21 @@ struct XLWorksheetFileTests {
         #expect(XLCellRangeAddressList("A1 not-address") == nil)
     }
 
+    @Test func cellRangeAddressUsesInclusiveLastAndExclusiveEnd() throws {
+        var range = XLCellRangeAddress(
+            start: XLCellAddress(row: 2, column: 3),
+            end: XLCellAddress(row: 5, column: 7)
+        )
+
+        #expect(range.last == XLCellAddress(row: 4, column: 6))
+        #expect(range.end == XLCellAddress(row: 5, column: 7))
+
+        range.end = XLCellAddress(row: 8, column: 10)
+
+        #expect(range.last == XLCellAddress(row: 7, column: 9))
+        #expect(range.description == "C2:I7")
+    }
+
     @Test func readsDataValidationsFromWorksheetXML() throws {
         let worksheet = try worksheetFile(data: Data("""
             <worksheet xmlns="\(XMLNamespaceURI.spreadsheet.string)"

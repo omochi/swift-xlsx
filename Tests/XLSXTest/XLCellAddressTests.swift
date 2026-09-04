@@ -23,6 +23,22 @@ struct XLCellAddressTests {
         #expect(XLCellAddress("c10") == XLCellAddress(row: 10, column: 3))
     }
 
+    @Test func describesColumnStrings() {
+        #expect(XLCellAddress.columnString(1) == "A")
+        #expect(XLCellAddress.columnString(26) == "Z")
+        #expect(XLCellAddress.columnString(27) == "AA")
+        #expect(XLCellAddress.columnString(16384) == "XFD")
+    }
+
+    @Test func parsesColumnStrings() {
+        #expect(XLCellAddress.columnValue(string: "A") == 1)
+        #expect(XLCellAddress.columnValue(string: "Z") == 26)
+        #expect(XLCellAddress.columnValue(string: "AA") == 27)
+        #expect(XLCellAddress.columnValue(string: "xfd") == 16384)
+        #expect(XLCellAddress.columnValue(string: "") == nil)
+        #expect(XLCellAddress.columnValue(string: "A1") == nil)
+    }
+
     @Test func rejectsInvalidAddresses() {
         #expect(XLCellAddress("") == nil)
         #expect(XLCellAddress("A") == nil)
