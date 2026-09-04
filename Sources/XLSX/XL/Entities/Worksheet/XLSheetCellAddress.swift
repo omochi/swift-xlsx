@@ -27,7 +27,7 @@ public struct XLSheetCellAddress: Sendable & Hashable & LosslessStringConvertibl
         Self.description(sheetName: sheetName) + "!" + cellAddress.description
     }
 
-    private static func sheetCellSeparatorIndex(in description: String) -> String.Index? {
+    static func sheetCellSeparatorIndex(in description: String) -> String.Index? {
         if description.first == "'" {
             var index = description.index(after: description.startIndex)
             while index < description.endIndex {
@@ -53,7 +53,7 @@ public struct XLSheetCellAddress: Sendable & Hashable & LosslessStringConvertibl
         return description.firstIndex(of: "!")
     }
 
-    private static func parseSheetName(_ text: String) -> String? {
+    static func parseSheetName(_ text: String) -> String? {
         guard !text.isEmpty else {
             return nil
         }
@@ -93,7 +93,7 @@ public struct XLSheetCellAddress: Sendable & Hashable & LosslessStringConvertibl
         return text
     }
 
-    private static func description(sheetName: String) -> String {
+    static func description(sheetName: String) -> String {
         precondition(!sheetName.isEmpty, "XLSheetCellAddress sheetName must not be empty.")
 
         if sheetName.allSatisfy(isUnquotedSheetNameCharacter) {

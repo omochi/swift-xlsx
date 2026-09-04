@@ -3,8 +3,17 @@ import MemberwiseInit
 @MemberwiseInit(.public)
 public struct XLCellAddress: Sendable & Hashable & LosslessStringConvertible {
     public init?(_ description: String) {
+        var isColumnAbsolute = false
         var index = description.unicodeScalars.startIndex
 
+        if index < description.unicodeScalars.endIndex,
+           description.unicodeScalars[index] == Self.dollar
+        {
+            isColumnAbsolute = true
+            index = description.unicodeScalars.index(after: index)
+        }
+
+        let columnStartIndex = index
         while index < description.unicodeScalars.endIndex {
             let scalar = description.unicodeScalars[index]
             guard Self.columnDigitValue(of: scalar) != nil else {
@@ -14,10 +23,20 @@ public struct XLCellAddress: Sendable & Hashable & LosslessStringConvertible {
             index = description.unicodeScalars.index(after: index)
         }
 
-        let columnText = String(description.unicodeScalars[..<index])
+        let columnText = String(description.unicodeScalars[columnStartIndex..<index])
         guard let column = Self.columnValue(string: columnText),
               index < description.unicodeScalars.endIndex
         else {
+            return nil
+        }
+
+        var isRowAbsolute = false
+        if description.unicodeScalars[index] == Self.dollar {
+            isRowAbsolute = true
+            index = description.unicodeScalars.index(after: index)
+        }
+
+        guard index < description.unicodeScalars.endIndex else {
             return nil
         }
 
@@ -42,18 +61,30 @@ public struct XLCellAddress: Sendable & Hashable & LosslessStringConvertible {
             return nil
         }
 
+        self.isRowAbsolute = isRowAbsolute
         self.row = row
+        self.isColumnAbsolute = isColumnAbsolute
         self.column = column
     }
 
+    public var isRowAbsolute: Bool = false
     public var row: Int
+    public var isColumnAbsolute: Bool = false
     public var column: Int
+
+    public static var maxRowNumber: Int {
+        1_048_576
+    }
+
+    public static var maxColumnNumber: Int {
+        16_384
+    }
 
     public var description: String {
         precondition(row > 0, "XLCellAddress row must be positive.")
         precondition(column > 0, "XLCellAddress column must be positive.")
 
-        return Self.columnString(column) + String(row)
+        return "\(isColumnAbsolute ? "$" : "")\(Self.columnString(column))\(isRowAbsolute ? "$" : "")\(row)"
     }
 
     public static func columnString(_ column: Int) -> String {
@@ -93,6 +124,7 @@ public struct XLCellAddress: Sendable & Hashable & LosslessStringConvertible {
         return column
     }
 
+    private static let dollar = UnicodeScalar(36)!
     private static let uppercaseA = 65
     private static let uppercaseZ = 90
     private static let lowercaseA = 97

@@ -867,17 +867,21 @@ struct XLDocumentTests {
         let document = XLDocument()
         let worksheet = try #require(document.workbook.worksheets.first)
         let address = try #require(XLCellAddress("D4"))
+        let absoluteAddress = try #require(XLCellAddress("$D$4"))
 
         #expect(worksheet.existingCell(row: 3, column: 2) == nil)
         #expect(worksheet.existingCell(address: address) == nil)
 
         worksheet.cell(row: 3, column: 2).value = .string("left")
         worksheet.cell(address: address).value = .string("right")
+        worksheet.cell(address: absoluteAddress).value = .string("absolute")
 
         #expect(worksheet.existingCell(row: 3, column: 2)?.address == XLCellAddress(row: 3, column: 2))
         #expect(worksheet.existingCell(row: 3, column: 2)?.value == .string("left"))
         #expect(worksheet.existingCell(address: address)?.address == address)
-        #expect(worksheet.existingCell(address: address)?.value == .string("right"))
+        #expect(worksheet.existingCell(address: address)?.value == .string("absolute"))
+        #expect(worksheet.existingCell(address: absoluteAddress)?.address == address)
+        #expect(worksheet.existingCell(address: absoluteAddress)?.value == .string("absolute"))
     }
 
     @Test func appendsWorksheet() throws {
