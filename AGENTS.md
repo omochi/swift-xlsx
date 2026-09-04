@@ -10,6 +10,9 @@
   - 公開向けの英語版と日本語版の説明を書く。
   - 両方の内容と、冒頭の言語切り替え link を同期する。
   - ライブラリの対応状況は `Feature Status` / `機能の対応状況` セクションに書く。機能を追加・削除・変更したときは、必要に応じて両方の表を更新する。
+- `docs/example-workbook.md`
+  - `example.xlsx` の機能対応表、生成方法、Microsoft Excel での手動確認手順を書く。
+  - Excel 上で観察可能な public API を追加・削除・変更したときは、`XLExampleDocuments.exampleDocument()`、example fixture、この文書を同期する。
 - `docs/design.md`
   - 現在の設計方針や実装上の判断を書く。
   - XML/OPC の扱い、storage と handle の分担、namespace prefix の扱いなど、実装時に守る設計メモとして使う。

@@ -38,7 +38,7 @@ swift run xlsx-tool example-documents temp
 open temp/example.xlsx
 ```
 
-The code that creates this sample is in [`Sources/XLSXExamples/XLExampleDocuments.swift`](Sources/XLSXExamples/XLExampleDocuments.swift). It writes sheets for formulas, column widths, number formats, fonts, fills, borders, data validation, password-protected sheet protection, and hidden sheet state.
+The code that creates this sample is in [`Sources/XLSXExamples/XLExampleDocuments.swift`](Sources/XLSXExamples/XLExampleDocuments.swift). It writes sheets for cell values, formulas, column settings, number formats, fonts, fills, borders, data validation, cell styles, sheet and cell protection, freeze panes, and hidden and very hidden sheet states. The complete coverage matrix and manual Microsoft Excel checklist are in [`docs/example-workbook.md`](docs/example-workbook.md) (Japanese).
 
 ## Quick Start
 
@@ -82,16 +82,16 @@ The table below lists concrete features rather than broad compatibility levels. 
 | Area | Supported | Not Supported |
 | --- | --- | --- |
 | Workbooks | Create, open, save | Calculation engine, encryption, macros |
-| Worksheets | Add, remove, rename, hide sheets, read existing sheets, freeze top rows and left columns | Chartsheets, dialog sheets |
-| Cells | Plain and rich text in shared and inline strings, phonetic runs and properties, numbers, booleans, dates, formulas, cached formula values | Comments, hyperlinks |
+| Worksheets | Add, remove, rename, mark sheets as hidden or very hidden, read existing sheets, freeze top rows and left columns | Chartsheets, dialog sheets |
+| Cells | Plain and rich text in shared and inline strings, phonetic runs and properties, numbers, booleans, dates, errors, regular and shared formulas, cached formula values | Comments, hyperlinks, typed array and data-table formula editing |
 | Rows | Sparse row and cell storage | Row heights, grouping, hidden rows |
-| Columns | Column widths, column styles, hidden columns | Grouping |
+| Columns | Column widths, column styles, hidden and best-fit columns, outline level, collapsed and phonetic attributes | High-level grouping operations |
 | Number formats | Built-in formats, custom format strings | Full locale-aware format evaluation |
-| Fonts | Bold, italic, strike, size, name, color | Theme fonts, underline variants, vertical alignment |
+| Fonts | Bold, italic, strike, condense, extend, outline, shadow, size, name, typed color | Typed theme fonts, underline variants, vertical alignment |
 | Fills | Pattern fills, typed colors | Gradient fills, theme color resolution |
 | Borders | Side borders, diagonal borders, line styles | Theme color resolution, advanced border semantics |
 | Cell formats | Cell-level styles, style collection, named cell styles, protection | Conditional formatting, full style inheritance |
-| Data validation | List validation, validation ranges | Full validation option coverage |
+| Data validation | Whole number, decimal, list, date, time, text length, and custom validation; validation ranges; prompt and error options | Full validation option coverage |
 | Sheet protection | Sheet protection flags, password hash info, SHA-512 password hash generation | Workbook protection, legacy password hash generation |
 | Package structure | OPC relationships, content types, shared strings, unknown file preservation | Digital signatures, typed APIs for custom XML extensions |
 | Media and objects | - | Images, drawings, charts, pivot tables, tables, slicers |

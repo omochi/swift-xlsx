@@ -1,7 +1,16 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="54" uniqueCount="54">
+<sst
+    xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+    count="195"
+    uniqueCount="195">
     <si>
-        <t>sum→</t>
+        <t>shared formula</t>
+    </si>
+    <si>
+        <t>regular formula</t>
+    </si>
+    <si>
+        <t>cached string</t>
     </si>
     <si>
         <t>width=10</t>
@@ -11,6 +20,21 @@
     </si>
     <si>
         <t>width=30</t>
+    </si>
+    <si>
+        <t>hidden column</t>
+    </si>
+    <si>
+        <t>column E is hidden</t>
+    </si>
+    <si>
+        <t>bestFit=true</t>
+    </si>
+    <si>
+        <t>outlineLevel=1</t>
+    </si>
+    <si>
+        <t>collapsed=true</t>
     </si>
     <si>
         <t>builtin 0</t>
@@ -106,52 +130,223 @@
         <t>strike</t>
     </si>
     <si>
+        <t>condense</t>
+    </si>
+    <si>
+        <t>extend</t>
+    </si>
+    <si>
+        <t>outline</t>
+    </si>
+    <si>
+        <t>shadow</t>
+    </si>
+    <si>
         <t>size</t>
     </si>
     <si>
         <t>name</t>
     </si>
     <si>
-        <t>red</t>
+        <t>RGB red</t>
+    </si>
+    <si>
+        <t>indexed red</t>
+    </si>
+    <si>
+        <t>theme accent</t>
+    </si>
+    <si>
+        <t>theme accent tint</t>
+    </si>
+    <si>
+        <t>automatic color</t>
+    </si>
+    <si>
+        <t>none</t>
+    </si>
+    <si>
+        <t>sample</t>
+    </si>
+    <si>
+        <t>solid</t>
+    </si>
+    <si>
+        <t>mediumGray</t>
+    </si>
+    <si>
+        <t>darkGray</t>
+    </si>
+    <si>
+        <t>lightGray</t>
+    </si>
+    <si>
+        <t>darkHorizontal</t>
+    </si>
+    <si>
+        <t>darkVertical</t>
+    </si>
+    <si>
+        <t>darkDown</t>
+    </si>
+    <si>
+        <t>darkUp</t>
+    </si>
+    <si>
+        <t>darkGrid</t>
+    </si>
+    <si>
+        <t>darkTrellis</t>
+    </si>
+    <si>
+        <t>lightHorizontal</t>
+    </si>
+    <si>
+        <t>lightVertical</t>
+    </si>
+    <si>
+        <t>lightDown</t>
+    </si>
+    <si>
+        <t>lightUp</t>
+    </si>
+    <si>
+        <t>lightGrid</t>
+    </si>
+    <si>
+        <t>lightTrellis</t>
+    </si>
+    <si>
+        <t>gray125</t>
+    </si>
+    <si>
+        <t>gray0625</t>
     </si>
     <si>
         <t>start</t>
     </si>
     <si>
-        <t>end</t>
-    </si>
-    <si>
-        <t>left</t>
-    </si>
-    <si>
-        <t>right</t>
-    </si>
-    <si>
-        <t>top</t>
-    </si>
-    <si>
-        <t>bottom</t>
-    </si>
-    <si>
-        <t>diagonal up</t>
-    </si>
-    <si>
-        <t>diagonal down</t>
+        <t>thin</t>
     </si>
     <si>
         <t>medium</t>
     </si>
     <si>
+        <t>end</t>
+    </si>
+    <si>
+        <t>dashed</t>
+    </si>
+    <si>
+        <t>dotted</t>
+    </si>
+    <si>
+        <t>left</t>
+    </si>
+    <si>
+        <t>thick</t>
+    </si>
+    <si>
+        <t>double</t>
+    </si>
+    <si>
+        <t>right</t>
+    </si>
+    <si>
+        <t>hair</t>
+    </si>
+    <si>
+        <t>mediumDashed</t>
+    </si>
+    <si>
+        <t>top</t>
+    </si>
+    <si>
+        <t>dashDot</t>
+    </si>
+    <si>
+        <t>mediumDashDot</t>
+    </si>
+    <si>
+        <t>bottom</t>
+    </si>
+    <si>
+        <t>dashDotDot</t>
+    </si>
+    <si>
+        <t>mediumDashDotDot</t>
+    </si>
+    <si>
+        <t>diagonal up</t>
+    </si>
+    <si>
+        <t>slantDashDot</t>
+    </si>
+    <si>
+        <t>diagonal down</t>
+    </si>
+    <si>
+        <t>diagonal both</t>
+    </si>
+    <si>
+        <t>validation type</t>
+    </si>
+    <si>
+        <t>sample value</t>
+    </si>
+    <si>
+        <t>valid input</t>
+    </si>
+    <si>
+        <t>list source</t>
+    </si>
+    <si>
+        <t>list</t>
+    </si>
+    <si>
         <t>Apple</t>
     </si>
     <si>
-        <t>select↓</t>
+        <t>Apple, Banana, or Cherry</t>
+    </si>
+    <si>
+        <t>whole</t>
+    </si>
+    <si>
+        <t>1 through 10</t>
     </si>
     <si>
         <t>Banana</t>
     </si>
     <si>
+        <t>decimal</t>
+    </si>
+    <si>
+        <t>0 through 1</t>
+    </si>
+    <si>
         <t>Cherry</t>
+    </si>
+    <si>
+        <t>1960 through 2080</t>
+    </si>
+    <si>
+        <t>09:00 through 17:00</t>
+    </si>
+    <si>
+        <t>text length</t>
+    </si>
+    <si>
+        <t>Hello</t>
+    </si>
+    <si>
+        <t>10 characters or fewer</t>
+    </si>
+    <si>
+        <t>even number</t>
+    </si>
+    <si>
+        <t>list, second range</t>
     </si>
     <si>
         <t>password:</t>
@@ -160,6 +355,255 @@
         <t>swift-xlsx</t>
     </si>
     <si>
+        <t>locked cell</t>
+    </si>
+    <si>
+        <t>cannot edit</t>
+    </si>
+    <si>
+        <t>unlocked cell</t>
+    </si>
+    <si>
+        <t>can edit</t>
+    </si>
+    <si>
+        <t>hidden formula</t>
+    </si>
+    <si>
         <t>hidden</t>
+    </si>
+    <si>
+        <t>plain text</t>
+    </si>
+    <si>
+        <t>Hello, swift-xlsx</t>
+    </si>
+    <si>
+        <t>rich text</t>
+    </si>
+    <si>
+        <r>
+            <rPr>
+                <b/>
+            </rPr>
+            <t>bold</t>
+        </r>
+        <r>
+            <t xml:space="preserve"> + </t>
+        </r>
+        <r>
+            <rPr>
+                <color rgb="FFFF0000"/>
+            </rPr>
+            <t>red</t>
+        </r>
+    </si>
+    <si>
+        <t>phonetic text</t>
+    </si>
+    <si>
+        <t>漢字</t>
+        <rPh sb="0" eb="2">
+            <t>かんじ</t>
+        </rPh>
+        <phoneticPr fontId="0" type="Hiragana" alignment="center"/>
+    </si>
+    <si>
+        <t>number</t>
+    </si>
+    <si>
+        <t>boolean true</t>
+    </si>
+    <si>
+        <t>boolean false</t>
+    </si>
+    <si>
+        <t>error</t>
+    </si>
+    <si>
+        <t>row</t>
+    </si>
+    <si>
+        <t>column 2</t>
+    </si>
+    <si>
+        <t>column 3</t>
+    </si>
+    <si>
+        <t>column 4</t>
+    </si>
+    <si>
+        <t>column 5</t>
+    </si>
+    <si>
+        <t>column 6</t>
+    </si>
+    <si>
+        <t>column 7</t>
+    </si>
+    <si>
+        <t>column 8</t>
+    </si>
+    <si>
+        <t>column 9</t>
+    </si>
+    <si>
+        <t>column 10</t>
+    </si>
+    <si>
+        <t>row 2</t>
+    </si>
+    <si>
+        <t>row 3</t>
+    </si>
+    <si>
+        <t>row 4</t>
+    </si>
+    <si>
+        <t>row 5</t>
+    </si>
+    <si>
+        <t>row 6</t>
+    </si>
+    <si>
+        <t>row 7</t>
+    </si>
+    <si>
+        <t>row 8</t>
+    </si>
+    <si>
+        <t>row 9</t>
+    </si>
+    <si>
+        <t>row 10</t>
+    </si>
+    <si>
+        <t>row 11</t>
+    </si>
+    <si>
+        <t>row 12</t>
+    </si>
+    <si>
+        <t>row 13</t>
+    </si>
+    <si>
+        <t>row 14</t>
+    </si>
+    <si>
+        <t>row 15</t>
+    </si>
+    <si>
+        <t>row 16</t>
+    </si>
+    <si>
+        <t>row 17</t>
+    </si>
+    <si>
+        <t>row 18</t>
+    </si>
+    <si>
+        <t>row 19</t>
+    </si>
+    <si>
+        <t>row 20</t>
+    </si>
+    <si>
+        <t>row 21</t>
+    </si>
+    <si>
+        <t>row 22</t>
+    </si>
+    <si>
+        <t>row 23</t>
+    </si>
+    <si>
+        <t>row 24</t>
+    </si>
+    <si>
+        <t>row 25</t>
+    </si>
+    <si>
+        <t>row 26</t>
+    </si>
+    <si>
+        <t>row 27</t>
+    </si>
+    <si>
+        <t>row 28</t>
+    </si>
+    <si>
+        <t>row 29</t>
+    </si>
+    <si>
+        <t>row 30</t>
+    </si>
+    <si>
+        <t>row 31</t>
+    </si>
+    <si>
+        <t>row 32</t>
+    </si>
+    <si>
+        <t>row 33</t>
+    </si>
+    <si>
+        <t>row 34</t>
+    </si>
+    <si>
+        <t>row 35</t>
+    </si>
+    <si>
+        <t>row 36</t>
+    </si>
+    <si>
+        <t>row 37</t>
+    </si>
+    <si>
+        <t>row 38</t>
+    </si>
+    <si>
+        <t>row 39</t>
+    </si>
+    <si>
+        <t>row 40</t>
+    </si>
+    <si>
+        <t>row 41</t>
+    </si>
+    <si>
+        <t>row 42</t>
+    </si>
+    <si>
+        <t>row 43</t>
+    </si>
+    <si>
+        <t>row 44</t>
+    </si>
+    <si>
+        <t>row 45</t>
+    </si>
+    <si>
+        <t>row 46</t>
+    </si>
+    <si>
+        <t>row 47</t>
+    </si>
+    <si>
+        <t>row 48</t>
+    </si>
+    <si>
+        <t>row 49</t>
+    </si>
+    <si>
+        <t>row 50</t>
+    </si>
+    <si>
+        <t>named cell style</t>
+    </si>
+    <si>
+        <t>combined cell format</t>
+    </si>
+    <si>
+        <t>very hidden</t>
     </si>
 </sst>

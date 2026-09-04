@@ -38,7 +38,7 @@ swift run xlsx-tool example-documents temp
 open temp/example.xlsx
 ```
 
-このサンプルを生成しているコードは [`Sources/XLSXExamples/XLExampleDocuments.swift`](Sources/XLSXExamples/XLExampleDocuments.swift) にあります。数式、列幅、数値形式、フォント、塗りつぶし、罫線、データ validation、パスワード付き sheet protection、sheet の非表示状態を示す sheet を生成します。
+このサンプルを生成しているコードは [`Sources/XLSXExamples/XLExampleDocuments.swift`](Sources/XLSXExamples/XLExampleDocuments.swift) にあります。cell value、数式、列設定、数値形式、font、fill、border、data validation、cell style、sheet と cell の protection、freeze panes、hidden と very hidden の sheet 状態を示す sheet を生成します。完全な対応表と Microsoft Excel での手動確認手順は [`docs/example-workbook.md`](docs/example-workbook.md) にあります。
 
 ## クイックスタート
 
@@ -82,16 +82,16 @@ try document.save(to: URL(fileURLWithPath: "output.xlsx"))
 | 領域 | 対応 | 未対応 |
 | --- | --- | --- |
 | Workbook | 作成、オープン、保存 | 計算 engine、暗号化、macro |
-| Worksheet | sheet の追加、削除、改名、非表示、既存 sheet の読み込み、上端の行と左端の列の固定 | Chart sheet、dialog sheet |
-| Cell | Shared string と inline string の plain text と rich text、ふりがなの run と property、数値、真偽値、日付、数式、数式の cache 値 | コメント、hyperlink |
+| Worksheet | sheet の追加、削除、改名、hidden と very hidden、既存 sheet の読み込み、上端の行と左端の列の固定 | Chart sheet、dialog sheet |
+| Cell | Shared string と inline string の plain text と rich text、ふりがなの run と property、数値、真偽値、日付、error、通常数式と shared formula、数式の cache 値 | コメント、hyperlink、array formula と data-table formula の型付き編集 |
 | Row | Sparse な row と cell の storage | 行の高さ、grouping、行の非表示 |
-| Column | 列幅、列の style、列の非表示 | Grouping |
+| Column | 列幅、列の style、hidden と best fit、outline level、collapsed と phonetic 属性 | 高水準な grouping 操作 |
 | Number format | 組み込み format、custom format string | Locale を考慮した完全な format 評価 |
-| Font | 太字、斜体、取り消し線、size、名前、色 | Theme font、下線の variant、垂直位置 |
+| Font | 太字、斜体、取り消し線、condense、extend、outline、shadow、size、名前、型付きの色 | 型付きの theme font、下線の variant、垂直位置 |
 | Fill | Pattern fill、型付きの色 | Gradient fill、theme color の解決 |
 | Border | 各辺と対角線の border、line style | Theme color の解決、高度な border semantics |
 | Cell format | Cell 単位の style、style collection、named cell style、protection | Conditional formatting、完全な style 継承 |
-| Data validation | List validation、validation range | Validation option の完全な対応 |
+| Data validation | 整数、小数、list、日付、時刻、文字列長、custom validation、validation range、prompt と error の option | Validation option の完全な対応 |
 | Sheet protection | Sheet protection flag、password hash 情報、SHA-512 password hash の生成 | Workbook protection、legacy password hash の生成 |
 | Package structure | OPC relationship、content type、shared string、未知の file の保持 | Digital signature、custom XML extension の型付き API |
 | Media と object | - | 画像、drawing、chart、pivot table、table、slicer |
