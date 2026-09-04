@@ -7,7 +7,7 @@ public final class XLRowStorage {
     public init(
         rowElement: XMLElement,
         rowNumber: Int,
-        sharedStringStorage: OrderedSet<XLSharedStringRecord>,
+        sharedStringStorage: OrderedSet<XLText>,
         styleStorage: XLStyleStorage,
         sharedFormulaDefinitionAddressByIndex: [Int: XLCellAddress] = [:]
     ) {
@@ -55,7 +55,7 @@ public final class XLRowStorage {
             return cell
         }
 
-        let cell = XLCellStorage(value: .string(""))
+        let cell = XLCellStorage(value: .text(""))
         cellByColumn[column] = cell
         return cell
     }
@@ -67,7 +67,7 @@ public final class XLRowStorage {
     public func write(
         to rowElement: XMLElement,
         rowNumber: Int,
-        sharedStringStorage: OrderedSet<XLSharedStringRecord>? = nil,
+        sharedStringStorage: OrderedSet<XLText>? = nil,
         styleStorage: XLStyleStorage? = nil,
         formulaSharedIndicesByDefinitionAddress: [XLCellAddress: Int]? = nil
     ) throws {
@@ -94,7 +94,7 @@ public final class XLRowStorage {
     }
 
     public func collectSharedStrings(
-        sharedStringStorage: inout OrderedSet<XLSharedStringRecord>,
+        sharedStringStorage: inout OrderedSet<XLText>,
         formulaSharedIndicesByDefinitionAddress: [XLCellAddress: Int],
         rowNumber: Int
     ) {

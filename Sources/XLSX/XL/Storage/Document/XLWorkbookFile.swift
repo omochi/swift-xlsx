@@ -112,7 +112,7 @@ public final class XLWorkbookFile {
         return RemovedWorksheet(sheet: sheet, file: file)
     }
 
-    public func collectSharedStrings(sharedStringStorage: inout OrderedSet<XLSharedStringRecord>) {
+    public func collectSharedStrings(sharedStringStorage: inout OrderedSet<XLText>) {
         for worksheet in worksheets {
             worksheet.file.collectSharedStrings(sharedStringStorage: &sharedStringStorage)
         }
@@ -147,10 +147,29 @@ public final class XLWorkbookFile {
         workbookElement.declareNamespace(preferredPrefix: "r", uri: .officeRelationships)
 
         let sheetsElement = XMLUtils.ensureChildElement(name: "sheets", in: workbookElement)
+        ensureDefaultWorkbookView(in: workbookElement, before: sheetsElement)
         for sheet in sheets {
             let element = sheetElementForWriting(sheetID: sheet.sheetID, in: sheetsElement)
             try sheet.write(to: element)
         }
+    }
+
+    private func ensureDefaultWorkbookView(in workbookElement: XMLElement, before sheetsElement: XMLElement) {
+        guard worksheets.contains(where: { $0.file.requiresDefaultWorkbookView }) else {
+            return
+        }
+
+        let bookViewsElement = XMLUtils.ensureChildElement(
+            name: "bookViews",
+            in: workbookElement,
+            insertionIndex: {
+                workbookElement.children.firstIndex { $0 === sheetsElement }
+            }
+        )
+        guard bookViewsElement.elements(name: "workbookView").isEmpty else {
+            return
+        }
+        bookViewsElement.appendChild(XMLElement(name: XMLName(name: "workbookView")))
     }
 
     private func sheetElementForWriting(sheetID: Int, in sheetsElement: XMLElement) -> XMLElement {

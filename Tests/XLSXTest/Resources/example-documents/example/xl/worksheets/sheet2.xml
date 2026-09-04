@@ -7,17 +7,41 @@
         <col min="1" max="1" width="10.0" customWidth="1"/>
         <col min="2" max="2" width="20.0" customWidth="1"/>
         <col min="3" max="3" width="30.0" customWidth="1"/>
+        <col min="4" max="4" width="20.0" customWidth="1" style="1"/>
+        <col min="5" max="5" width="20.0" customWidth="1" hidden="1"/>
+        <col min="6" max="6" width="24.0" customWidth="1"/>
+        <col min="7" max="7" width="18.0" customWidth="1" bestFit="1"/>
+        <col min="8" max="8" width="18.0" customWidth="1" outlineLevel="1"/>
+        <col min="9" max="9" width="18.0" customWidth="1" collapsed="1"/>
     </cols>
     <sheetData>
         <row r="1">
             <c r="A1" t="s">
-                <v>1</v>
+                <v>3</v>
             </c>
             <c r="B1" t="s">
-                <v>2</v>
+                <v>4</v>
             </c>
             <c r="C1" t="s">
-                <v>3</v>
+                <v>5</v>
+            </c>
+            <c r="D1" s="1">
+                <v>0.125</v>
+            </c>
+            <c r="E1" t="s">
+                <v>6</v>
+            </c>
+            <c r="F1" t="s">
+                <v>7</v>
+            </c>
+            <c r="G1" t="s">
+                <v>8</v>
+            </c>
+            <c r="H1" t="s">
+                <v>9</v>
+            </c>
+            <c r="I1" t="s">
+                <v>10</v>
             </c>
         </row>
     </sheetData>

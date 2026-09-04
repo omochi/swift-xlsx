@@ -80,8 +80,17 @@ extension XMLUtils {
         element.setAttribute(name: name, value: value)
     }
 
-    public static func setBoolAttribute(name: String, value: Bool?, in element: XMLElement) {
+    public static func setBoolAttribute(
+        name: String,
+        value: Bool?,
+        default: Bool? = nil,
+        in element: XMLElement
+    ) {
         guard let value else {
+            element.removeAttribute(name: name)
+            return
+        }
+        if let `default`, value == `default` {
             element.removeAttribute(name: name)
             return
         }

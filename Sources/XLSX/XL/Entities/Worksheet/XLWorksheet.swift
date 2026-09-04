@@ -15,12 +15,39 @@ public struct XLWorksheet {
         }
     }
 
-    public var dataValidation: XLDataValidations {
+    public var state: XLSheetState {
+        get {
+            package.workbook.file.sheets[sheetIndex].state
+        }
+        nonmutating set {
+            package.workbook.file.sheets[sheetIndex].state = newValue
+        }
+    }
+
+    public var dataValidation: XLDataValidations? {
         get {
             file.dataValidations
         }
         nonmutating set {
             file.dataValidations = newValue
+        }
+    }
+
+    public var sheetProtection: XLSheetProtection? {
+        get {
+            file.sheetProtection
+        }
+        nonmutating set {
+            file.sheetProtection = newValue
+        }
+    }
+
+    public var frozenPanes: XLFrozenPanes? {
+        get {
+            file.frozenPanes
+        }
+        nonmutating set {
+            file.frozenPanes = newValue
         }
     }
 

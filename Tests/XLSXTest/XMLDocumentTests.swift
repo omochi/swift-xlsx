@@ -88,6 +88,32 @@ struct XMLDocumentTests {
         #expect(output == #"<root custom="a&amp;b"><child>raw &lt; value</child></root>"#)
     }
 
+    @Test func serializesTextAsXMLStringAndData() {
+        let text = XMLText(#"raw < value & "quoted""#)
+        let expected = #"raw &lt; value &amp; "quoted""#
+
+        #expect(text.xmlString() == expected)
+        #expect(text.data() == Data(expected.utf8))
+    }
+
+    @Test func serializesElementAndDocumentAsData() {
+        let element = XMLElement(
+            name: XMLName(name: "root"),
+            children: [XMLElement(name: XMLName(name: "child"))]
+        )
+        let document = XMLDocument(children: [element])
+
+        #expect(element.data() == Data("<root><child/></root>".utf8))
+        #expect(element.data(pretty: true) == Data("""
+        <root>
+            <child/>
+        </root>
+        """.utf8) + Data([0x0a]))
+        #expect(document.data() == Data("""
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?><root><child/></root>
+        """.utf8))
+    }
+
     @Test func serializesDocumentAsPrettyXMLString() throws {
         let document = XMLDocument(children: [
             XMLElement(
@@ -394,6 +420,12 @@ struct XMLDocumentTests {
 
         XMLUtils.setBoolAttribute(name: "enabled", value: Optional<Bool>.none, in: element)
         #expect(element.attribute(name: "enabled") == nil)
+
+        XMLUtils.setBoolAttribute(name: "enabled", value: true, default: true, in: element)
+        #expect(element.attribute(name: "enabled") == nil)
+
+        XMLUtils.setBoolAttribute(name: "enabled", value: false, default: true, in: element)
+        #expect(element.attribute(name: "enabled") == XMLUtils.boolString(value: false))
 
         XMLUtils.setIntAttribute(name: "count", value: 1, in: element)
         #expect(element.attribute(name: "count") == "1")

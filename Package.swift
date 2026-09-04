@@ -9,8 +9,12 @@ let package = Package(
     ],
     products: [
         .library(
+            name: "XLSXXML",
+            targets: ["XLSXXML"]
+        ),
+        .library(
             name: "XLSX",
-            targets: ["XLSX"]
+            targets: ["XLSX", "XLSXXML"]
         ),
         .executable(
             name: "xlsx-tool",
@@ -21,6 +25,7 @@ let package = Package(
         .package(url: "https://github.com/gohanlon/swift-memberwise-init-macro.git", from: "0.6.0"),
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.0"),
         .package(url: "https://github.com/apple/swift-collections.git", from: "1.6.0"),
+        .package(url: "https://github.com/apple/swift-crypto.git", from: "4.5.0"),
         .package(url: "https://github.com/compnerd/xylem.git", branch: "main"),
     ],
     targets: [
@@ -39,6 +44,7 @@ let package = Package(
                 "XLSXXML",
                 .product(name: "MemberwiseInit", package: "swift-memberwise-init-macro"),
                 .product(name: "OrderedCollections", package: "swift-collections"),
+                .product(name: "Crypto", package: "swift-crypto"),
             ]
         ),
         .target(

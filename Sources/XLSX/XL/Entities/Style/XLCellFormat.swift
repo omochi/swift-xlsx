@@ -7,24 +7,26 @@ public struct XLCellFormat: Hashable {
         fill: XLFill? = nil,
         border: XLBorder? = nil,
         styleFormat: XLCellStyleFormatRef? = nil,
+        protection: XLCellFormatProtection? = nil,
         applyNumberFormat: Bool? = nil,
         applyFont: Bool? = nil,
         applyFill: Bool? = false,
         applyBorder: Bool? = nil,
         applyAlignment: Bool = false,
-        applyProtection: Bool = false
+        applyProtection: Bool? = nil
     ) {
         self.numberFormat = numberFormat
         self.font = font
         self.fill = fill
         self.border = border
         self.styleFormat = styleFormat
+        self.protection = protection
         self.applyNumberFormat = applyNumberFormat ?? (self.numberFormat != nil)
         self.applyFont = applyFont ?? (font != nil)
         self.applyFill = applyFill ?? (fill != nil)
         self.applyBorder = applyBorder ?? (border != nil)
         self.applyAlignment = applyAlignment
-        self.applyProtection = applyProtection
+        self.applyProtection = applyProtection ?? (protection != nil)
     }
 
     public init(
@@ -42,6 +44,7 @@ public struct XLCellFormat: Hashable {
         self.styleFormat = record.styleFormatID.flatMap { id in
             cellStyleFormats.indices.contains(id) ? cellStyleFormats[id] : nil
         }
+        self.protection = record.protection
         self.applyNumberFormat = record.applyNumberFormat
         self.applyFont = record.applyFont
         self.applyFill = record.applyFill
@@ -71,6 +74,11 @@ public struct XLCellFormat: Hashable {
         }
     }
     public var styleFormat: XLCellStyleFormatRef? = nil
+    public var protection: XLCellFormatProtection? = nil {
+        didSet {
+            applyProtection = protection != nil
+        }
+    }
     public var applyNumberFormat = false
     public var applyFont = false
     public var applyFill = false
@@ -91,6 +99,7 @@ public struct XLCellFormat: Hashable {
             fillID: try fillID(in: fills),
             borderID: try borderID(in: borders),
             styleFormatID: styleFormatID(in: cellStyleFormats),
+            protection: protection,
             applyNumberFormat: applyNumberFormat,
             applyFont: applyFont,
             applyFill: applyFill,
@@ -113,7 +122,7 @@ public struct XLCellFormat: Hashable {
     public func collectStyle(stage: XLStyleCollectionStage, styleStorage: inout XLStyleStorage) throws {
         switch stage {
         case .numberFormats:
-            if case let .format(format)? = numberFormat {
+            if case .format(let format)? = numberFormat {
                 styleStorage.numberFormats.append(format)
             }
         case .fonts:
@@ -225,9 +234,9 @@ public struct XLCellFormat: Hashable {
         }
 
         switch numberFormat {
-        case let .builtin(id):
+        case .builtin(let id):
             return id
-        case let .format(format):
+        case .format(let format):
             guard let id = XLNumberFormat.customNumberFormatID(for: format, in: numberFormats) else {
                 throw OPCError.missingNumberFormatRecord
             }

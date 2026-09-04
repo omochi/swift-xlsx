@@ -47,7 +47,7 @@ public struct ExtractCommand: ParsableCommand {
             case .directory:
                 try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
 
-            case let .file(data):
+            case .file(let data):
                 let parentURL = url.deletingLastPathComponent()
                 try FileManager.default.createDirectory(at: parentURL, withIntermediateDirectories: true)
 

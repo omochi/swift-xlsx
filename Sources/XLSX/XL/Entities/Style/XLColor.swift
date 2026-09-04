@@ -34,11 +34,11 @@ public enum XLColor: Sendable & Hashable {
         let element = XMLElement(name: XMLName(name: name))
 
         switch self {
-        case let .rgb(value):
+        case .rgb(let value):
             element.setAttribute(name: "rgb", value: value)
-        case let .indexed(value):
+        case .indexed(let value):
             XMLUtils.setIntAttribute(name: "indexed", value: value, in: element)
-        case let .theme(value, tint):
+        case .theme(let value, let tint):
             XMLUtils.setIntAttribute(name: "theme", value: value, in: element)
             XMLUtils.setDoubleAttribute(name: "tint", value: tint, in: element)
         case .auto:

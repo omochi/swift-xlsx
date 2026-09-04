@@ -26,15 +26,15 @@ public final class XLSharedStringsFile {
         return try OPCFilePath(string: "sharedStrings.xml").resolved(relativeTo: workbookPath)
     }
 
-    public static func readStorage(xmlDocument: XMLDocument) throws -> OrderedSet<XLSharedStringRecord> {
+    public static func readStorage(xmlDocument: XMLDocument) throws -> OrderedSet<XLText> {
         guard let sharedStringsElement = xmlDocument.element(name: "sst") else {
             throw OPCError.invalidSharedStringsFile
         }
 
-        return OrderedSet(sharedStringRecords(in: sharedStringsElement))
+        return OrderedSet(texts(in: sharedStringsElement))
     }
 
-    public func xmlDocument(sharedStringStorage: OrderedSet<XLSharedStringRecord>) throws -> XMLDocument {
+    public func xmlDocument(sharedStringStorage: OrderedSet<XLText>) throws -> XMLDocument {
         let document = original?.clone() ?? XMLDocument()
         let sharedStringsElement = XMLUtils.ensureRootElement(name: "sst", in: document)
         sharedStringsElement.setDefaultNamespace(uri: .spreadsheet)
@@ -52,65 +52,20 @@ public final class XLSharedStringsFile {
 
     private func write(
         to sharedStringsElement: XMLElement,
-        sharedStringStorage: OrderedSet<XLSharedStringRecord>
+        sharedStringStorage: OrderedSet<XLText>
     ) throws {
         sharedStringsElement.children = try XMLUtils.patchChildren(
             parentElement: sharedStringsElement,
             replacingElementName: "si",
             records: sharedStringStorage,
-            makeElement: { record in
-                try elementForWriting(record: record)
+            makeElement: { text in
+                try text.xmlElement(name: "si")
             }
         )
     }
 
-    private func elementForWriting(
-        record: XLSharedStringRecord
-    ) throws -> XMLElement {
-        switch record {
-        case let .text(text):
-            return Self.makeTextElement(for: text)
-        case let .opaque(xmlString):
-            return try XMLElement(xmlString: xmlString)
-        }
-    }
-
-    public static func makeTextElement(for text: String) -> XMLElement {
-        let itemElement = XMLElement(name: XMLName(name: "si"))
-        let textElement = XMLElement(name: XMLName(name: "t"))
-        if text != text.trimmingCharacters(in: .whitespacesAndNewlines) {
-            textElement.attributes.append(XMLAttribute(
-                name: XMLName(prefix: "xml", name: "space"),
-                value: "preserve"
-            ))
-        }
-        textElement.appendChild(XMLText(text))
-        itemElement.appendChild(textElement)
-        return itemElement
-    }
-
-    private static func text(in element: XMLElement) -> String? {
-        let childElements = element.children.compactMap { $0 as? XMLElement }
-        let hasNonWhitespaceText = element.children.contains { child in
-            guard let text = child as? XMLText else {
-                return false
-            }
-            return !text.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        }
-
-        if !hasNonWhitespaceText,
-           childElements.count == 1,
-           let text = childElements.first,
-           text.name.name == "t"
-        {
-            return text.children.compactMap { ($0 as? XMLText)?.value }.joined()
-        }
-
-        return nil
-    }
-
-    private static func sharedStringRecords(in sharedStringsElement: XMLElement) -> [XLSharedStringRecord] {
-        var records: [XLSharedStringRecord] = []
+    private static func texts(in sharedStringsElement: XMLElement) -> [XLText] {
+        var texts: [XLText] = []
         for child in sharedStringsElement.children {
             guard let element = child as? XMLElement,
                   element.name.name == "si"
@@ -118,12 +73,8 @@ public final class XLSharedStringsFile {
                 continue
             }
 
-            if let text = text(in: element) {
-                records.append(.text(text))
-            } else {
-                records.append(.opaque(xmlString: element.xmlString()))
-            }
+            texts.append(XLText(element: element))
         }
-        return records
+        return texts
     }
 }

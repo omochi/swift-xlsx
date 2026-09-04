@@ -34,11 +34,22 @@ struct XLDocumentTests {
         #expect(sharedStringsXML.contains("<t>A</t>"))
     }
 
+    @Test func opensAndSerializesWorkbookData() throws {
+        let sourceData = try Data(contentsOf: try #require(Bundle.module.url(forResource: "simple", withExtension: "xlsx")))
+
+        let document = try XLDocument(data: sourceData)
+        let serializedData = try document.data()
+        let reopenedDocument = try XLDocument(data: serializedData)
+        let worksheet = try #require(reopenedDocument.workbook.worksheets.first)
+
+        #expect(worksheet.existingCell(row: 1, column: 1)?.value == .text("A"))
+    }
+
     @Test func opensPlainSharedStringCellsAsStringValues() throws {
         let document = try XLDocument.open(url: try #require(Bundle.module.url(forResource: "simple", withExtension: "xlsx")))
         let worksheet = try #require(document.workbook.worksheets.first)
 
-        #expect(worksheet.existingCell(row: 1, column: 1)?.value == .string("A"))
+        #expect(worksheet.existingCell(row: 1, column: 1)?.value == .text("A"))
     }
 
     @Test func opensCellFormatsThroughDocumentStylePool() throws {
@@ -438,7 +449,7 @@ struct XLDocumentTests {
 
         let document = try XLDocument.open(url: sourceURL)
         let worksheet = try #require(document.workbook.worksheets.first)
-        worksheet.cell(row: 1, column: 1).value = .string("B")
+        worksheet.cell(row: 1, column: 1).value = .text("B")
         try document.save(to: destinationURL)
 
         let package = try OPCPackage(data: Data(contentsOf: destinationURL))
@@ -750,6 +761,23 @@ struct XLDocumentTests {
         #expect(document.package.workbook.file.sheets[0].name == "Renamed")
     }
 
+    @Test func worksheetStateUsesWorkbookSheetEntry() throws {
+        let document = XLDocument()
+        let worksheet = try #require(document.workbook.worksheets.first)
+
+        #expect(worksheet.state == .visible)
+
+        worksheet.state = .hidden
+
+        #expect(document.package.workbook.file.sheets[0].state == .hidden)
+        let package = try OPCPackage(data: document.data())
+        let workbookXML = try String(
+            decoding: #require(package.data(at: OPCFilePath(string: "/xl/workbook.xml"))),
+            as: UTF8.self
+        )
+        #expect(workbookXML.contains(#"<sheet name="Sheet1" sheetId="1" r:id="rId1" state="hidden"/>"#))
+    }
+
     @Test func worksheetExposesDataValidationThroughFile() throws {
         let document = XLDocument()
         let worksheet = try #require(document.workbook.worksheets.first)
@@ -768,7 +796,48 @@ struct XLDocumentTests {
         )
 
         #expect(worksheet.file.dataValidations == worksheet.dataValidation)
-        #expect(worksheet.file.dataValidations.validations.first?.address?.description == "B2:B10")
+        #expect(worksheet.file.dataValidations?.validations.first?.address?.description == "B2:B10")
+    }
+
+    @Test func worksheetExposesSheetProtectionThroughFile() throws {
+        let document = XLDocument()
+        let worksheet = try #require(document.workbook.worksheets.first)
+
+        worksheet.sheetProtection = XLSheetProtection(
+            formatCells: false,
+            passwordHashInfo: XLSheetProtection.PasswordHashInfo(algorithmName: "SHA-512")
+        )
+
+        #expect(worksheet.file.sheetProtection == worksheet.sheetProtection)
+        #expect(worksheet.file.sheetProtection?.formatCells == false)
+        #expect(worksheet.file.sheetProtection?.selectLockedCells == false)
+        #expect(worksheet.file.sheetProtection?.selectUnlockedCells == false)
+        #expect(worksheet.file.sheetProtection?.passwordHashInfo.algorithmName == "SHA-512")
+    }
+
+    @Test func worksheetExposesFrozenPanesAndWritesWorkbookView() throws {
+        let document = XLDocument()
+        let worksheet = try #require(document.workbook.worksheets.first)
+
+        worksheet.frozenPanes = XLFrozenPanes(rowCount: 1, columnCount: 2)
+
+        #expect(worksheet.file.frozenPanes == worksheet.frozenPanes)
+        #expect(worksheet.frozenPanes == XLFrozenPanes(rowCount: 1, columnCount: 2))
+
+        let package = try OPCPackage(data: document.data())
+        let workbookXML = try String(
+            decoding: #require(package.data(at: OPCFilePath(string: "/xl/workbook.xml"))),
+            as: UTF8.self
+        )
+        let worksheetXML = try String(
+            decoding: #require(package.data(at: OPCFilePath(string: "/xl/worksheets/sheet1.xml"))),
+            as: UTF8.self
+        )
+
+        #expect(workbookXML.contains(#"<bookViews><workbookView/></bookViews><sheets>"#))
+        #expect(worksheetXML.contains(
+            #"<pane xSplit="2" ySplit="1" topLeftCell="C2" activePane="bottomRight" state="frozen"/>"#
+        ))
     }
 
     @Test func workbookWorksheetsShareWorksheetFileInstances() throws {
@@ -788,14 +857,15 @@ struct XLDocumentTests {
         #expect(worksheet.existingRowNumbers == [])
 
         let row = worksheet.row(3)
-        row.storage.cell(column: 2).value = .string("value")
+        row.storage.cell(column: 2).value = .text("value")
 
         #expect(row.number == 3)
         #expect(worksheet.maxRowNumber == 3)
+        #expect(worksheet.maxColumnNumber == 2)
         #expect(worksheet.existingRowNumbers == [3])
         #expect(worksheet.existingRows.map(\.number) == [3])
         #expect(worksheet.existingRows.map(\.existingColumnNumbers) == [[2]])
-        #expect(worksheet.existingRow(3)?.storage.existingCell(column: 2)?.value == .string("value"))
+        #expect(worksheet.existingRow(3)?.storage.existingCell(column: 2)?.value == .text("value"))
     }
 
     @Test func worksheetExposesColumnsThroughHandles() throws {
@@ -817,7 +887,7 @@ struct XLDocumentTests {
         worksheet.column(5).width = 8.5
 
         #expect(column.number == 3)
-        #expect(worksheet.maxColumnNumber == 5)
+        #expect(worksheet.maxColumnNumber == nil)
         #expect(worksheet.existingColumnNumbers == [3, 5])
         #expect(worksheet.existingColumns.map(\.number) == [3, 5])
         #expect(worksheet.existingColumns.map(\.width) == [20, 8.5])
@@ -840,32 +910,36 @@ struct XLDocumentTests {
         #expect(row.existingColumnNumbers == [])
 
         let cell = row.cell(column: 2)
-        cell.value = .string("value")
-        row.cell(column: 4).value = .string("right")
+        cell.value = .text("value")
+        row.cell(column: 4).value = .text("right")
 
         #expect(cell.address == XLCellAddress(row: 3, column: 2))
         #expect(row.maxColumnNumber == 4)
         #expect(row.existingColumnNumbers == [2, 4])
         #expect(row.existingCells.map(\.column) == [2, 4])
-        #expect(row.existingCells.map(\.value) == [.string("value"), .string("right")])
-        #expect(row.existingCell(column: 2)?.value == .string("value"))
+        #expect(row.existingCells.map(\.value) == [.text("value"), .text("right")])
+        #expect(row.existingCell(column: 2)?.value == .text("value"))
     }
 
     @Test func worksheetExposesCellsThroughHandles() throws {
         let document = XLDocument()
         let worksheet = try #require(document.workbook.worksheets.first)
         let address = try #require(XLCellAddress("D4"))
+        let absoluteAddress = try #require(XLCellAddress("$D$4"))
 
         #expect(worksheet.existingCell(row: 3, column: 2) == nil)
         #expect(worksheet.existingCell(address: address) == nil)
 
-        worksheet.cell(row: 3, column: 2).value = .string("left")
-        worksheet.cell(address: address).value = .string("right")
+        worksheet.cell(row: 3, column: 2).value = .text("left")
+        worksheet.cell(address: address).value = .text("right")
+        worksheet.cell(address: absoluteAddress).value = .text("absolute")
 
         #expect(worksheet.existingCell(row: 3, column: 2)?.address == XLCellAddress(row: 3, column: 2))
-        #expect(worksheet.existingCell(row: 3, column: 2)?.value == .string("left"))
+        #expect(worksheet.existingCell(row: 3, column: 2)?.value == .text("left"))
         #expect(worksheet.existingCell(address: address)?.address == address)
-        #expect(worksheet.existingCell(address: address)?.value == .string("right"))
+        #expect(worksheet.existingCell(address: address)?.value == .text("absolute"))
+        #expect(worksheet.existingCell(address: absoluteAddress)?.address == address)
+        #expect(worksheet.existingCell(address: absoluteAddress)?.value == .text("absolute"))
     }
 
     @Test func appendsWorksheet() throws {
@@ -1038,7 +1112,7 @@ struct XLDocumentTests {
         )
         #expect(savedSharedStringsXML.contains(#"<rPr><b/></rPr>"#))
         #expect(savedSharedStringsXML.contains(#"<t>Rich</t>"#))
-        #expect(savedSharedStringsXML.contains(#"<t> text</t>"#))
+        #expect(savedSharedStringsXML.contains(#"<t xml:space="preserve"> text</t>"#))
     }
 }
 

@@ -3,28 +3,40 @@ import MemberwiseInit
 @MemberwiseInit(.public)
 public struct XLCellAddress: Sendable & Hashable & LosslessStringConvertible {
     public init?(_ description: String) {
-        var column = 0
+        var isColumnAbsolute = false
         var index = description.unicodeScalars.startIndex
 
-        while index < description.unicodeScalars.endIndex {
-            let scalar = description.unicodeScalars[index]
-            guard let value = Self.columnValue(of: scalar) else {
-                break
-            }
-
-            let (multipliedColumn, didMultiplyOverflow) = column.multipliedReportingOverflow(by: 26)
-            let (nextColumn, didAddOverflow) = multipliedColumn.addingReportingOverflow(value)
-            guard !didMultiplyOverflow, !didAddOverflow else {
-                return nil
-            }
-
-            column = nextColumn
+        if index < description.unicodeScalars.endIndex,
+           description.unicodeScalars[index] == Self.dollar
+        {
+            isColumnAbsolute = true
             index = description.unicodeScalars.index(after: index)
         }
 
-        guard column > 0,
+        let columnStartIndex = index
+        while index < description.unicodeScalars.endIndex {
+            let scalar = description.unicodeScalars[index]
+            guard Self.columnDigitValue(of: scalar) != nil else {
+                break
+            }
+
+            index = description.unicodeScalars.index(after: index)
+        }
+
+        let columnText = String(description.unicodeScalars[columnStartIndex..<index])
+        guard let column = Self.columnValue(string: columnText),
               index < description.unicodeScalars.endIndex
         else {
+            return nil
+        }
+
+        var isRowAbsolute = false
+        if description.unicodeScalars[index] == Self.dollar {
+            isRowAbsolute = true
+            index = description.unicodeScalars.index(after: index)
+        }
+
+        guard index < description.unicodeScalars.endIndex else {
             return nil
         }
 
@@ -49,15 +61,33 @@ public struct XLCellAddress: Sendable & Hashable & LosslessStringConvertible {
             return nil
         }
 
+        self.isRowAbsolute = isRowAbsolute
         self.row = row
+        self.isColumnAbsolute = isColumnAbsolute
         self.column = column
     }
 
+    public var isRowAbsolute: Bool = false
     public var row: Int
+    public var isColumnAbsolute: Bool = false
     public var column: Int
+
+    public static var maxRowNumber: Int {
+        1_048_576
+    }
+
+    public static var maxColumnNumber: Int {
+        16_384
+    }
 
     public var description: String {
         precondition(row > 0, "XLCellAddress row must be positive.")
+        precondition(column > 0, "XLCellAddress column must be positive.")
+
+        return "\(isColumnAbsolute ? "$" : "")\(Self.columnString(column))\(isRowAbsolute ? "$" : "")\(row)"
+    }
+
+    public static func columnString(_ column: Int) -> String {
         precondition(column > 0, "XLCellAddress column must be positive.")
 
         var remainingColumn = column
@@ -69,9 +99,32 @@ public struct XLCellAddress: Sendable & Hashable & LosslessStringConvertible {
             remainingColumn /= 26
         }
 
-        return String(String.UnicodeScalarView(scalars.reversed())) + String(row)
+        return String(String.UnicodeScalarView(scalars.reversed()))
     }
 
+    public static func columnValue(string: String) -> Int? {
+        var column = 0
+        for scalar in string.unicodeScalars {
+            guard let value = Self.columnDigitValue(of: scalar) else {
+                return nil
+            }
+
+            let (multipliedColumn, didMultiplyOverflow) = column.multipliedReportingOverflow(by: 26)
+            let (nextColumn, didAddOverflow) = multipliedColumn.addingReportingOverflow(value)
+            guard !didMultiplyOverflow, !didAddOverflow else {
+                return nil
+            }
+
+            column = nextColumn
+        }
+
+        guard column > 0 else {
+            return nil
+        }
+        return column
+    }
+
+    private static let dollar = UnicodeScalar(36)!
     private static let uppercaseA = 65
     private static let uppercaseZ = 90
     private static let lowercaseA = 97
@@ -79,7 +132,7 @@ public struct XLCellAddress: Sendable & Hashable & LosslessStringConvertible {
     private static let zero = 48
     private static let nine = 57
 
-    private static func columnValue(of scalar: UnicodeScalar) -> Int? {
+    private static func columnDigitValue(of scalar: UnicodeScalar) -> Int? {
         let value = Int(scalar.value)
         if uppercaseA...uppercaseZ ~= value {
             return value - uppercaseA + 1

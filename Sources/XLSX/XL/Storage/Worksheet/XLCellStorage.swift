@@ -14,7 +14,7 @@ public final class XLCellStorage {
 
     public init?(
         cellElement: XMLElement,
-        sharedStringStorage: OrderedSet<XLSharedStringRecord>,
+        sharedStringStorage: OrderedSet<XLText>,
         styleStorage: XLStyleStorage,
         sharedFormulaDefinitionAddressByIndex: [Int: XLCellAddress] = [:]
     ) {
@@ -43,7 +43,7 @@ public final class XLCellStorage {
     public func write(
         to cellElement: XMLElement,
         address: XLCellAddress? = nil,
-        sharedStringStorage: OrderedSet<XLSharedStringRecord>? = nil,
+        sharedStringStorage: OrderedSet<XLText>? = nil,
         styleStorage: XLStyleStorage? = nil,
         formulaSharedIndicesByDefinitionAddress: [XLCellAddress: Int]? = nil
     ) throws {
@@ -77,12 +77,12 @@ public final class XLCellStorage {
     }
 
     public func collectSharedStrings(
-        sharedStringStorage: inout OrderedSet<XLSharedStringRecord>,
+        sharedStringStorage: inout OrderedSet<XLText>,
         address: XLCellAddress,
         formulaSharedIndicesByDefinitionAddress: [XLCellAddress: Int]
     ) {
         if let formula,
-           case .string = value,
+           case .text = value,
            formulaRecordForWriting(
                for: formula,
                address: address,
@@ -95,12 +95,10 @@ public final class XLCellStorage {
         collectValueSharedStrings(sharedStringStorage: &sharedStringStorage)
     }
 
-    private func collectValueSharedStrings(sharedStringStorage: inout OrderedSet<XLSharedStringRecord>) {
+    private func collectValueSharedStrings(sharedStringStorage: inout OrderedSet<XLText>) {
         switch value {
-        case let .string(text):
-            sharedStringStorage.append(.text(text))
-        case let .opaqueSharedString(xmlString):
-            sharedStringStorage.append(.opaque(xmlString: xmlString))
+        case .text(let text):
+            sharedStringStorage.append(text)
         case .number, .boolean, .error:
             break
         }
@@ -177,14 +175,14 @@ public final class XLCellStorage {
 
     private func writeValue(
         to cellElement: XMLElement,
-        sharedStringStorage: OrderedSet<XLSharedStringRecord>?,
+        sharedStringStorage: OrderedSet<XLText>?,
         hasFormula: Bool
     ) throws {
         if hasFormula,
-           case let .string(text) = value
+           case .text(let text) = value
         {
             cellElement.setAttribute(name: "t", value: "str")
-            appendValueElement(to: cellElement, text: text)
+            appendValueElement(to: cellElement, text: text.string)
             return
         }
 
@@ -197,16 +195,16 @@ public final class XLCellStorage {
         sharedIndicesByDefinitionAddress: [XLCellAddress: Int]?
     ) -> XLFormulaRecord? {
         switch formula {
-        case let .regular(formula):
+        case .regular(let formula):
             return XLFormulaRecord(formula: formula)
-        case let .sharedDefinition(definition):
+        case .sharedDefinition(let definition):
             return XLFormulaRecord(
                 formula: definition.formula,
                 kind: .shared,
                 sharedIndex: address.flatMap { sharedIndicesByDefinitionAddress?[$0] },
                 reference: definition.reference
             )
-        case let .sharedReference(address):
+        case .sharedReference(let address):
             guard let sharedIndex = sharedIndicesByDefinitionAddress?[address] else {
                 return nil
             }
@@ -216,7 +214,7 @@ public final class XLCellStorage {
                 kind: .shared,
                 sharedIndex: sharedIndex
             )
-        case let .array(xmlString), let .dataTable(xmlString):
+        case .array(let xmlString), .dataTable(let xmlString):
             guard let element = try? XMLElement(xmlString: xmlString),
                   element.name.name == "f"
             else {

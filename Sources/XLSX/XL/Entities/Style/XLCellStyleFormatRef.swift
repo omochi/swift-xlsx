@@ -92,9 +92,9 @@ public struct XLCellStyleFormatRef: Hashable {
         }
 
         switch numberFormat {
-        case let .builtin(id):
+        case .builtin(let id):
             return id
-        case let .format(format):
+        case .format(let format):
             return XLNumberFormat.customNumberFormatID(for: format, in: numberFormats)
         }
     }
@@ -102,7 +102,7 @@ public struct XLCellStyleFormatRef: Hashable {
     public func collectStyle(stage: XLStyleCollectionStage, styleStorage: inout XLStyleStorage) {
         switch stage {
         case .numberFormats:
-            if case let .format(format)? = numberFormat {
+            if case .format(let format)? = numberFormat {
                 styleStorage.numberFormats.append(format)
             }
         case .fonts:

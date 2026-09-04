@@ -311,7 +311,7 @@ enum ZIPArchive {
                     data: Data()
                 )
 
-            case let .file(data):
+            case .file(let data):
                 ZIPEntry(
                     name: entry.path.components.joined(separator: "/"),
                     data: data

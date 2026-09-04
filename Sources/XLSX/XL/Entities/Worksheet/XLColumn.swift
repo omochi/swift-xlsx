@@ -2,6 +2,8 @@ import MemberwiseInit
 
 @MemberwiseInit(.public)
 public struct XLColumn {
+    public static var defaultColumnWidth: Double { 10.7109375 }
+
     public var number: Int
     public var storage: XLColumnStorage
 

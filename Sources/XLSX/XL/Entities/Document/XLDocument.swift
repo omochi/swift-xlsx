@@ -13,6 +13,10 @@ public struct XLDocument {
         try self.init(package: XLDocumentPackage(opcPackage: opcPackage))
     }
 
+    public init(data: Data) throws {
+        try self.init(opcPackage: OPCPackage(data: data))
+    }
+
     public var package: XLDocumentPackage
 
     public var workbook: XLWorkbook {
@@ -20,11 +24,14 @@ public struct XLDocument {
     }
 
     public static func open(url: URL) throws -> XLDocument {
-        try XLDocument(opcPackage: OPCPackage(data: Data(contentsOf: url)))
+        try XLDocument(data: Data(contentsOf: url))
+    }
+
+    public func data() throws -> Data {
+        try package.clone().makeOPCPackage().data()
     }
 
     public func save(to url: URL) throws {
-        let data = try package.clone().makeOPCPackage().data()
-        try data.write(to: url, options: .atomic)
+        try data().write(to: url, options: .atomic)
     }
 }

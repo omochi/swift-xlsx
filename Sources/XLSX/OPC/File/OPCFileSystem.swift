@@ -23,7 +23,7 @@ enum OPCFileSystem {
             case .directory:
                 try fileManager.createDirectory(at: url, withIntermediateDirectories: true)
 
-            case let .file(data):
+            case .file(let data):
                 let parentURL = url.deletingLastPathComponent()
                 try fileManager.createDirectory(at: parentURL, withIntermediateDirectories: true)
 

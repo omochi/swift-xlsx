@@ -7,24 +7,26 @@ public struct XLCellFormatRecord: Sendable & Hashable {
         fillID: Int? = nil,
         borderID: Int? = nil,
         styleFormatID: Int? = nil,
+        protection: XLCellFormatProtection? = nil,
         applyNumberFormat: Bool = false,
         applyFont: Bool = false,
         applyFill: Bool = false,
         applyBorder: Bool = false,
         applyAlignment: Bool = false,
-        applyProtection: Bool = false
+        applyProtection: Bool? = nil
     ) {
         self.numberFormatID = numberFormatID
         self.fontID = fontID
         self.fillID = fillID
         self.borderID = borderID
         self.styleFormatID = styleFormatID
+        self.protection = protection
         self.applyNumberFormat = applyNumberFormat
         self.applyFont = applyFont
         self.applyFill = applyFill
         self.applyBorder = applyBorder
         self.applyAlignment = applyAlignment
-        self.applyProtection = applyProtection
+        self.applyProtection = applyProtection ?? (protection != nil)
     }
 
     public init(element: XMLElement) {
@@ -34,12 +36,13 @@ public struct XLCellFormatRecord: Sendable & Hashable {
             fillID: XMLUtils.intAttribute(name: "fillId", in: element),
             borderID: XMLUtils.intAttribute(name: "borderId", in: element),
             styleFormatID: XMLUtils.intAttribute(name: "xfId", in: element),
+            protection: element.elements(name: "protection").first.flatMap(XLCellFormatProtection.init(element:)),
             applyNumberFormat: XMLUtils.boolAttribute(name: "applyNumberFormat", in: element),
             applyFont: XMLUtils.boolAttribute(name: "applyFont", in: element),
             applyFill: XMLUtils.boolAttribute(name: "applyFill", in: element),
             applyBorder: XMLUtils.boolAttribute(name: "applyBorder", in: element),
             applyAlignment: XMLUtils.boolAttribute(name: "applyAlignment", in: element),
-            applyProtection: XMLUtils.boolAttribute(name: "applyProtection", in: element)
+            applyProtection: XMLUtils.boolAttribute(name: "applyProtection", in: element, defaultValue: nil)
         )
     }
 
@@ -48,6 +51,11 @@ public struct XLCellFormatRecord: Sendable & Hashable {
     public var fillID: Int?
     public var borderID: Int?
     public var styleFormatID: Int?
+    public var protection: XLCellFormatProtection? {
+        didSet {
+            applyProtection = protection != nil
+        }
+    }
     public var applyNumberFormat: Bool
     public var applyFont: Bool
     public var applyFill: Bool
@@ -68,6 +76,9 @@ public struct XLCellFormatRecord: Sendable & Hashable {
         XMLUtils.setBoolAttribute(name: "applyBorder", value: applyBorder ? true : nil, in: element)
         XMLUtils.setBoolAttribute(name: "applyAlignment", value: applyAlignment ? true : nil, in: element)
         XMLUtils.setBoolAttribute(name: "applyProtection", value: applyProtection ? true : nil, in: element)
+        if let protection {
+            element.appendChild(protection.xmlElement())
+        }
         return element
     }
 }

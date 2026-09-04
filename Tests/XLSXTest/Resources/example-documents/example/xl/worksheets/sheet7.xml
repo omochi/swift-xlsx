@@ -3,34 +3,233 @@
     xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="">
+    <cols>
+        <col min="1" max="1" width="24.0" customWidth="1"/>
+        <col min="2" max="2" width="20.0" customWidth="1"/>
+        <col min="3" max="3" width="32.0" customWidth="1"/>
+        <col min="8" max="8" width="18.0" customWidth="1"/>
+    </cols>
     <sheetData>
         <row r="1">
             <c r="A1" t="s">
-                <v>47</v>
+                <v>95</v>
             </c>
             <c r="B1" t="s">
-                <v>48</v>
+                <v>96</v>
+            </c>
+            <c r="C1" t="s">
+                <v>97</v>
+            </c>
+            <c r="H1" t="s">
+                <v>98</v>
             </c>
         </row>
         <row r="2">
             <c r="A2" t="s">
-                <v>49</v>
+                <v>99</v>
+            </c>
+            <c r="B2" t="s">
+                <v>100</v>
+            </c>
+            <c r="C2" t="s">
+                <v>101</v>
+            </c>
+            <c r="H2" t="s">
+                <v>100</v>
             </c>
         </row>
         <row r="3">
             <c r="A3" t="s">
-                <v>50</v>
+                <v>102</v>
+            </c>
+            <c r="B3">
+                <v>5</v>
+            </c>
+            <c r="C3" t="s">
+                <v>103</v>
+            </c>
+            <c r="H3" t="s">
+                <v>104</v>
+            </c>
+        </row>
+        <row r="4">
+            <c r="A4" t="s">
+                <v>105</v>
+            </c>
+            <c r="B4">
+                <v>0.5</v>
+            </c>
+            <c r="C4" t="s">
+                <v>106</v>
+            </c>
+            <c r="H4" t="s">
+                <v>107</v>
+            </c>
+        </row>
+        <row r="5">
+            <c r="A5" t="s">
+                <v>26</v>
+            </c>
+            <c r="B5" s="8">
+                <v>25569</v>
+            </c>
+            <c r="C5" t="s">
+                <v>108</v>
+            </c>
+        </row>
+        <row r="6">
+            <c r="A6" t="s">
+                <v>28</v>
+            </c>
+            <c r="B6" s="9">
+                <v>0.5</v>
+            </c>
+            <c r="C6" t="s">
+                <v>109</v>
+            </c>
+        </row>
+        <row r="7">
+            <c r="A7" t="s">
+                <v>110</v>
+            </c>
+            <c r="B7" t="s">
+                <v>111</v>
+            </c>
+            <c r="C7" t="s">
+                <v>112</v>
+            </c>
+        </row>
+        <row r="8">
+            <c r="A8" t="s">
+                <v>37</v>
+            </c>
+            <c r="B8">
+                <v>4</v>
+            </c>
+            <c r="C8" t="s">
+                <v>113</v>
+            </c>
+        </row>
+        <row r="10">
+            <c r="A10" t="s">
+                <v>114</v>
+            </c>
+            <c r="B10" t="s">
+                <v>104</v>
+            </c>
+        </row>
+        <row r="11">
+            <c r="B11" t="s">
+                <v>107</v>
+            </c>
+        </row>
+        <row r="12">
+            <c r="B12" t="s">
+                <v>100</v>
             </c>
         </row>
     </sheetData>
-    <dataValidations count="1">
+    <dataValidations count="7">
         <dataValidation
-            sqref="B2"
+            sqref="B2 B10:B12"
             type="list"
             errorStyle="stop"
             allowBlank="1"
-            showErrorMessage="1">
-            <formula1>$A$1:$A$3</formula1>
+            showInputMessage="1"
+            showErrorMessage="1"
+            errorTitle="Invalid list value"
+            error="Select a value from the list."
+            promptTitle="List validation"
+            prompt="Select Apple, Banana, or Cherry.">
+            <formula1>$H$2:$H$4</formula1>
+        </dataValidation>
+        <dataValidation
+            sqref="B3"
+            type="whole"
+            operator="between"
+            errorStyle="stop"
+            allowBlank="1"
+            showInputMessage="1"
+            showErrorMessage="1"
+            errorTitle="Invalid whole number"
+            error="Enter a whole number from 1 through 10."
+            promptTitle="Whole number"
+            prompt="Enter 1 through 10.">
+            <formula1>1</formula1>
+            <formula2>10</formula2>
+        </dataValidation>
+        <dataValidation
+            sqref="B4"
+            type="decimal"
+            operator="between"
+            errorStyle="warning"
+            allowBlank="1"
+            showInputMessage="1"
+            showErrorMessage="1"
+            errorTitle="Decimal outside range"
+            error="Enter a decimal from 0 through 1."
+            promptTitle="Decimal"
+            prompt="Enter 0 through 1.">
+            <formula1>0</formula1>
+            <formula2>1</formula2>
+        </dataValidation>
+        <dataValidation
+            sqref="B5"
+            type="date"
+            operator="between"
+            errorStyle="stop"
+            allowBlank="1"
+            showInputMessage="1"
+            showErrorMessage="1"
+            errorTitle="Invalid date"
+            error="Enter a date from 1960 through 2080."
+            promptTitle="Date"
+            prompt="Enter a date from 1960 through 2080.">
+            <formula1>DATE(1960,1,1)</formula1>
+            <formula2>DATE(2080,12,31)</formula2>
+        </dataValidation>
+        <dataValidation
+            sqref="B6"
+            type="time"
+            operator="between"
+            errorStyle="stop"
+            allowBlank="1"
+            showInputMessage="1"
+            showErrorMessage="1"
+            errorTitle="Invalid time"
+            error="Enter a time from 09:00 through 17:00."
+            promptTitle="Time"
+            prompt="Enter a time from 09:00 through 17:00.">
+            <formula1>TIME(9,0,0)</formula1>
+            <formula2>TIME(17,0,0)</formula2>
+        </dataValidation>
+        <dataValidation
+            sqref="B7"
+            type="textLength"
+            operator="lessThanOrEqual"
+            errorStyle="stop"
+            imeMode="hiragana"
+            allowBlank="1"
+            showInputMessage="1"
+            showErrorMessage="1"
+            errorTitle="Text is too long"
+            error="Enter 10 characters or fewer."
+            promptTitle="Text length"
+            prompt="Enter 10 characters or fewer.">
+            <formula1>10</formula1>
+        </dataValidation>
+        <dataValidation
+            sqref="B8"
+            type="custom"
+            errorStyle="information"
+            allowBlank="1"
+            showInputMessage="1"
+            showErrorMessage="1"
+            errorTitle="Odd number"
+            error="Enter an even number."
+            promptTitle="Custom validation"
+            prompt="Enter an even number.">
+            <formula1>MOD(B8,2)=0</formula1>
         </dataValidation>
     </dataValidations>
 </worksheet>

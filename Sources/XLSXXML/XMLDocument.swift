@@ -51,8 +51,8 @@ public final class XMLDocument: XMLNode {
         return serializer.serialize(document: self)
     }
 
-    public var data: Data {
-        Data(xmlString().utf8)
+    public func data(pretty: Bool = false) -> Data {
+        Data(xmlString(pretty: pretty).utf8)
     }
 
     public func element(name: String) -> XMLElement? {

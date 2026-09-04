@@ -34,7 +34,7 @@ public struct XLFont: Sendable & Hashable {
                 size = XMLUtils.doubleAttribute(name: "val", in: childElement)
             case "color":
                 color = XLColor(element: childElement)
-            case "name":
+            case "name", "rFont":
                 name = childElement.attribute(name: "val")
             case "family":
                 familyXMLString = childElement.xmlString()
@@ -64,8 +64,11 @@ public struct XLFont: Sendable & Hashable {
     public var charsetXMLString: String? = nil
     public var schemeXMLString: String? = nil
 
-    public func xmlElement() throws -> XMLElement {
-        let element = XMLElement(name: XMLName(name: "font"))
+    public func xmlElement(
+        name elementName: String = "font",
+        fontNameElementName: String = "name"
+    ) throws -> XMLElement {
+        let element = XMLElement(name: XMLName(name: elementName))
         appendBoolFontProperty(name: "b", value: bold, to: element)
         appendBoolFontProperty(name: "i", value: italic, to: element)
         appendBoolFontProperty(name: "strike", value: strike, to: element)
@@ -77,7 +80,7 @@ public struct XLFont: Sendable & Hashable {
         try appendElement(xmlString: verticalAlignmentXMLString, to: element)
         appendFontSize(to: element)
         appendColor(to: element)
-        appendFontName(to: element)
+        appendFontName(name: fontNameElementName, to: element)
         try appendElement(xmlString: familyXMLString, to: element)
         try appendElement(xmlString: charsetXMLString, to: element)
         try appendElement(xmlString: schemeXMLString, to: element)
@@ -111,11 +114,11 @@ public struct XLFont: Sendable & Hashable {
         element.appendChild(color.xmlElement(name: "color"))
     }
 
-    private func appendFontName(to element: XMLElement) {
+    private func appendFontName(name elementName: String, to element: XMLElement) {
         guard name != nil else {
             return
         }
-        let nameElement = XMLElement(name: XMLName(name: "name"))
+        let nameElement = XMLElement(name: XMLName(name: elementName))
         XMLUtils.setStringAttribute(name: "val", value: name, in: nameElement)
         element.appendChild(nameElement)
     }
