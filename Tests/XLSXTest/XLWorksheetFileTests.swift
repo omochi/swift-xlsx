@@ -370,6 +370,14 @@ struct XLWorksheetFileTests {
         #expect(xml.contains(#"<sheetData><row r="2"><c r="B2" t="inlineStr"><is><t>left</t></is></c><c r="D2" t="inlineStr"><is><t>right</t></is></c></row><row r="10"><c r="C10" t="inlineStr"><is><t>bottom</t></is></c></row></sheetData>"#))
     }
 
+    @Test func writesRequiredSheetDataWhenRowsAreEmpty() throws {
+        let worksheet = XLWorksheetFile()
+
+        let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
+
+        #expect(xml.contains(#"<sheetData/>"#))
+    }
+
     @Test func writesColumnsToWorksheetXML() throws {
         let worksheet = XLWorksheetFile(
             columnByNumber: [
@@ -381,7 +389,7 @@ struct XLWorksheetFileTests {
 
         let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
 
-        #expect(xml.contains(#"<cols><col min="2" max="2" width="20.0" customWidth="1"/><col min="4" max="4" width="8.5" customWidth="1"/></cols>"#))
+        #expect(xml.contains(#"<cols><col min="2" max="2" width="20.0" customWidth="1"/><col min="4" max="4" width="8.5" customWidth="1"/></cols><sheetData/>"#))
     }
 
     @Test func writesConsecutiveEquivalentColumnsAsRange() throws {
@@ -560,7 +568,7 @@ struct XLWorksheetFileTests {
 
         let xml = try String(decoding: worksheet.xmlDocument().data(), as: UTF8.self)
 
-        #expect(xml.contains(#"<sheetProtection sheet="1" objects="1" scenarios="1"/>"#))
+        #expect(xml.contains(#"<sheetData/><sheetProtection sheet="1" objects="1" scenarios="1"/>"#))
     }
 
     @Test func preservesEmptyDataValidationsTagWhenPresent() throws {

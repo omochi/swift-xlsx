@@ -312,11 +312,17 @@ public final class XLWorksheetFile {
         sharedStringStorage: OrderedSet<XLText>? = nil,
         styleStorage: XLStyleStorage? = nil
     ) throws {
+        let sheetDataElement = XMLUtils.ensureChildElement(
+            name: "sheetData",
+            in: worksheetElement,
+            insertionIndex: {
+                self.worksheetChildInsertionIndex(name: "sheetData", in: worksheetElement.children)
+            }
+        )
         guard !rowByNumber.isEmpty else {
             return
         }
 
-        let sheetDataElement = XMLUtils.ensureChildElement(name: "sheetData", in: worksheetElement)
         let sheetDataChildren = rowElementsAndOtherChildren(in: sheetDataElement)
         var rowElementByNumber = sheetDataChildren.rowElementByNumber
         let formulaSharedIndicesByDefinitionAddress = sharedFormulaIndicesByDefinitionAddress()
