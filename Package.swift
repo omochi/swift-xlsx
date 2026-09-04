@@ -26,8 +26,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.0"),
         .package(url: "https://github.com/apple/swift-collections.git", from: "1.6.0"),
         .package(url: "https://github.com/apple/swift-crypto.git", from: "4.5.0"),
-        // 公式にはまだバージョンリリースがないため、バージョンを打っただけの fork を使っている
-        .package(url: "https://github.com/omochi/xylem.git", from: "0.0.1"),
+        .package(url: "https://github.com/compnerd/xylem.git", from: "0.0.1"),
     ],
     targets: [
         .target(
