@@ -1,5 +1,5 @@
 {
-  "originHash" : "f26c2a0b29c1de64400c4cf831b1df11bc4c8c08616dd7a59d11ab31be38a877",
+  "originHash" : "18dd03ee63b7d1fb2b8d0416db44bc7171c31f88f45f00db66cfb3f581a4cd10",
   "pins" : [
     {
       "identity" : "swift-argument-parser",
@@ -58,10 +58,10 @@
     {
       "identity" : "xylem",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/compnerd/xylem.git",
+      "location" : "https://github.com/omochi/xylem.git",
       "state" : {
-        "branch" : "main",
-        "revision" : "9881c95ce3a139f4ccfa584676201516c2a5751d"
+        "revision" : "9881c95ce3a139f4ccfa584676201516c2a5751d",
+        "version" : "0.0.1"
       }
     }
   ],
