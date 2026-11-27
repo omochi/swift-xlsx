@@ -12,6 +12,7 @@ public class XMLNode {
         set { replaceChildren(newValue) }
     }
 
+    // 配列を持つサブクラスでは、追記時のコピーを避けるために格納先を _modify で貸し出す。
     var _children: [XMLNode] {
         get { [] }
         set {}

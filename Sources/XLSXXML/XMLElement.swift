@@ -46,6 +46,7 @@ public final class XMLElement: XMLNode {
     override var _children: [XMLNode] {
         get { childNodes }
         set { childNodes = newValue }
+        _modify { yield &childNodes }
     }
 
     public override func clone() -> Self {
